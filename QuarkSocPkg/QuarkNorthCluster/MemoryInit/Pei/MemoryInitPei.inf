@@ -38,6 +38,9 @@
   GCC:RELEASE_*_*_CC_FLAGS             = -DNDEBUG -DGCC -Wno-unused-function
   INTEL:RELEASE_*_*_CC_FLAGS           = /D NDEBUG
   MSFT:RELEASE_*_*_CC_FLAGS            = /D NDEBUG
+  GCC:*_CLANG38_IA32_CC_FLAGS          = -fno-lto -fbuiltin
+  GCC:*_CLANG38_IA32_DLINK2_FLAGS      = -flto
+  GCC:*_GCC5_IA32_CC_FLAGS             = -fbuiltin
 
 [Sources]
   memory_options.h
