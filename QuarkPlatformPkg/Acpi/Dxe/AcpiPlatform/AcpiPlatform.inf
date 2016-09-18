@@ -200,3 +200,6 @@
 
 [Depex]
   gEfiMpServiceProtocolGuid AND gEfiAcpiTableProtocolGuid
+
+[BuildOptions]
+  GCC:*_CLANG38_IA32_DLINK2_FLAGS      = -O1
