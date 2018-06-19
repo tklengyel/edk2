@@ -1,0 +1,47 @@
+## @file
+#   A uefi lib fuzzer (ULibfuzzer) executor which do the fuzz testing against
+#   all functions in a Uefi library according to functions' type info.
+#
+#   Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+#   This program and the accompanying materials
+#   are licensed and made available under the terms and conditions of the BSD License
+#   which accompanies this distribution. The full text of the license may be found at
+#   http://opensource.org/licenses/bsd-license.
+#
+#   THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = ULibfuzzer
+  FILE_GUID                      = EE2EF91C-DCB7-4e91-B00F-4348FC918FDB
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = ShellCEntryLib
+
+[Sources]
+  ULibfuzzer.c
+  ULibfuzzer.h
+  TypeInfo.h
+  BaseSafeIntLib_FunctionTypeInfo.c
+  BaseSafeIntLib_FunctionTypeInfo.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ShellPkg/ShellPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  ShellCEntryLib
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  HiiLib
+  DxeServicesLib
+  PeCoffGetEntryPointLib
+  ShellLib
+  BaseRngLib
+  SafeIntLib
