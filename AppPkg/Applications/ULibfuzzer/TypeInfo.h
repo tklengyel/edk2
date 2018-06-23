@@ -101,8 +101,9 @@ extern EFI_GUID gInterfaceTypeInfoProtocolGuid;
 // Map of a function address to its type info
 //
 typedef struct _FUNCTION_TYPE_MAP{
-  void                       *FunctionAddress;   //key
-  TYPE__EFI_FUNCTION_HEADER  *FunctionTypeInfo;          //value
+  void                       *FunctionAddress;
+  TYPE__EFI_FUNCTION_HEADER  *FunctionTypeInfo;
+  void                       *InvokeWrapper;
 } FUNCTION_TYPE_MAP;
 
 #define MAX_ARG_NUM 12

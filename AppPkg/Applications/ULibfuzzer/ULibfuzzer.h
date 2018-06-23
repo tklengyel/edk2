@@ -50,6 +50,10 @@ UINTN
   IN  UINTN   Arg11
 );
 
+typedef
+EFI_STATUS
+(EFIAPI* UEFI_INVOKE_WRAPPER)();
+
 #define TYPE_INFO_NODE_SIGNATURE SIGNATURE_32 ('T', 'I', 'N', 'D')
 typedef struct {
   UINTN                     Signature;
@@ -65,6 +69,7 @@ typedef struct {
   LIST_ENTRY                Link;
   void                      *FunctionAddress;
   TYPE__EFI_FUNCTION_HEADER *FunctionTypeInfoHdr;
+  void                      *InvokeWrapper;
 } FUNCTION_TYPE_MAP_NODE;
 #define FUNCTION_TYPE_MAP_NODE_FROM_LINK(a) CR (a, FUNCTION_TYPE_MAP_NODE, Link, FUNCTION_TYPE_MAP_NODE_SIGNATURE)
 
