@@ -405,7 +405,6 @@ FuzzingFunction (
       DEBUG ((EFI_D_ERROR, "fail to create the log file!\n"));
       LogFileHandle = NULL;
       goto FuzzFunction;
-      return Status;
     }
   }
 
