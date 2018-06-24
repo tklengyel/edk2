@@ -403,6 +403,8 @@ FuzzingFunction (
     if (EFI_ERROR(Status)) {
       Print (L"fail to create the log file!\n");
       DEBUG ((EFI_D_ERROR, "fail to create the log file!\n"));
+      LogFileHandle = NULL;
+      goto FuzzFunction;
       return Status;
     }
   }
@@ -428,6 +430,7 @@ FuzzingFunction (
     }
   }
 
+FuzzFunction:
   Print (L"going to fuzz function: %a\n", FunctionTypeInfo->TypeName);
   DEBUG ((EFI_D_ERROR, "going to fuzz function: %a\n", FunctionTypeInfo->TypeName));
   //
@@ -447,11 +450,14 @@ FuzzingFunction (
     STATUS_FAIL,
     sizeof(STATUS_FAIL)
     );
-  BufferSize = sizeof(FunctionLog);
-  Status = ShellSetFilePosition(LogFileHandle, 0xFFFFFFFFFFFFFFFF);
-  Status = ShellGetFilePosition(LogFileHandle, &Position);
-  Status = ShellWriteFile (LogFileHandle, &BufferSize, &FunctionLog);
-  Status = ShellFlushFile (LogFileHandle);
+  if (LogFileHandle != NULL){
+    BufferSize = sizeof(FunctionLog);
+    Status = ShellSetFilePosition(LogFileHandle, 0xFFFFFFFFFFFFFFFF);
+    Status = ShellGetFilePosition(LogFileHandle, &Position);
+    Status = ShellWriteFile (LogFileHandle, &BufferSize, &FunctionLog);
+    Status = ShellFlushFile (LogFileHandle);
+  }
+
   //
   // Generate call arguments firstly
   //
@@ -514,12 +520,16 @@ FuzzingFunction (
     STATUS_DONE,
     sizeof(STATUS_DONE)
     );
-  Status = ShellSetFilePosition(LogFileHandle, Position);
-  Status = ShellWriteFile (LogFileHandle, &BufferSize, &FunctionLog);
-  Status = ShellFlushFile (LogFileHandle);
+  if(LogFileHandle != NULL){
+    Status = ShellSetFilePosition(LogFileHandle, Position);
+    Status = ShellWriteFile (LogFileHandle, &BufferSize, &FunctionLog);
+    Status = ShellFlushFile (LogFileHandle);
+  }
 
 ErrorExit:
-  ShellCloseFile(&LogFileHandle);
+  if(LogFileHandle != NULL){
+    ShellCloseFile(&LogFileHandle);
+  }
   Print (L"FuzzingFunction done\n");
   DEBUG ((EFI_D_ERROR, "FuzzingFunction done\n"));
   return Status;
