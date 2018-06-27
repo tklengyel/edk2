@@ -13,6 +13,31 @@
 **/
 #include "TypeInfo.h"
 #include "ULibfuzzer.h"
+//
+// Configures:
+//
+// TRUE = not save "FuzzLog.txt"
+// FASLSE = save "FuzzLog.txt"
+static BOOLEAN NotSaveFuzzLogFile = TRUE;
+// 0 = enable log output
+// 1 = disable log output
+#define DISABLE_LOG 0
+
+
+#define _PRINT_LOG(...)    \
+    Print (L##__VA_ARGS__);
+
+#define _DEBUG_LOG(...)    \
+    _DEBUG_PRINT (EFI_D_ERROR, ##__VA_ARGS__);
+
+#if DISABLE_LOG == 0
+  #define OUTPUT_LOG(Expression) \
+    _PRINT_LOG Expression; \
+    _DEBUG_LOG Expression
+#else
+  #define OUTPUT_LOG(Expression)
+#endif
+
 
 //
 // Add the function type map list in below ToMergeTypeInfoList[]
@@ -50,8 +75,7 @@ HelloWorld(
   IN  UINTN   Arg11
   )
 {
-  //Print (L"Hello World\n");
-  DEBUG ((EFI_D_ERROR, "Hello World\n"));
+  OUTPUT_LOG (("Hello World\n"));
   return 0;
 }
 
@@ -102,8 +126,7 @@ GetFunArgTypeInfo (
   AddressPtr = (CHAR8**)((UINTN)&FunctionTypeHeader->ParameterTypeName_1 +
                           ArgIndex*(sizeof (UINTN)+sizeof(CHAR8*)));
   TypeInfoName = *AddressPtr;
-  //Print (L"GetFunArgTypeInfo ArgIndex is %d, TypeInfoName is %a\n", ArgIndex, TypeInfoName);
-  DEBUG ((EFI_D_ERROR, "GetFunArgTypeInfo ArgIndex is %d, TypeInfoName is %a\n", ArgIndex, TypeInfoName));
+  OUTPUT_LOG (("GetFunArgTypeInfo ArgIndex is %d, TypeInfoName is %a\n", ArgIndex, TypeInfoName));
   return GetTypeInfo(TypeInfoList, TypeInfoName);
 }
 
@@ -124,10 +147,9 @@ AddBufferList(
   if (NodePtr == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }
-  //Print (L"AddBufferList BufferAddress=0x%x\n", BufferAddress);
-  //Print (L"AddBufferList NodePtr=0x%x\n", NodePtr);
-  //DEBUG ((EFI_D_ERROR, "AddBufferList BufferAddress=0x%x\n", BufferAddress));
-  //DEBUG ((EFI_D_ERROR, "AddBufferList NodePtr=0x%x\n", NodePtr));
+
+  //OUTPUT_LOG (("AddBufferList BufferAddress=0x%x\n", BufferAddress));
+  //OUTPUT_LOG (("AddBufferList NodePtr=0x%x\n", NodePtr));
   NodePtr->Signature = ALLOCATED_BUFFER_NODE_SIGNATURE;
   NodePtr->BufferAddress = BufferAddress;
   InsertTailList (BufferList, &NodePtr->Link);
@@ -145,30 +167,30 @@ RandomBuffer(
   BOOLEAN   Status;
   UINT16    Value16;
   ASSERT (Rand != NULL);
-  //Print (L"RandomBuffer ByteSize=%d\n", ByteSize);
-  DEBUG ((EFI_D_ERROR, "RandomBuffer ByteSize=%d\n", ByteSize));
+
+  OUTPUT_LOG (("RandomBuffer ByteSize=%d\n", ByteSize));
   Status = FALSE;
   switch (ByteSize){
     case sizeof(UINT8):
       Status = GetRandomNumber16(&Value16);
       *(unsigned char *)Rand = Value16 >> 8;
-      DEBUG ((EFI_D_ERROR, "GetRandomNumber8= 0x%2x\n", *(unsigned char *)Rand));
+      OUTPUT_LOG (("GetRandomNumber8= 0x%2x\n", *(unsigned char *)Rand));
       break;
     case sizeof(UINT16):
       Status = GetRandomNumber16(Rand);
-      DEBUG ((EFI_D_ERROR, "GetRandomNumber16= 0x%4x\n", *(unsigned short *)Rand));
+      OUTPUT_LOG (("GetRandomNumber16= 0x%4x\n", *(unsigned short *)Rand));
       break;
     case sizeof(UINT32):
       Status = GetRandomNumber32(Rand);
-      DEBUG ((EFI_D_ERROR, "GetRandomNumber32= 0x%8x\n", *(unsigned int *)Rand));
+      OUTPUT_LOG (("GetRandomNumber32= 0x%8x\n", *(unsigned int *)Rand));
       break;
     case sizeof(UINT64):
       Status = GetRandomNumber64(Rand);
-      DEBUG ((EFI_D_ERROR, "GetRandomNumber64= 0x%16lx\n", *(unsigned long long *)Rand));
+      OUTPUT_LOG (("GetRandomNumber64= 0x%16lx\n", *(unsigned long long *)Rand));
       break;
     case sizeof(UINT64)*2:
       Status = GetRandomNumber128(Rand);
-      DEBUG ((EFI_D_ERROR, "GetRandomNumber128= 0x%32lx\n", *(UINTN *)Rand));
+      OUTPUT_LOG (("GetRandomNumber128= 0x%32lx\n", *(UINTN *)Rand));
       break;
     default:
       // Bugbug, should add support for buffer bytesize > 16
@@ -194,16 +216,13 @@ MutateFunArg(
   switch (ArgTypeHeader->TypeClass){
     case TYPE_CLASS_POINTER:
       PointedTypeInfoName = (CHAR8 *)((TYPE__POINTER *)ArgTypeHeader)->PointedType;
-      //Print (L"The Pointer's PointedType= %a\n", PointedTypeInfoName);
-      DEBUG ((EFI_D_ERROR, "The Pointer's PointedType= %a\n", PointedTypeInfoName));
+      OUTPUT_LOG (("The Pointer's PointedType= %a\n", PointedTypeInfoName));
       PointedTypeInfo = GetTypeInfo(TypeInfoList, PointedTypeInfoName);
       if (PointedTypeInfo == NULL){
-        //Print (L"Fail to get PointedType %a TypeInfo!\n", PointedTypeInfoName);
-        DEBUG ((EFI_D_ERROR, "Fail to get PointedType %a TypeInfo!\n", PointedTypeInfoName));
+        OUTPUT_LOG (("Fail to get PointedType %a TypeInfo!\n", PointedTypeInfoName));
         return EFI_NOT_FOUND;
       }
-      //Print (L"Get the PointedType=%a, PointedType size=%d\n", PointedTypeInfo->TypeName, PointedTypeInfo->TypeSize);
-      DEBUG ((EFI_D_ERROR, "Get the PointedType=%a, PointedType size=%d\n", PointedTypeInfo->TypeName, PointedTypeInfo->TypeSize));
+      OUTPUT_LOG (("Get the PointedType=%a, PointedType size=%d\n", PointedTypeInfo->TypeName, PointedTypeInfo->TypeSize));
       //
       // Check whether it is a pointer of pointer
       //
@@ -255,11 +274,9 @@ FreeBufferList(
     NodePtr = ALLOCATED_BUFFER_NODE_FROM_LINK (Link);
     RemoveEntryList(Link);
     Link = GetNextNode (BufferList, Link);
-    //Print (L"FreePool NodePtr->BufferAddress=0x%x\n", NodePtr->BufferAddress);
-    DEBUG ((EFI_D_ERROR, "FreePool NodePtr->BufferAddress=0x%x\n", NodePtr->BufferAddress));
+    OUTPUT_LOG (("FreePool NodePtr->BufferAddress=0x%x\n", NodePtr->BufferAddress));
     FreePool(NodePtr->BufferAddress);
-    //Print (L"FreePool NodePtr=0x%x\n", NodePtr);
-    DEBUG ((EFI_D_ERROR, "FreePool NodePtr=0x%x\n", NodePtr));
+    OUTPUT_LOG (("FreePool NodePtr=0x%x\n", NodePtr));
     FreePool(NodePtr);
   }
 
@@ -356,38 +373,32 @@ FuzzingFunction (
   UINTN                     BufferSize;
   UINT64                    Position;
 
-  Print (L"FuzzingFunction begin\n");
-  DEBUG ((EFI_D_ERROR, "FuzzingFunction begin\n"));
+  OUTPUT_LOG (("FuzzingFunction begin\n"));
   //
   // Check inputs sanity
   //
   if (FunctionAddress == NULL){
-    Print (L"Error! Target fuzzing FunctionAddress is NULL\n");
-    DEBUG ((EFI_D_ERROR, "Error! Target fuzzing FunctionAddress is NULL\n"));
+    OUTPUT_LOG (("Error! Target fuzzing FunctionAddress is NULL\n"));
     return EFI_INVALID_PARAMETER;
   }
 
   if (FunctionTypeInfo == NULL){
-    Print (L"Error! Target fuzzing TypeInfo is NULL\n");
-    DEBUG ((EFI_D_ERROR, "Error! Target fuzzing TypeInfo is NULL\n"));
+    OUTPUT_LOG (("Error! Target fuzzing TypeInfo is NULL\n"));
     return EFI_INVALID_PARAMETER;
   }
 
   if (FunctionTypeInfo->TypeName == NULL){
-    Print (L"Error! Target fuzzing TypeInfo's TypeName is NULL\n");
-    DEBUG ((EFI_D_ERROR, "Error! Target fuzzing TypeInfo's TypeName is NULL\n"));
+    OUTPUT_LOG (("Error! Target fuzzing TypeInfo's TypeName is NULL\n"));
     return EFI_INVALID_PARAMETER;
   }
 
   if (FunctionTypeInfo->TypeClass != TYPE_CLASS_FUNCTION){
-    Print (L"Error! %a's FunctionTypeInfo is not TYPE_CLASS_FUNCTION\n", FunctionTypeInfo->TypeName);
-    DEBUG ((EFI_D_ERROR, "Error! %a's FunctionTypeInfo is not TYPE_CLASS_FUNCTION\n", FunctionTypeInfo->TypeName));
+    OUTPUT_LOG (("Error! %a's FunctionTypeInfo is not TYPE_CLASS_FUNCTION\n", FunctionTypeInfo->TypeName));
     return EFI_INVALID_PARAMETER;
   }
 
   if (FunctionTypeInfo->ParameterNum > MAX_ARG_NUM){
-    Print (L"Function %a has too many parameters, please change the UEFI_CALL definition\n", FunctionTypeInfo->TypeName);
-    DEBUG ((EFI_D_ERROR, "Function %a has too many parameters, please change the UEFI_CALL definition\n", FunctionTypeInfo->TypeName));
+    OUTPUT_LOG (("Function %a has too many parameters, please change the UEFI_CALL definition\n", FunctionTypeInfo->TypeName));
     ASSERT(0);
   }
 
@@ -395,14 +406,18 @@ FuzzingFunction (
   //
   // Save the function log
   //
+  if (NotSaveFuzzLogFile){
+    OUTPUT_LOG (("Skip save Fuzzlog.txt file\n"));
+    LogFileHandle = NULL;
+    goto FuzzFunction;
+  }
+
   Status = ShellOpenFileByName(L"FuzzLog.txt", &LogFileHandle, EFI_FILE_MODE_READ|EFI_FILE_MODE_WRITE, 0);
   if (EFI_ERROR(Status)) {
-    Print (L"fail to open the log file, create a new one\n");
-    DEBUG ((EFI_D_ERROR, "fail to open the log file, create a new one\n"));
+    OUTPUT_LOG (("fail to open the log file, create a new one\n"));
     Status = ShellOpenFileByName(L"FuzzLog.txt", &LogFileHandle, EFI_FILE_MODE_CREATE|EFI_FILE_MODE_READ|EFI_FILE_MODE_WRITE, 0);
     if (EFI_ERROR(Status)) {
-      Print (L"fail to create the log file!\n");
-      DEBUG ((EFI_D_ERROR, "fail to create the log file!\n"));
+      OUTPUT_LOG (("fail to create the log file!\n"));
       LogFileHandle = NULL;
       goto FuzzFunction;
     }
@@ -410,8 +425,7 @@ FuzzingFunction (
 
   Status = ShellSetFilePosition(LogFileHandle, 0xFFFFFFFFFFFFFFFF);
   if (EFI_ERROR(Status)) {
-    Print (L"Set the Position to end of the file fail!\n");
-    DEBUG ((EFI_D_ERROR, "Set the Position to end of the file fail!\n"));
+    OUTPUT_LOG (("Set the Position to end of the file fail!\n"));
     return Status;
   }
 
@@ -423,15 +437,13 @@ FuzzingFunction (
     // Skip if this function is in black list file
     //
     if(CheckFunctionFromBlackList(BlackListFileHandle, FunctionTypeInfo)){
-      Print (L"Skip function %a, which is in BlackList\n", FunctionTypeInfo->TypeName);
-      DEBUG ((EFI_D_ERROR, "Skip function %a, which is in BlackList\n", FunctionTypeInfo->TypeName));
+      OUTPUT_LOG (("Skip function %a, which is in BlackList\n", FunctionTypeInfo->TypeName));
       return EFI_UNSUPPORTED;
     }
   }
 
 FuzzFunction:
-  Print (L"going to fuzz function: %a\n", FunctionTypeInfo->TypeName);
-  DEBUG ((EFI_D_ERROR, "going to fuzz function: %a\n", FunctionTypeInfo->TypeName));
+  OUTPUT_LOG (("going to fuzz function: %a\n", FunctionTypeInfo->TypeName));
   //
   // Log the protocol function
   //
@@ -464,8 +476,7 @@ FuzzFunction:
   for (ArgIndex = 0; ArgIndex < FunctionTypeInfo->ParameterNum; ArgIndex++){
     ArgTypeHeader = GetFunArgTypeInfo(&MergedTypeInfoList, FunctionTypeInfo, ArgIndex);
     if (ArgTypeHeader == NULL){
-      Print (L"Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex);
-      DEBUG ((EFI_D_ERROR, "Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex));
+      OUTPUT_LOG (("Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex));
       goto ErrorExit;
     }
     Status = MutateFunArg(
@@ -474,8 +485,7 @@ FuzzFunction:
                 &Arg[ArgIndex]
                 );
     if (EFI_ERROR (Status)){
-      Print (L"Fun Arg type %a fails to instantiate\n\n", ArgTypeHeader->TypeName);
-      DEBUG ((EFI_D_ERROR, "Fun Arg type %a fails to instantiate\n\n", ArgTypeHeader->TypeName));
+      OUTPUT_LOG (("Fun Arg type %a fails to instantiate\n\n", ArgTypeHeader->TypeName));
     }
     FunctionLog.Arg[ArgIndex] = Arg[ArgIndex];
   }
@@ -484,15 +494,13 @@ FuzzFunction:
   //
   UefiCall = (UEFI_CALL)(UINTN)FunctionAddress;
   FunctionLog.FunctionPointer = FunctionAddress;
-  Print (L"UefiCall address = 0x%x\n", (UINTN)UefiCall);
-  DEBUG ((EFI_D_ERROR, "UefiCall address = 0x%x\n", (UINTN)UefiCall));
+  OUTPUT_LOG (("UefiCall address = 0x%x\n", (UINTN)UefiCall));
+  //DEBUG ((EFI_D_ERROR, "UefiCall address = 0x%x\n", (UINTN)UefiCall));
   for (ArgIndex = 0; ArgIndex < MAX_ARG_NUM; ArgIndex++){
     if (sizeof(UINTN) == 8){ // %lx cannot use for UINTN in 32bit platform
-      Print (L"Arg[%d]= 0x%lx\n", ArgIndex, Arg[ArgIndex]);
-      DEBUG ((EFI_D_ERROR, "Arg[%d]= 0x%lx\n", ArgIndex, Arg[ArgIndex])); 
+      OUTPUT_LOG (("Arg[%d]= 0x%lx\n", ArgIndex, Arg[ArgIndex])); 
     }else{
-      Print (L"Arg[%d]= 0x%x\n", ArgIndex, Arg[ArgIndex]);
-      DEBUG ((EFI_D_ERROR, "Arg[%d]= 0x%x\n", ArgIndex, Arg[ArgIndex]));  
+      OUTPUT_LOG (("Arg[%d]= 0x%x\n", ArgIndex, Arg[ArgIndex]));  
     }
   }
 
@@ -511,8 +519,7 @@ FuzzFunction:
     Arg[11]
     );
 
-  Print (L"UefiCall is done\n");
-  DEBUG ((EFI_D_ERROR, "UefiCall is done\n"));
+  OUTPUT_LOG (("UefiCall is done\n"));
   AsciiStrnCpyS(
     FunctionLog.StatusStr,
     sizeof(FunctionLog.StatusStr),
@@ -529,8 +536,7 @@ ErrorExit:
   if(LogFileHandle != NULL){
     ShellCloseFile(&LogFileHandle);
   }
-  Print (L"FuzzingFunction done\n");
-  DEBUG ((EFI_D_ERROR, "FuzzingFunction done\n"));
+  OUTPUT_LOG (("FuzzingFunction done\n"));
   return Status;
 }
 
@@ -641,8 +647,7 @@ AddFunctionTypeMap(
     return EFI_OUT_OF_RESOURCES;
   }
 
-  Print (L"Function TypeName= %a\n", FunctionTypeMapPtr->FunctionTypeInfo->TypeName);
-  DEBUG ((EFI_D_ERROR, "Function TypeName= %a\n", FunctionTypeMapPtr->FunctionTypeInfo->TypeName));
+  OUTPUT_LOG (("Function TypeName= %a\n", FunctionTypeMapPtr->FunctionTypeInfo->TypeName));
 
   NodePtr->Signature = FUNCTION_TYPE_MAP_NODE_SIGNATURE;
   NodePtr->FunctionAddress = FunctionTypeMapPtr->FunctionAddress;
@@ -728,8 +733,7 @@ AddTypeInfo(
   }
 
   if (TypeInfoHdr->TypeName == NULL){
-    Print (L"Error! Add NULL TypeName.\n");
-    DEBUG ((EFI_D_ERROR, "Error! Add NULL TypeName.\n"));
+    OUTPUT_LOG (("Error! Add NULL TypeName.\n"));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -742,8 +746,7 @@ AddTypeInfo(
     return EFI_OUT_OF_RESOURCES;
   }
 
-  Print (L"TypeName= %a\n", TypeInfoHdr->TypeName);
-  DEBUG ((EFI_D_ERROR, "TypeName= %a\n", TypeInfoHdr->TypeName));
+  OUTPUT_LOG (("TypeName= %a\n", TypeInfoHdr->TypeName));
 
   NodePtr->Signature = TYPE_INFO_NODE_SIGNATURE;
   NodePtr->TypeInfoHdr = TypeInfoHdr;
@@ -803,7 +806,7 @@ GenParameter(
   FunctionTypeInfo = (TYPE__EFI_FUNCTION_HEADER *)TypeInfo;
   ArgTypeHeader = GetFunArgTypeInfo(&MergedTypeInfoList, FunctionTypeInfo, (ArgIndex - 1)); //ArgIndex begin with 1
   if (ArgTypeHeader == NULL){
-    DEBUG ((EFI_D_ERROR, "GenParameter Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex));
+    OUTPUT_LOG (("GenParameter Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex));
     return RETURN_NOT_FOUND;
   }
 
@@ -813,7 +816,7 @@ GenParameter(
               ParameterAddress
               );
   if (EFI_ERROR (Status)){
-    DEBUG ((EFI_D_ERROR, "Fun Arg type %a fails to instantiate\n\n", ArgTypeHeader->TypeName));
+    OUTPUT_LOG (("Fun Arg type %a fails to instantiate\n\n", ArgTypeHeader->TypeName));
     return RETURN_UNSUPPORTED;
   }
 
@@ -843,27 +846,22 @@ ShellAppMain (
   LIST_ENTRY                  *Link;
   //UEFI_INVOKE_WRAPPER         UefiInvokeWrapper;
 
-  Print(L"\nHello uefi lib fuzzer!\n");
-  DEBUG ((EFI_D_ERROR, "\nHello uefi lib fuzzer!\n"));
+  OUTPUT_LOG(("\nHello uefi lib fuzzer!\n"));
   //
   // 1.Merge all type info and function map lists
   //
-  Print(L"Merging all type info\n");
-  DEBUG ((EFI_D_ERROR, "Merging all type info\n"));
+  OUTPUT_LOG(("Merging all type info\n"));
   InitializeListHead (&MergedTypeInfoList);
   MergeTypeInfo(ToMergeTypeInfoList, &MergedTypeInfoList);
   if (IsListEmpty (&MergedTypeInfoList)) {
-    Print(L"There is no type info available!\n");
-    DEBUG ((EFI_D_ERROR, "There is no type info available!\n"));
+    OUTPUT_LOG(("There is no type info available!\n"));
     return(0);
   }
-  Print(L"Merging all function map lists\n");
-  DEBUG ((EFI_D_ERROR, "Merging all function map lists\n"));
+  OUTPUT_LOG(("Merging all function map lists\n"));
   InitializeListHead (&MergedFunctionTypeMapList);
   MergeFunctionTypeMap(ToMergeFunctionTypeMapList, &MergedFunctionTypeMapList);
   if (IsListEmpty (&MergedFunctionTypeMapList)) {
-    Print(L"There is no function type map available!\n");
-    DEBUG ((EFI_D_ERROR, "There is no function type map available!\n"));
+    OUTPUT_LOG(("There is no function type map available!\n"));
     return(0);
   }
 
@@ -907,6 +905,7 @@ ShellAppMain (
       // Add error handling code here
     }
   }
+
   //
   //
   //
