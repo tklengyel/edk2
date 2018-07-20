@@ -948,3 +948,6 @@
       NULL|SecurityPkg/Library/HashInstanceLibSha256/HashInstanceLibSha256.inf
   }
 !endif
+
+  MdeModulePkg/Bus/Fuzz/FuzzBus.inf
+
