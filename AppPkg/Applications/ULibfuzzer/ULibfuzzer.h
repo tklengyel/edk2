@@ -32,10 +32,28 @@
 
 //
 // (EFIAPI *EFI_HII_STRING_ID_TO_IMAGE) function has 12 Args!
+//  Need to distinguish the function abi with or without EFIAPI!
 //
 typedef
 UINTN
-(EFIAPI* UEFI_CALL)(
+(* UEFI_CALL)(
+  IN  UINTN   Arg0,
+  IN  UINTN   Arg1,
+  IN  UINTN   Arg2,
+  IN  UINTN   Arg3,
+  IN  UINTN   Arg4,
+  IN  UINTN   Arg5,
+  IN  UINTN   Arg6,
+  IN  UINTN   Arg7,
+  IN  UINTN   Arg8,
+  IN  UINTN   Arg9,
+  IN  UINTN   Arg10,
+  IN  UINTN   Arg11
+);
+
+typedef
+UINTN
+(EFIAPI* UEFI_CALL_EFIAPI)(
   IN  UINTN   Arg0,
   IN  UINTN   Arg1,
   IN  UINTN   Arg2,
