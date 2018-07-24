@@ -200,6 +200,30 @@ RandomBuffer(
   return Status;
 }
 
+
+TYPE_INFO_HEADER*
+EFIAPI
+GetStructFieldTypeInfo (
+  IN  LIST_ENTRY              *TypeInfoList,
+  IN  TYPE__STRUCTURE_HEADER  *StructTypeHeader,
+  IN  UINTN                   FieldIndex
+  )
+{
+  CHAR8                     *TypeInfoName;
+  CHAR8                     **AddressPtr;
+  //
+  // FieldIndex start with 0
+  //
+  if (FieldIndex >= StructTypeHeader->StructFieldNum){
+    return NULL;
+  }
+  AddressPtr = (CHAR8 **)((UINTN)&StructTypeHeader->StructFieldTypeName_1 + FieldIndex*2*sizeof (CHAR8*));
+  TypeInfoName = *AddressPtr;
+  OUTPUT_LOG (("GetStructFieldTypeInfo FieldIndex is %d TypeInfoName is %a\n", FieldIndex, TypeInfoName));
+  return GetTypeInfo(TypeInfoList, TypeInfoName);
+}
+
+
 EFI_STATUS
 EFIAPI
 MutateFunArg(
@@ -212,6 +236,13 @@ MutateFunArg(
   CHAR8                     *PointedTypeInfoName;
   TYPE_INFO_HEADER          *PointedTypeInfo;
   UINTN                     *Buffer;
+  TYPE__STRUCTURE_HEADER    *TypeStructureHeader;
+  UINTN                     FieldIndex;
+  TYPE_INFO_HEADER          *FieldTypeHeader;
+  TYPE_INFO_HEADER          *NextStructFieldTypeHeader;
+  CHAR8*                    BufferPtr;
+  UINTN                     Alignment;
+  UINTN                     AlignmentOffset;
 
   switch (ArgTypeHeader->TypeClass){
     case TYPE_CLASS_POINTER:
@@ -245,6 +276,87 @@ MutateFunArg(
 
     case TYPE_CLASS_FUNCTION:
       *ArgBuffer = (UINTN)HelloWorld;
+      OUTPUT_LOG (("Type %a is a function, and set as HelloWorld\n", ArgTypeHeader->TypeName));
+      OUTPUT_LOG (("HelloWorld address=0x%x\n", (UINTN)HelloWorld));
+      return RETURN_SUCCESS;
+
+    case TYPE_CLASS_STRUCTURE:
+      //ZeroMem(ArgBuffer, ArgTypeHeader->TypeSize);
+      //RandomBuffer(ArgBuffer, ArgTypeHeader->TypeSize);
+
+      //
+      // Mutate the fields again to recursively fill the function and pointer buffer
+      //
+      BufferPtr = (CHAR8*) ArgBuffer;
+      TypeStructureHeader = (TYPE__STRUCTURE_HEADER *)ArgTypeHeader;
+      for(FieldIndex = 0; FieldIndex < TypeStructureHeader->StructFieldNum; FieldIndex++){
+        FieldTypeHeader = GetStructFieldTypeInfo(TypeInfoList, TypeStructureHeader, FieldIndex);
+        if (FieldTypeHeader == NULL){
+          OUTPUT_LOG (("Error! Cannot get the type %a for structure %a field %d \n",
+                        FieldTypeHeader->TypeName,
+                        TypeStructureHeader->TypeName,
+                        FieldIndex
+                      ));
+          return EFI_NOT_FOUND;
+        }
+        OUTPUT_LOG (("Structure FieldIndex %d address=0x%x\n", FieldIndex, (UINTN)BufferPtr));
+        Status = MutateFunArg(
+                    TypeInfoList,
+                    FieldTypeHeader,
+                    (UINTN *)BufferPtr
+                    );
+        if (EFI_ERROR (Status)){
+          OUTPUT_LOG (("Strcuture field type %a fails to instantiate\n\n", FieldTypeHeader->TypeName));
+        }
+
+        BufferPtr += FieldTypeHeader->TypeSize;
+        //
+        // Uefi spec 2.3.1 Data Types
+        // Protocol structure are aligned on boundaries equal to the largest
+        // internal datum of the structure and internal data are implicitly
+        // padded to achieve natural alignment.
+        // https://bugzilla.tianocore.org/show_bug.cgi?id=930
+        //
+        // Bugbug, need to caculate every Strucut internal default alignment,
+        // hardcode is not correct
+        // It's better directly auto-generated the offset in IfTypeInfo.c
+        //
+        // &AcpiTableInstance->AcpiSdtProtocol.AcpiVersion= 0x7E16E1B0
+        // &AcpiTableInstance->AcpiSdtProtocol.GetAcpiTable= 0x7E16E1B8
+        // &AcpiTableInstance->AcpiSdtProtocol.RegisterNotify= 0x7E16E1C0
+        // &AcpiTableInstance->AcpiSdtProtocol.Open= 0x7E16E1C8
+        //
+        // &VirtioDeviceProtocol.Revision= 0x7E017BA0
+        // &VirtioDeviceProtocol.SubSystemDeviceId= 0x7E017BA4
+        // &VirtioDeviceProtocol.GetDeviceFeatures= 0x7E017BA8
+        // &VirtioDeviceProtocol.SetGuestFeatures= 0x7E017BB0
+        // &VirtioDeviceProtocol.SetQueueAddress= 0x7E017BB8
+        //
+
+        //
+        // Use the Next field type size to decide the current field alignment
+        //
+        if ((FieldIndex+1) < TypeStructureHeader->StructFieldNum){
+          NextStructFieldTypeHeader = GetStructFieldTypeInfo(&MergedTypeInfoList, TypeStructureHeader, FieldIndex+1);
+          if (NextStructFieldTypeHeader == NULL){
+            OUTPUT_LOG (("Error! NextStructFieldTypeHeader is NULL\n"));
+            continue;
+          }
+          if (NextStructFieldTypeHeader->TypeSize >= STRUCTURE_DEFAULT_ALIGNMENT){
+            Alignment = STRUCTURE_DEFAULT_ALIGNMENT;
+          } else {
+            Alignment = 4;
+          }
+
+          if ((UINTN)BufferPtr % Alignment != 0){
+            AlignmentOffset = Alignment - ((UINTN)BufferPtr % Alignment);
+          }else{
+            AlignmentOffset = 0;
+          }
+          OUTPUT_LOG (("AlignmentOffset = 0x%x\n", AlignmentOffset));
+          BufferPtr += AlignmentOffset;
+        }
+      }
       return RETURN_SUCCESS;
 
     default:
@@ -889,7 +1001,11 @@ ShellAppMain (
     // input argument. But the UINT64 argument are used in several Uefi APIs,
     // e.g. SafeInt64ToUint64(). So force convert the UINT64 argument to
     // 4 bytes Arg[] in UefiCall() can cause error.
-    //
+	// The UefiCall() template has another critical limitation that it has fixed
+	// EFIAPI ABI attribute which implicty required all the tested function also
+	// have same EFIAPI ABI attribute. But this assumption is not true for all
+	// Uefi functions.
+	//
     Status = FuzzingFunction(MapNodePtr->FunctionAddress, MapNodePtr->FunctionTypeInfoHdr);
 
     // method 2: native function call

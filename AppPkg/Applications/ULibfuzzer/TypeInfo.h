@@ -85,6 +85,14 @@ typedef struct _TYPE__POINTER{
   const CHAR8* PointedType;
 } TYPE__POINTER;
 
+typedef struct _TYPE__STRUCTURE_HEADER{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const UINTN StructFieldNum;
+  const CHAR8* StructFieldName_1;
+  const CHAR8* StructFieldTypeName_1;
+} TYPE__STRUCTURE_HEADER;
 
 typedef struct _TYPE_INFO_HEADER{
   const CHAR8*  TypeName;
