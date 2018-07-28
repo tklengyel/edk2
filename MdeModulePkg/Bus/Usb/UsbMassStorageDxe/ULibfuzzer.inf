@@ -1,0 +1,82 @@
+## @file
+#   A uefi lib fuzzer (ULibfuzzer) executor which do the fuzz testing against
+#   all functions in a Uefi library according to functions' type info.
+#
+#   Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+#   This program and the accompanying materials
+#   are licensed and made available under the terms and conditions of the BSD License
+#   which accompanies this distribution. The full text of the license may be found at
+#   http://opensource.org/licenses/bsd-license.
+#
+#   THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = ULibfuzzer_UsbMassStorageDxe
+  FILE_GUID                      = 0285462B-E2A8-485a-982E-7000DD90F3BE
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = ShellCEntryLib
+
+[Sources]
+  ULibfuzzer.c
+  ULibfuzzer.h
+  TypeInfo.h
+
+  UsbMassBoot.h
+  UsbMassImpl.h
+  UsbMassBot.h
+  UsbMassBot.c
+  ComponentName.c
+  UsbMassImpl.c
+  UsbMassBoot.c
+  UsbMassCbi.h
+  UsbMass.h
+  UsbMassCbi.c
+  UsbMassDiskInfo.h
+  UsbMassDiskInfo.c
+  UsbMassStorageDxe_FunctionTypeInfo.c
+  UsbMassStorageDxe_FunctionTypeInfo.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ShellPkg/ShellPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  ShellCEntryLib
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  HiiLib
+  DxeServicesLib
+  PeCoffGetEntryPointLib
+  ShellLib
+  BaseRngLib
+  SafeIntLib
+
+  BaseLib
+  MemoryAllocationLib
+  UefiLib
+  UefiBootServicesTableLib
+  BaseMemoryLib
+  DebugLib
+  DevicePathLib
+
+[Protocols]
+  gEfiUsbIoProtocolGuid                         ## TO_START
+  gEfiDevicePathProtocolGuid                    ## TO_START
+  gEfiBlockIoProtocolGuid                       ## BY_START
+  gEfiDiskInfoProtocolGuid                      ## BY_START
+
+# [Event]
+# EVENT_TYPE_RELATIVE_TIMER        ## CONSUMES
+#
+
+[UserExtensions.TianoCore."ExtraFiles"]
+  UsbMassStorageDxeExtra.uni
+  
