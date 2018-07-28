@@ -761,7 +761,7 @@ UsbBootDetectMedia (
     // This function is called from:
     //   Block I/O Protocol APIs, which run at TPL_CALLBACK.
     //   DriverBindingStart(), which raises to TPL_CALLBACK.
-    ASSERT (EfiGetCurrentTpl () == TPL_CALLBACK);
+    //ASSERT (EfiGetCurrentTpl () == TPL_CALLBACK);// ULibfuzzer work around
 
     //
     // When it is called from DriverBindingStart(), below reinstall fails.

@@ -361,7 +361,6 @@ UsbMassInitMedia (
   Media->MediaId          = 1;
 
   Status = UsbBootGetParams (UsbMass);
-  DEBUG ((DEBUG_INFO, "UsbMassInitMedia: UsbBootGetParams (%r)\n", Status));
   if (Status == EFI_MEDIA_CHANGED) {
     //
     // Some USB storage devices may report MEDIA_CHANGED sense key when hot-plugged.
@@ -492,7 +491,7 @@ UsbMassInitMultiLun (
   EFI_STATUS                       Status;
   EFI_STATUS                       ReturnStatus;
 
-  ASSERT (MaxLun > 0);
+  //ASSERT (MaxLun > 0);// ULibfuzzer work around
   ReturnStatus = EFI_NOT_FOUND;
 
   for (Index = 0; Index <= MaxLun; Index++) {

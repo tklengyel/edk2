@@ -165,7 +165,7 @@ UsbBotSendCommand (
   UINTN                     DataLen;
   UINTN                     Timeout;
 
-  ASSERT ((CmdLen > 0) && (CmdLen <= USB_BOT_MAX_CMDLEN));
+  //ASSERT ((CmdLen > 0) && (CmdLen <= USB_BOT_MAX_CMDLEN));// ULibfuzzer work around
 
   //
   // Fill in the Command Block Wrapper.
