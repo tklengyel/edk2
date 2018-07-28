@@ -952,3 +952,5 @@
 !endif
 
   AppPkg/Applications/ULibfuzzer/ULibfuzzer.inf
+  MdeModulePkg/Bus/Usb/UsbMassStorageDxe/ULibfuzzer.inf
+

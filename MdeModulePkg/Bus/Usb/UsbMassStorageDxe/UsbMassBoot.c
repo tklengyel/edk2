@@ -754,7 +754,7 @@ UsbBootDetectMedia (
     // This function is called from:
     //   Block I/O Protocol APIs, which run at TPL_CALLBACK.
     //   DriverBindingStart(), which raises to TPL_CALLBACK.
-    ASSERT (EfiGetCurrentTpl () == TPL_CALLBACK);
+    //ASSERT (EfiGetCurrentTpl () == TPL_CALLBACK);// ULibfuzzer work around
 
     //
     // When it is called from DriverBindingStart(), below reinstall fails.
@@ -820,6 +820,7 @@ UsbBootReadBlocks (
   UINT32                    Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
+  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
   CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
   Status    = EFI_SUCCESS;
 
@@ -898,6 +899,7 @@ UsbBootWriteBlocks (
   UINT32                Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
+  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
   CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
   Status    = EFI_SUCCESS;
 
@@ -976,6 +978,7 @@ UsbBootReadBlocks16 (
   UINT32                    Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
+  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
   CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
   Status    = EFI_SUCCESS;
 
@@ -1052,6 +1055,7 @@ UsbBootWriteBlocks16 (
   UINT32                Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
+  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
   CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
   Status    = EFI_SUCCESS;
 
