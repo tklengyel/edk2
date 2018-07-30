@@ -947,4 +947,4 @@
 
   AppPkg/Applications/ULibfuzzer/ULibfuzzer.inf
   MdeModulePkg/Bus/Usb/UsbMassStorageDxe/ULibfuzzer.inf
-
+  MdeModulePkg/Bus/Usb/UsbBusDxe/ULibfuzzer.inf
