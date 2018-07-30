@@ -134,6 +134,9 @@
         # For RVCTCYGWIN CC_FLAGS must be first to work around pathing issues
         "$(CC)" $(CC_FLAGS) -c -o ${dst} $(INC) ${src}
 
+    <Command.SANITIZER>
+        "$(CC)" $(CC_FLAGS) $(SAN_FLAGS) -c -o ${dst} $(INC) ${src}
+
     <Command.XCODE>
         "$(CC)" $(CC_FLAGS) -o ${dst} $(INC) ${src}
 

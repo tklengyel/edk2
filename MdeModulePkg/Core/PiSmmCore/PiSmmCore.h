@@ -61,6 +61,7 @@
 #include <Library/TimerLib.h>
 #include <Library/HobLib.h>
 #include <Library/SmmMemLib.h>
+#include <Library/Asan.h>
 
 #include "PiSmmCorePrivateData.h"
 #include "HeapGuard.h"
@@ -1252,6 +1253,16 @@ extern LIST_ENTRY  mSmmMemoryMap;
 //
 #define MAX_POOL_INDEX  (MAX_POOL_SHIFT - MIN_POOL_SHIFT + 1)
 
+//
+// The pool memory with Asan red zone looks like this:
+// H L U U U U R R R R R R A T
+//   H -- FREE_POOL_HEADER
+//   L -- left redzone defined in POOL_HEAD (static kAsanHeapLeftRedzoneSize bytes)
+//   U -- user memory.
+//   R -- right redzone (dymanic ComputePoolRightRedzoneSize() bytes)
+//   A -- Alignment (might be zero byte)
+//
+#define kAsanHeapLeftRedzoneSize  128
 #define POOL_HEAD_SIGNATURE   SIGNATURE_32('p','h','d','0')
 
 typedef struct {
@@ -1259,6 +1270,9 @@ typedef struct {
   BOOLEAN           Available;
   EFI_MEMORY_TYPE   Type;
   UINTN             Size;
+  UINTN             OriSize;
+  UINTN             AsanRightRZSize;
+  CHAR8             AsanLeftRZ[kAsanHeapLeftRedzoneSize];
 } POOL_HEADER;
 
 #define POOL_TAIL_SIGNATURE   SIGNATURE_32('p','t','a','l')

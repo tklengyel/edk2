@@ -212,6 +212,13 @@ RuntimeDriverConvertInternalPointer (
   return RuntimeDriverConvertPointer (0x0, ConvertAddress);
 }
 
+typedef struct {
+  UINTN                  MemoryMapSize;
+  UINTN                  DescriptorSize;
+  UINT32                 DescriptorVersion;
+  EFI_MEMORY_DESCRIPTOR  *VirtualMap;
+} VIRTUAL_ADDRESS_MAP_INFO;
+
 /**
 
   Changes the runtime addressing mode of EFI firmware from physical to virtual.
@@ -247,6 +254,7 @@ RuntimeDriverSetVirtualAddressMap (
   EFI_RUNTIME_IMAGE_ENTRY       *RuntimeImage;
   LIST_ENTRY                    *Link;
   EFI_PHYSICAL_ADDRESS          VirtImageBase;
+  VIRTUAL_ADDRESS_MAP_INFO      VirtMemMapInfo;
 
   //
   // Can only switch to virtual addresses once the memory map is locked down,
@@ -284,6 +292,10 @@ RuntimeDriverSetVirtualAddressMap (
   //
   REPORT_STATUS_CODE (EFI_PROGRESS_CODE, (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_PC_VIRTUAL_ADDRESS_CHANGE_EVENT));
 
+  VirtMemMapInfo.MemoryMapSize = MemoryMapSize;
+  VirtMemMapInfo.DescriptorSize = DescriptorSize;
+  VirtMemMapInfo.DescriptorVersion = DescriptorVersion;
+  VirtMemMapInfo.VirtualMap = VirtualMap;
   //
   // Signal all the EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE events.
   // All runtime events are stored in a list in Runtime AP.
@@ -291,6 +303,7 @@ RuntimeDriverSetVirtualAddressMap (
   for (Link = mRuntime.EventHead.ForwardLink; Link != &mRuntime.EventHead; Link = Link->ForwardLink) {
     RuntimeEvent = BASE_CR (Link, EFI_RUNTIME_EVENT_ENTRY, Link);
     if ((RuntimeEvent->Type & EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE) == EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE) {
+      RuntimeEvent->NotifyContext = &VirtMemMapInfo;
       RuntimeEvent->NotifyFunction (
                       RuntimeEvent->Event,
                       RuntimeEvent->NotifyContext
