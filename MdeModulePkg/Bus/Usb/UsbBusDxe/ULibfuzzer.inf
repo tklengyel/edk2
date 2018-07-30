@@ -1,0 +1,85 @@
+## @file
+#   A uefi lib fuzzer (ULibfuzzer) executor which do the fuzz testing against
+#   all functions in a Uefi library according to functions' type info.
+#
+#   Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+#   This program and the accompanying materials
+#   are licensed and made available under the terms and conditions of the BSD License
+#   which accompanies this distribution. The full text of the license may be found at
+#   http://opensource.org/licenses/bsd-license.
+#
+#   THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = ULibfuzzer_UsbBusDxe
+  FILE_GUID                      = F677E87F-C72A-4bc4-8F7E-46655A11520A
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = ShellCEntryLib
+
+[Sources]
+  UsbDesc.c
+  UsbEnumer.c
+  UsbEnumer.h
+  UsbBus.c
+  UsbHub.c
+  ComponentName.c
+  UsbUtility.h
+  UsbHub.h
+  UsbUtility.c
+  UsbDesc.h
+  UsbBus.h
+
+  ULibfuzzer.c
+  ULibfuzzer.h
+  TypeInfo.h
+  UsbBusDxe_FunctionTypeInfo.c
+  UsbBusDxe_FunctionTypeInfo.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+  ShellPkg/ShellPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  MemoryAllocationLib
+  DevicePathLib
+  UefiLib
+  UefiBootServicesTableLib
+  BaseMemoryLib
+  DebugLib
+  ReportStatusCodeLib
+
+  UefiLib
+  ShellCEntryLib
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  HiiLib
+  DxeServicesLib
+  PeCoffGetEntryPointLib
+  ShellLib
+  BaseRngLib
+  SafeIntLib
+
+[Protocols]
+  gEfiUsbIoProtocolGuid                         ## BY_START
+  ## TO_START
+  ## BY_START
+  gEfiDevicePathProtocolGuid                    
+  gEfiUsb2HcProtocolGuid                        ## TO_START
+  gEfiUsbHcProtocolGuid                         ## TO_START
+
+# [Event]
+#
+# EVENT_TYPE_PERIODIC_TIMER       ## CONSUMES
+#
+
+[UserExtensions.TianoCore."ExtraFiles"]
+  UsbBusDxeExtra.uni
+  
