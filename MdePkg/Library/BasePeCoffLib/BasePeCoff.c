@@ -55,6 +55,7 @@ PeCoffLoaderAdjustOffsetForTeImage (
   @return EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC - Image is PE32+
 
 **/
+__attribute__((no_sanitize("address")))
 UINT16
 PeCoffLoaderGetPeHeaderMagicValue (
   IN  EFI_IMAGE_OPTIONAL_HEADER_PTR_UNION  Hdr
@@ -1693,6 +1694,7 @@ PeCoffLoaderLoadImage (
                              image was relocated using PeCoffLoaderRelocateImage().
 
 **/
+__attribute__((no_sanitize("address")))
 VOID
 EFIAPI
 PeCoffLoaderRelocateImageForRuntime (

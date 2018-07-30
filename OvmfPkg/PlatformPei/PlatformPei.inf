@@ -51,6 +51,7 @@
 [Guids]
   gEfiMemoryTypeInformationGuid
   gEfiXenInfoGuid
+  gAsanInfoGuid
 
 [LibraryClasses]
   BaseLib
@@ -105,6 +106,8 @@
   gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApInitTimeOutInMicroSeconds
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApStackSize
+  gEfiMdeModulePkgTokenSpaceGuid.AsanShadowMemoryStart
+  gEfiMdeModulePkgTokenSpaceGuid.AsanShadowMemorySize
 
 [FixedPcd]
   gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress

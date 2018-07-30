@@ -102,6 +102,7 @@
   DebugAgentLib
   CpuExceptionHandlerLib
   PcdLib
+  AsanLib
 
 [Guids]
   gEfiEventMemoryMapChangeGuid                  ## PRODUCES             ## Event

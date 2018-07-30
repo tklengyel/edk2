@@ -410,6 +410,12 @@ DEFINE DTC_BIN                 = ENV(DTC_PREFIX)dtc
 #                             Required to build platforms or ACPI tables:
 #                               Intel(r) ACPI Compiler from
 #                               https://acpica.org/downloads
+#   CLANGSAN40  -Linux-  Requires:
+#                             Clang v5.0 or later and GNU binutils 2.26 targeting x86_64-linux-gnu
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler from
+#                               https://acpica.org/downloads
 #   ELFGCC      -Linux-  Requires:
 #                             GCC(this tool chain uses whatever version of gcc and binutils that is installed in /usr/bin)
 #                        Optional:
@@ -4976,6 +4982,91 @@ RELEASE_GCC49_IA32_CC_FLAGS       = DEF(GCC49_IA32_CC_FLAGS) -Os -Wno-unused-but
 RELEASE_GCC49_X64_CC_FLAGS       = DEF(GCC49_X64_CC_FLAGS) -Os -Wno-unused-but-set-variable -Wno-unused-const-variable
   NOOPT_GCC49_X64_CC_FLAGS       = DEF(GCC49_X64_CC_FLAGS) -O0
 
+####################################################################################
+#
+# GCC Sanitizer 4.9 - This configuration is used to compile under Linux to produce
+#           PE/COFF binaries using GCC 4.9. with address sanitizer enabled
+#
+####################################################################################
+*_GCCSAN49_*_*_FAMILY               = GCC
+*_GCCSAN49_*_*_BUILDRULEFAMILY      = SANITIZER
+
+*_GCCSAN49_*_MAKE_PATH                    = make
+*_GCCSAN49_*_*_DLL                        = ENV(GCC49_DLL)
+*_GCCSAN49_*_ASL_PATH                     = DEF(UNIX_IASL_BIN)
+
+*_GCCSAN49_*_PP_FLAGS                     = DEF(GCC_PP_FLAGS)
+*_GCCSAN49_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
+*_GCCSAN49_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
+*_GCCSAN49_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
+*_GCCSAN49_*_APP_FLAGS                    =
+*_GCCSAN49_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
+*_GCCSAN49_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
+
+DEFINE GCCSAN49_IA32_PREFIX               = ENV(GCCSAN49_BIN)
+DEFINE GCCSAN49_X64_PREFIX                = ENV(GCCSAN49_BIN)
+
+##################
+# GCCSAN49 IA32 definitions
+##################
+*_GCCSAN49_IA32_OBJCOPY_PATH         = objcopy
+*_GCCSAN49_IA32_CC_PATH              = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_SLINK_PATH           = ar
+*_GCCSAN49_IA32_DLINK_PATH           = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_ASLDLINK_PATH        = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_ASM_PATH             = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_PP_PATH              = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_VFRPP_PATH           = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_ASLCC_PATH           = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_ASLPP_PATH           = DEF(GCCSAN49_IA32_PREFIX)gcc
+*_GCCSAN49_IA32_RC_PATH              = objcopy
+
+*_GCCSAN49_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32
+*_GCCSAN49_IA32_ASLDLINK_FLAGS       = DEF(GCC49_IA32_X64_ASLDLINK_FLAGS) -Wl,-m,elf_i386
+*_GCCSAN49_IA32_ASM_FLAGS            = DEF(GCC49_ASM_FLAGS) -m32 -march=i386
+*_GCCSAN49_IA32_DLINK_FLAGS          = DEF(GCC49_IA32_X64_DLINK_FLAGS) -Wl,-m,elf_i386,--oformat=elf32-i386
+*_GCCSAN49_IA32_DLINK2_FLAGS         = DEF(GCC49_IA32_DLINK2_FLAGS)
+*_GCCSAN49_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
+*_GCCSAN49_IA32_OBJCOPY_FLAGS        =
+*_GCCSAN49_IA32_NASM_FLAGS           = -f elf32
+
+  DEBUG_GCCSAN49_IA32_CC_FLAGS       = DEF(GCC49_IA32_CC_FLAGS) -Os
+RELEASE_GCCSAN49_IA32_CC_FLAGS       = DEF(GCC49_IA32_CC_FLAGS) -Os -Wno-unused-but-set-variable
+  NOOPT_GCCSAN49_IA32_CC_FLAGS       = DEF(GCC49_IA32_CC_FLAGS) -O0
+
+##################
+# GCCSAN49 X64 definitions
+##################
+*_GCCSAN49_X64_OBJCOPY_PATH         = objcopy
+*_GCCSAN49_X64_CC_PATH              = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_SLINK_PATH           = ar
+*_GCCSAN49_X64_DLINK_PATH           = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_ASLDLINK_PATH        = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_ASM_PATH             = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_PP_PATH              = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_VFRPP_PATH           = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_ASLCC_PATH           = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_ASLPP_PATH           = DEF(GCCSAN49_X64_PREFIX)gcc
+*_GCCSAN49_X64_RC_PATH              = objcopy
+
+*_GCCSAN49_X64_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m64
+*_GCCSAN49_X64_ASLDLINK_FLAGS       = DEF(GCC49_IA32_X64_ASLDLINK_FLAGS) -Wl,-m,elf_x86_64
+*_GCCSAN49_X64_ASM_FLAGS            = DEF(GCC49_ASM_FLAGS) -m64
+*_GCCSAN49_X64_DLINK_FLAGS          = DEF(GCC49_X64_DLINK_FLAGS)
+*_GCCSAN49_X64_DLINK2_FLAGS         = DEF(GCC49_X64_DLINK2_FLAGS) -Os
+*_GCCSAN49_X64_RC_FLAGS             = DEF(GCC_X64_RC_FLAGS)
+*_GCCSAN49_X64_OBJCOPY_FLAGS        =
+*_GCCSAN49_X64_NASM_FLAGS           = -f elf64
+
+  DEBUG_GCCSAN49_X64_CC_FLAGS       = DEF(GCC49_X64_CC_FLAGS) -O0
+RELEASE_GCCSAN49_X64_CC_FLAGS       = DEF(GCC49_X64_CC_FLAGS) -O0 -Wno-unused-but-set-variable
+  NOOPT_GCCSAN49_X64_CC_FLAGS       = DEF(GCC49_X64_CC_FLAGS) -O0
+#
+# the -fasan-shadow-offset=AsanShadowMemoryStart is needed by the gcc asan fake stack shadow memory mapping.
+# edk2 asan only depend on gcc do the fake stack shadow memory mapping.
+#
+*_GCCSAN49_X64_SAN_FLAGS          = -fsanitize=kernel-address --param asan-globals=1 --param asan-stack=1 --param asan-instrumentation-with-call-threshold=0 -fasan-shadow-offset=0x18000000 -fsanitize=undefined -fno-sanitize=alignment -fsanitize-coverage=trace-pc
+
 ##################
 # GCC49 ARM definitions
 ##################
@@ -5305,6 +5396,50 @@ DEFINE CLANG38_X64_TARGET           = -target x86_64-pc-linux-gnu
 DEFINE CLANG38_WARNING_OVERRIDES    = -Wno-parentheses-equality -Wno-tautological-compare -Wno-tautological-constant-out-of-range-compare -Wno-empty-body -Wno-unused-const-variable -Wno-varargs -Wno-unknown-warning-option
 DEFINE CLANG38_ALL_CC_FLAGS         = DEF(GCC44_ALL_CC_FLAGS) DEF(CLANG38_WARNING_OVERRIDES) -fno-stack-protector -mms-bitfields -Wno-address -Wno-shift-negative-value -Wno-unknown-pragmas -Wno-incompatible-library-redeclaration -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -msoft-float -mno-implicit-float  -ftrap-function=undefined_behavior_has_been_optimized_away_by_clang -funsigned-char -fno-ms-extensions -Wno-null-dereference
 
+DEFINE CLANG38_IA32_ASLCC           = DEF(GCC_ASLCC_FLAGS) -m32 -fno-lto DEF(CLANG38_IA32_TARGET)
+DEFINE CLANG38_IA32_ASLDLINK        = DEF(GCC5_IA32_X64_ASLDLINK_FLAGS) -Wl,-m,elf_i386
+DEFINE CLANG38_IA32_ASM             = DEF(GCC5_ASM_FLAGS) -m32 -march=i386 DEF(CLANG38_IA32_TARGET)
+DEFINE CLANG38_IA32_RC              = DEF(GCC_IA32_RC_FLAGS)
+DEFINE CLANG38_IA32_OBJCOPY         =
+DEFINE CLANG38_IA32_NASM            = -f elf32
+DEFINE CLANG38_IA32_PP              = DEF(GCC_PP_FLAGS) DEF(CLANG38_IA32_TARGET)
+DEFINE CLANG38_IA32_ASLPP           = DEF(GCC_ASLPP_FLAGS) DEF(CLANG38_IA32_TARGET)
+DEFINE CLANG38_IA32_VFRPP           = DEF(GCC_VFRPP_FLAGS) DEF(CLANG38_IA32_TARGET)
+
+DEFINE CLANG38_X64_ASLCC            = DEF(GCC_ASLCC_FLAGS) -m64 -fno-lto DEF(CLANG38_X64_TARGET)
+DEFINE CLANG38_X64_ASLDLINK         = DEF(GCC5_IA32_X64_ASLDLINK_FLAGS) -Wl,-m,elf_x86_64
+DEFINE CLANG38_X64_ASM              = DEF(GCC5_ASM_FLAGS) -m64 DEF(CLANG38_X64_TARGET)
+DEFINE CLANG38_X64_RC               = DEF(GCC_X64_RC_FLAGS)
+DEFINE CLANG38_X64_OBJCOPY          =
+DEFINE CLANG38_X64_NASM             = -f elf64
+DEFINE CLANG38_X64_PP               = DEF(GCC_PP_FLAGS) DEF(CLANG38_X64_TARGET)
+DEFINE CLANG38_X64_ASLPP            = DEF(GCC_ASLPP_FLAGS) DEF(CLANG38_X64_TARGET)
+DEFINE CLANG38_X64_VFRPP            = DEF(GCC_VFRPP_FLAGS) DEF(CLANG38_X64_TARGET)
+
+DEFINE DEBUG_CLANG38_IA32_CC        = DEF(CLANG38_ALL_CC_FLAGS) -m32 -Oz -flto -march=i586 DEF(CLANG38_IA32_TARGET) -g
+DEFINE DEBUG_CLANG38_IA32_DLINK     = DEF(GCC5_IA32_X64_DLINK_FLAGS) -flto -Wl,-Oz -Wl,-melf_i386 -Wl,--oformat=elf32-i386
+DEFINE DEBUG_CLANG38_IA32_DLINK2    = DEF(GCC5_IA32_DLINK2_FLAGS) -O3
+
+DEFINE RELEASE_CLANG38_IA32_CC      = DEF(CLANG38_ALL_CC_FLAGS) -m32 -Oz -flto -march=i586 DEF(CLANG38_IA32_TARGET)
+DEFINE RELEASE_CLANG38_IA32_DLINK   = DEF(GCC5_IA32_X64_DLINK_FLAGS) -flto -Wl,-Oz -Wl,-melf_i386 -Wl,--oformat=elf32-i386
+DEFINE RELEASE_CLANG38_IA32_DLINK2  = DEF(GCC5_IA32_DLINK2_FLAGS) -O3
+
+DEFINE NOOPT_CLANG38_IA32_CC        = DEF(CLANG38_ALL_CC_FLAGS) -m32 -O0 -march=i586 DEF(CLANG38_IA32_TARGET) -g
+DEFINE NOOPT_CLANG38_IA32_DLINK     = DEF(GCC5_IA32_X64_DLINK_FLAGS) -Wl,-O0 -Wl,-melf_i386 -Wl,--oformat=elf32-i386
+DEFINE NOOPT_CLANG38_IA32_DLINK2    = DEF(GCC5_IA32_DLINK2_FLAGS) -O0
+
+DEFINE DEBUG_CLANG38_X64_CC         = DEF(CLANG38_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -fpie -Oz -flto DEF(CLANG38_X64_TARGET) -g
+DEFINE DEBUG_CLANG38_X64_DLINK      = DEF(GCC5_IA32_X64_DLINK_FLAGS) -flto -Wl,-Oz -Wl,-melf_x86_64 -Wl,--oformat=elf64-x86-64 -Wl,-pie -mcmodel=small
+DEFINE DEBUG_CLANG38_X64_DLINK2     = DEF(GCC5_X64_DLINK2_FLAGS) -O3
+
+DEFINE RELEASE_CLANG38_X64_CC       = DEF(CLANG38_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -fpie -Oz -flto DEF(CLANG38_X64_TARGET)
+DEFINE RELEASE_CLANG38_X64_DLINK    = DEF(GCC5_IA32_X64_DLINK_FLAGS) -flto -Wl,-Oz -Wl,-melf_x86_64 -Wl,--oformat=elf64-x86-64 -Wl,-pie -mcmodel=small
+DEFINE RELEASE_CLANG38_X64_DLINK2   = DEF(GCC5_X64_DLINK2_FLAGS) -O3
+
+DEFINE NOOPT_CLANG38_X64_CC         = DEF(CLANG38_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -fpie -O0 DEF(CLANG38_X64_TARGET) -g
+DEFINE NOOPT_CLANG38_X64_DLINK      = DEF(GCC5_IA32_X64_DLINK_FLAGS) -Wl,-O0 -Wl,-melf_x86_64 -Wl,--oformat=elf64-x86-64 -Wl,-pie -mcmodel=small
+DEFINE NOOPT_CLANG38_X64_DLINK2     = DEF(GCC5_X64_DLINK2_FLAGS) -O0
+
 ###########################
 # CLANG38 IA32 definitions
 ###########################
@@ -5378,6 +5513,102 @@ RELEASE_CLANG38_X64_DLINK2_FLAGS   = DEF(GCC5_X64_DLINK2_FLAGS) -O3
 NOOPT_CLANG38_X64_CC_FLAGS         = DEF(CLANG38_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -fpie -O0 DEF(CLANG38_X64_TARGET) -g
 NOOPT_CLANG38_X64_DLINK_FLAGS      = DEF(GCC5_IA32_X64_DLINK_FLAGS) -Wl,-O0 -Wl,-melf_x86_64 -Wl,--oformat=elf64-x86-64 -Wl,-pie -mcmodel=small
 NOOPT_CLANG38_X64_DLINK2_FLAGS     = DEF(GCC5_X64_DLINK2_FLAGS) -O0
+
+####################################################################################
+#
+# Clang sanitizer 4.0 - This configuration is used to compile under Linux to produce
+#  PE/COFF binaries using LLVM/Clang 4.0 with address sanitizer enabled
+#
+####################################################################################
+*_CLANGSAN40_*_*_FAMILY                = GCC
+*_CLANGSAN40_*_*_BUILDRULEFAMILY       = SANITIZER
+
+*_CLANGSAN40_*_MAKE_PATH               = make
+*_CLANGSAN40_*_*_DLL                   = ENV(CLANGSAN40_DLL)
+*_CLANGSAN40_*_ASL_PATH                = DEF(UNIX_IASL_BIN)
+
+*_CLANGSAN40_*_APP_FLAGS               =
+*_CLANGSAN40_*_ASL_FLAGS               = DEF(IASL_FLAGS)
+*_CLANGSAN40_*_ASL_OUTFLAGS            = DEF(IASL_OUTFLAGS)
+
+DEFINE CLANGSAN40_IA32_PREFIX          = ENV(CLANGSAN40_BIN)
+DEFINE CLANGSAN40_X64_PREFIX           = ENV(CLANGSAN40_BIN)
+
+##############################
+# CLANGSAN40 IA32 definitions
+##############################
+*_CLANGSAN40_IA32_OBJCOPY_PATH         = objcopy
+*_CLANGSAN40_IA32_CC_PATH              = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_SLINK_PATH           = DEF(CLANGSAN40_IA32_PREFIX)llvm-ar
+*_CLANGSAN40_IA32_DLINK_PATH           = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_ASLDLINK_PATH        = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_ASM_PATH             = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_PP_PATH              = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_VFRPP_PATH           = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_ASLCC_PATH           = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_ASLPP_PATH           = DEF(CLANGSAN40_IA32_PREFIX)clang
+*_CLANGSAN40_IA32_RC_PATH              = objcopy
+
+*_CLANGSAN40_IA32_ASLCC_FLAGS          = DEF(CLANG38_IA32_ASLCC)
+*_CLANGSAN40_IA32_ASLDLINK_FLAGS       = DEF(CLANG38_IA32_ASLDLINK)
+*_CLANGSAN40_IA32_ASM_FLAGS            = DEF(CLANG38_IA32_ASM)
+*_CLANGSAN40_IA32_RC_FLAGS             = DEF(CLANG38_IA32_RC)
+*_CLANGSAN40_IA32_OBJCOPY_FLAGS        = DEF(CLANG38_IA32_OBJCOPY)
+*_CLANGSAN40_IA32_NASM_FLAGS           = DEF(CLANG38_IA32_NASM)
+*_CLANGSAN40_IA32_PP_FLAGS             = DEF(CLANG38_IA32_PP)
+*_CLANGSAN40_IA32_ASLPP_FLAGS          = DEF(CLANG38_IA32_ASLPP)
+*_CLANGSAN40_IA32_VFRPP_FLAGS          = DEF(CLANG38_IA32_VFRPP)
+
+DEBUG_CLANGSAN40_IA32_CC_FLAGS         = DEF(DEBUG_CLANG38_IA32_CC)
+DEBUG_CLANGSAN40_IA32_DLINK_FLAGS      = DEF(DEBUG_CLANG38_IA32_DLINK)
+DEBUG_CLANGSAN40_IA32_DLINK2_FLAGS     = DEF(DEBUG_CLANG38_IA32_DLINK2)
+
+RELEASE_CLANGSAN40_IA32_CC_FLAGS       = DEF(RELEASE_CLANG38_IA32_CC)
+RELEASE_CLANGSAN40_IA32_DLINK_FLAGS    = DEF(RELEASE_CLANG38_IA32_DLINK)
+RELEASE_CLANGSAN40_IA32_DLINK2_FLAGS   = DEF(RELEASE_CLANG38_IA32_DLINK2)
+
+NOOPT_CLANGSAN40_IA32_CC_FLAGS         = DEF(NOOPT_CLANG38_IA32_CC)
+NOOPT_CLANGSAN40_IA32_DLINK_FLAGS      = DEF(NOOPT_CLANG38_IA32_DLINK)
+NOOPT_CLANGSAN40_IA32_DLINK2_FLAGS     = DEF(NOOPT_CLANG38_IA32_DLINK2)
+
+#############################
+# CLANGSAN40 X64 definitions
+#############################
+*_CLANGSAN40_X64_OBJCOPY_PATH         = objcopy
+*_CLANGSAN40_X64_CC_PATH              = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_SLINK_PATH           = DEF(CLANGSAN40_X64_PREFIX)llvm-ar
+*_CLANGSAN40_X64_DLINK_PATH           = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_ASLDLINK_PATH        = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_ASM_PATH             = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_PP_PATH              = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_VFRPP_PATH           = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_ASLCC_PATH           = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_ASLPP_PATH           = DEF(CLANGSAN40_X64_PREFIX)clang
+*_CLANGSAN40_X64_RC_PATH              = objcopy
+
+*_CLANGSAN40_X64_ASLCC_FLAGS          = DEF(CLANG38_X64_ASLCC)
+*_CLANGSAN40_X64_ASLDLINK_FLAGS       = DEF(CLANG38_X64_ASLDLINK)
+*_CLANGSAN40_X64_ASM_FLAGS            = DEF(CLANG38_X64_ASM)
+*_CLANGSAN40_X64_RC_FLAGS             = DEF(CLANG38_X64_RC)
+*_CLANGSAN40_X64_OBJCOPY_FLAGS        = DEF(CLANG38_X64_OBJCOPY)
+*_CLANGSAN40_X64_NASM_FLAGS           = DEF(CLANG38_X64_NASM)
+*_CLANGSAN40_X64_PP_FLAGS             = DEF(CLANG38_X64_PP)
+*_CLANGSAN40_X64_ASLPP_FLAGS          = DEF(CLANG38_X64_ASLPP)
+*_CLANGSAN40_X64_VFRPP_FLAGS          = DEF(CLANG38_X64_VFRPP)
+
+DEBUG_CLANGSAN40_X64_CC_FLAGS         = DEF(DEBUG_CLANG38_X64_CC) -fno-lto
+DEBUG_CLANGSAN40_X64_DLINK_FLAGS      = DEF(DEBUG_CLANG38_X64_DLINK)
+DEBUG_CLANGSAN40_X64_DLINK2_FLAGS     = DEF(DEBUG_CLANG38_X64_DLINK2)
+
+RELEASE_CLANGSAN40_X64_CC_FLAGS       = DEF(RELEASE_CLANG38_X64_CC) -fno-lto
+RELEASE_CLANGSAN40_X64_DLINK_FLAGS    = DEF(RELEASE_CLANG38_X64_DLINK)
+RELEASE_CLANGSAN40_X64_DLINK2_FLAGS   = DEF(RELEASE_CLANG38_X64_DLINK2)
+
+NOOPT_CLANGSAN40_X64_CC_FLAGS         = DEF(NOOPT_CLANG38_X64_CC)
+NOOPT_CLANGSAN40_X64_DLINK_FLAGS      = DEF(NOOPT_CLANG38_X64_DLINK)
+NOOPT_CLANGSAN40_X64_DLINK2_FLAGS     = DEF(NOOPT_CLANG38_X64_DLINK2)
+
+*_CLANGSAN40_X64_SAN_FLAGS            = -fsanitize=address -fno-sanitize-address-use-after-scope -mllvm -asan-stack-dynamic-alloca=0 -mllvm -asan-instrumentation-with-call-threshold=0 -mllvm -asan-force-dynamic-shadow=true -fsanitize=undefined -fno-sanitize=alignment -fsanitize-coverage=trace-pc
 
 ##################
 # CLANG38 ARM definitions

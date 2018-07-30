@@ -151,12 +151,24 @@ InternalAllocPoolByIndex (
       return EFI_OUT_OF_RESOURCES;
     }
     Hdr = (FREE_POOL_HEADER *) (UINTN) Address;
+    //
+    // Unpoison firstly
+    //
+    UnpoisonPool ((UINTN)Hdr, EFI_PAGES_TO_SIZE(EFI_SIZE_TO_PAGES (MAX_POOL_SIZE << 1)));
   } else if (!IsListEmpty (&mSmmPoolLists[SmmPoolType][PoolIndex])) {
     Hdr = BASE_CR (GetFirstNode (&mSmmPoolLists[SmmPoolType][PoolIndex]), FREE_POOL_HEADER, Link);
+    //
+    // Unpoison firstly
+    //
+    UnpoisonPool((UINTN)Hdr, MIN_POOL_SIZE << PoolIndex);
     RemoveEntryList (&Hdr->Link);
   } else {
     Status = InternalAllocPoolByIndex (PoolType, PoolIndex + 1, &Hdr);
     if (!EFI_ERROR (Status)) {
+      //
+      // Unpoison firstly
+      //
+      UnpoisonPool((UINTN)Hdr, MIN_POOL_SIZE << (PoolIndex + 1));
       Hdr->Header.Signature = 0;
       Hdr->Header.Size >>= 1;
       Hdr->Header.Available = TRUE;
@@ -165,6 +177,15 @@ InternalAllocPoolByIndex (
       Tail->Signature = 0;
       Tail->Size = 0;
       InsertHeadList (&mSmmPoolLists[SmmPoolType][PoolIndex], &Hdr->Link);
+      //
+      // Poison the new free pool
+      //
+      PoisonPool(
+        (UINTN)Hdr + sizeof(FREE_POOL_HEADER),
+        (UINTN)(MIN_POOL_SIZE << PoolIndex) - sizeof(FREE_POOL_HEADER),
+        kAsanHeapFreeMagic
+        );
+      UnpoisonPool ((UINTN)Tail, sizeof(POOL_TAIL));
       Hdr = (FREE_POOL_HEADER*)((UINT8*)Hdr + Hdr->Header.Size);
     }
   }
@@ -200,14 +221,25 @@ InternalFreePoolByIndex (
 {
   UINTN                 PoolIndex;
   SMM_POOL_TYPE         SmmPoolType;
+  POOL_HEADER           *PoolHdr;
 
   ASSERT ((FreePoolHdr->Header.Size & (FreePoolHdr->Header.Size - 1)) == 0);
   ASSERT (((UINTN)FreePoolHdr & (FreePoolHdr->Header.Size - 1)) == 0);
   ASSERT (FreePoolHdr->Header.Size >= MIN_POOL_SIZE);
 
+  UnpoisonPool ((UINTN)FreePoolHdr, sizeof(FREE_POOL_HEADER));
+  PoolHdr = &FreePoolHdr->Header;
+  PoisonPool((UINTN)PoolHdr->AsanLeftRZ, kAsanHeapLeftRedzoneSize, kAsanHeapFreeMagic);
+
   SmmPoolType = UefiMemoryTypeToSmmPoolType(FreePoolHdr->Header.Type);
 
   PoolIndex = (UINTN) (HighBitSet32 ((UINT32)FreePoolHdr->Header.Size) - MIN_POOL_SHIFT);
+  PoisonPool(
+    (UINTN)FreePoolHdr + sizeof(FREE_POOL_HEADER),
+    (UINTN)(MIN_POOL_SIZE << PoolIndex) - sizeof(FREE_POOL_HEADER),
+    kAsanHeapFreeMagic
+    );
+  UnpoisonPool ((UINTN)PoolTail, sizeof(POOL_TAIL));
   FreePoolHdr->Header.Signature = 0;
   FreePoolHdr->Header.Available = TRUE;
   FreePoolHdr->Header.Type = 0;
@@ -248,6 +280,10 @@ SmmInternalAllocatePool (
   BOOLEAN               HasPoolTail;
   BOOLEAN               NeedGuard;
   UINTN                 NoPages;
+  UINTN                 OrignalSize;
+  UINTN                 RightRedZoneSize;
+  CHAR8                 *UserDataPtr;
+
 
   Address = 0;
 
@@ -259,6 +295,13 @@ SmmInternalAllocatePool (
   NeedGuard   = IsPoolTypeToGuard (PoolType);
   HasPoolTail = !(NeedGuard &&
                   ((PcdGet8 (PcdHeapGuardPropertyMask) & BIT7) == 0));
+
+  //
+  // Add Asan right Red-zone overhead
+  //
+  OrignalSize = Size;
+  RightRedZoneSize = ComputePoolRightRedzoneSize(Size);
+  Size += RightRedZoneSize;
 
   //
   // Adjust the size by the pool header & tail overhead
@@ -286,6 +329,10 @@ SmmInternalAllocatePool (
     }
 
     PoolHdr = (POOL_HEADER*)(UINTN)Address;
+    //
+    // Unpoison firstly
+    //
+    UnpoisonPool ((UINTN)PoolHdr, EFI_PAGES_TO_SIZE (Size));
     PoolHdr->Signature = POOL_HEAD_SIGNATURE;
     PoolHdr->Size = EFI_PAGES_TO_SIZE (NoPages);
     PoolHdr->Available = FALSE;
@@ -296,7 +343,16 @@ SmmInternalAllocatePool (
       PoolTail->Signature = POOL_TAIL_SIGNATURE;
       PoolTail->Size = PoolHdr->Size;
     }
-
+    PoolHdr->OriSize   = OrignalSize;
+    PoolHdr->AsanRightRZSize   = RightRedZoneSize;
+    //
+    //Poison Pool left and right RedZones
+    //
+    UserDataPtr = (CHAR8 *)(PoolHdr + 1);
+    DEBUG ((DEBUG_POOL, "(UINTN)PoolHdr->AsanLeftRZ: 0x%x\n", (UINTN)PoolHdr->AsanLeftRZ));
+    PoisonPool((UINTN)PoolHdr->AsanLeftRZ, kAsanHeapLeftRedzoneSize, kAsanHeapLeftRedzoneMagic);
+    DEBUG ((DEBUG_POOL, "UserDataPtr + PoolHdr->OriSize: 0x%x\n", (UINTN)UserDataPtr + PoolHdr->OriSize));
+    PoisonPool((UINTN)UserDataPtr + PoolHdr->OriSize, PoolHdr->AsanRightRZSize, kAsanAllocaRightMagic);
     *Buffer = PoolHdr + 1;
     return Status;
   }
@@ -309,6 +365,17 @@ SmmInternalAllocatePool (
 
   Status = InternalAllocPoolByIndex (PoolType, PoolIndex, &FreePoolHdr);
   if (!EFI_ERROR(Status)) {
+    //
+    //Poison Pool left and right RedZones
+    //
+    PoolHdr = &FreePoolHdr->Header;
+    PoolHdr->OriSize   = OrignalSize;
+    PoolHdr->AsanRightRZSize   = RightRedZoneSize;
+    UserDataPtr = (CHAR8 *)(PoolHdr + 1);
+    DEBUG ((DEBUG_POOL, "(UINTN)PoolHdr->AsanLeftRZ: 0x%x\n", (UINTN)PoolHdr->AsanLeftRZ));
+    PoisonPool((UINTN)PoolHdr->AsanLeftRZ, kAsanHeapLeftRedzoneSize, kAsanHeapLeftRedzoneMagic);
+    DEBUG ((DEBUG_POOL, "UserDataPtr + PoolHdr->OriSize: 0x%x\n", (UINTN)UserDataPtr + PoolHdr->OriSize));
+    PoisonPool((UINTN)UserDataPtr + PoolHdr->OriSize, PoolHdr->AsanRightRZSize, kAsanAllocaRightMagic);
     *Buffer = &FreePoolHdr->Header + 1;
   }
   return Status;
