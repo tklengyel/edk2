@@ -28,7 +28,7 @@
 #include  <Protocol/DriverBinding.h>
 #include  <Protocol/ComponentName2.h>
 #include  <Protocol/DevicePath.h>
-
+#include "TypeInfo.h"
 
 //
 // (EFIAPI *EFI_HII_STRING_ID_TO_IMAGE) function has 12 Args!
@@ -109,3 +109,26 @@ typedef struct {
 } STRUCTURE_ALIGNMENT;
 
 #define STRUCTURE_DEFAULT_ALIGNMENT (UINTN)((UINTN)&((STRUCTURE_ALIGNMENT *) 0)->Field2 - (UINTN)&((STRUCTURE_ALIGNMENT *) 0)->Field1)
+
+//
+// Configures:
+//
+// 0 = enable log output
+// 1 = disable log output
+#define DISABLE_LOG 0
+
+
+#define _PRINT_LOG(...)    \
+    Print (L##__VA_ARGS__);
+
+#define _DEBUG_LOG(...)    \
+    _DEBUG_PRINT (EFI_D_ERROR, ##__VA_ARGS__);
+
+#if DISABLE_LOG == 0
+  #define OUTPUT_LOG(Expression) \
+    _PRINT_LOG Expression; \
+//    _DEBUG_LOG Expression
+#else
+  #define OUTPUT_LOG(Expression)
+#endif
+
