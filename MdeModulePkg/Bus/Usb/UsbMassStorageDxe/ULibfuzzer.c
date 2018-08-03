@@ -11,34 +11,15 @@
     THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
     WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 **/
-#include "TypeInfo.h"
 #include "ULibfuzzer.h"
 #include "UsbMass.h"
+
 //
 // Configures:
 //
 // TRUE = not save "FuzzLog.txt"
 // FASLSE = save "FuzzLog.txt"
 static BOOLEAN NotSaveFuzzLogFile = TRUE;
-// 0 = enable log output
-// 1 = disable log output
-#define DISABLE_LOG 0
-
-
-#define _PRINT_LOG(...)    \
-    Print (L##__VA_ARGS__);
-
-#define _DEBUG_LOG(...)    \
-    _DEBUG_PRINT (EFI_D_ERROR, ##__VA_ARGS__);
-
-#if DISABLE_LOG == 0
-  #define OUTPUT_LOG(Expression) \
-    _PRINT_LOG Expression; \
-//    _DEBUG_LOG Expression
-#else
-  #define OUTPUT_LOG(Expression)
-#endif
-
 
 //
 // Add the function type map list in below ToMergeTypeInfoList[]
@@ -232,29 +213,33 @@ GetStructFieldTypeInfo (
 
 EFI_STATUS
 EFIAPI
-MutateFunArg(
-  IN  LIST_ENTRY         *TypeInfoList,
-  IN  TYPE_INFO_HEADER   *ArgTypeHeader,
-  OUT UINTN              *ArgBuffer
+GenMutatedData(
+  IN      LIST_ENTRY         *TypeInfoList,
+  IN      TYPE_INFO_HEADER   *TypeHeader,
+  IN OUT  UINTN              *DataSize,
+  IN OUT  UINTN              *DataBuffer
   )
 {
   EFI_STATUS                Status;
   CHAR8                     *PointedTypeInfoName;
   TYPE_INFO_HEADER          *PointedTypeInfo;
-  UINTN                     *Buffer;
   TYPE__STRUCTURE_HEADER    *TypeStructureHeader;
   UINTN                     FieldIndex;
   TYPE_INFO_HEADER          *FieldTypeHeader;
-  //TYPE_INFO_HEADER          *NextStructFieldTypeHeader;
-  CHAR8*                    BufferPtr;
-  //UINTN                     Alignment;
-  //UINTN                     AlignmentOffset;
+  VOID                      *FieldBufferPtr;
   UINTN                     NextTypeStructFieldOffset;
   UINTN                     StructFieldOffset;
+  UINTN                     Size;
+  UINTN                     FieldSize;
+  VOID                      *Buffer;
 
-  switch (ArgTypeHeader->TypeClass){
+  switch (TypeHeader->TypeClass){
     case TYPE_CLASS_POINTER:
-      PointedTypeInfoName = (CHAR8 *)((TYPE__POINTER *)ArgTypeHeader)->PointedType;
+      //
+      // For pointer type, assume caller know the the DataSize and DataBuffer
+      // will be overrided with the allocated buffer values
+      //
+      PointedTypeInfoName = (CHAR8 *)((TYPE__POINTER *)TypeHeader)->PointedType;
       OUTPUT_LOG (("The Pointer's PointedType= %a\n", PointedTypeInfoName));
       PointedTypeInfo = GetTypeInfo(TypeInfoList, PointedTypeInfoName);
       if (PointedTypeInfo == NULL){
@@ -274,30 +259,35 @@ MutateFunArg(
       //
       //RandomBuffer(Buffer, PointedTypeInfo->TypeSize);
       AddBufferList(&AllocatedBufferList, Buffer);
-      *ArgBuffer = (UINTN)Buffer;
-      Status = MutateFunArg(
+      *DataBuffer = (UINTN)Buffer;
+      *DataSize = PointedTypeInfo->TypeSize;
+      Size = PointedTypeInfo->TypeSize;
+      Status = GenMutatedData(
                   TypeInfoList,
                   PointedTypeInfo,
+                  &Size,
                   Buffer
                   );
 
       return Status;
 
     case TYPE_CLASS_FUNCTION:
-      *ArgBuffer = (UINTN)HelloWorld;
-      OUTPUT_LOG (("Type %a is a function, and set as HelloWorld\n", ArgTypeHeader->TypeName));
+      *DataBuffer = (UINTN)HelloWorld;
+      *DataSize = sizeof(HelloWorld);
+      OUTPUT_LOG (("Type %a is a function, and set as HelloWorld\n", TypeHeader->TypeName));
       OUTPUT_LOG (("HelloWorld address=0x%x\n", (UINTN)HelloWorld));
       return RETURN_SUCCESS;
 
     case TYPE_CLASS_STRUCTURE:
-      //ZeroMem(ArgBuffer, ArgTypeHeader->TypeSize);
-      //RandomBuffer(ArgBuffer, ArgTypeHeader->TypeSize);
+      //ZeroMem(DataBuffer, TypeHeader->TypeSize);
+      //RandomBuffer(DataBuffer, TypeHeader->TypeSize);
 
       //
       // Mutate the fields again to recursively fill the function and pointer buffer
       //
-      BufferPtr = (CHAR8*) ArgBuffer;
-      TypeStructureHeader = (TYPE__STRUCTURE_HEADER *)ArgTypeHeader;
+      FieldBufferPtr = DataBuffer;
+      TypeStructureHeader = (TYPE__STRUCTURE_HEADER *)TypeHeader;
+      ASSERT(TypeStructureHeader->StructFieldOffset_1 == 0);
       for(FieldIndex = 1; FieldIndex <= TypeStructureHeader->StructFieldNum; FieldIndex++){
         FieldTypeHeader = GetStructFieldTypeInfo(TypeInfoList, TypeStructureHeader, FieldIndex);
         if (FieldTypeHeader == NULL){
@@ -308,81 +298,43 @@ MutateFunArg(
                       ));
           return EFI_NOT_FOUND;
         } 
-        OUTPUT_LOG (("Structure FieldIndex %d address=0x%x\n", FieldIndex, (UINTN)BufferPtr));
-        Status = MutateFunArg(
+        OUTPUT_LOG (("Structure FieldIndex %d address=0x%x TypeSize=0x%x\n",
+                     FieldIndex,
+                     FieldBufferPtr,
+                     FieldTypeHeader->TypeSize
+                     ));
+        FieldSize = FieldTypeHeader->TypeSize;
+        Status = GenMutatedData(
                     TypeInfoList,
                     FieldTypeHeader,
-                    (UINTN *)BufferPtr 
+                    &FieldSize,
+                    FieldBufferPtr 
                     );
         if (EFI_ERROR (Status)){
           OUTPUT_LOG (("Strcuture field type %a fails to instantiate\n\n", FieldTypeHeader->TypeName));
         }
+
+        if (FieldIndex >= TypeStructureHeader->StructFieldNum){
+          break;
+        }
+
         //
         // Directly use the field offset info in TYPE STRUCTURE created by Uefi-aware compiler
         //
         NextTypeStructFieldOffset = FieldIndex*(2*sizeof(const CHAR8*)+sizeof(const UINTN));
-        OUTPUT_LOG (("FieldIndex 0x%x NextTypeStructFieldOffset=0x%x\n", FieldIndex, NextTypeStructFieldOffset));
+        OUTPUT_LOG (("FieldIndex %d NextTypeStructFieldOffset=0x%x\n", FieldIndex, NextTypeStructFieldOffset));
         StructFieldOffset = *(UINTN*)((CHAR8*)&TypeStructureHeader->StructFieldOffset_1 + NextTypeStructFieldOffset);
         OUTPUT_LOG (("FieldIndex 0x%x StructFieldOffset=0x%x\n", FieldIndex, StructFieldOffset));
-        BufferPtr = (CHAR8*)ArgBuffer + StructFieldOffset;
-        OUTPUT_LOG (("BufferPtr= 0x%x\n", (UINTN)BufferPtr));
-#if 0
-        BufferPtr += FieldTypeHeader->TypeSize;
-        //
-        // Uefi spec 2.3.1 Data Types
-        // Protocol structure are aligned on boundaries equal to the largest 
-        // internal datum of the structure and internal data are implicitly
-        // padded to achieve natural alignment.
-        // https://bugzilla.tianocore.org/show_bug.cgi?id=930
-        //
-        // Bugbug, need to caculate every Strucut internal default alignment,
-        // hardcode is not correct
-        // It's better directly auto-generated the offset in IfTypeInfo.c
-        //
-        // &AcpiTableInstance->AcpiSdtProtocol.AcpiVersion= 0x7E16E1B0
-        // &AcpiTableInstance->AcpiSdtProtocol.GetAcpiTable= 0x7E16E1B8
-        // &AcpiTableInstance->AcpiSdtProtocol.RegisterNotify= 0x7E16E1C0
-        // &AcpiTableInstance->AcpiSdtProtocol.Open= 0x7E16E1C8
-        //
-        // &VirtioDeviceProtocol.Revision= 0x7E017BA0
-        // &VirtioDeviceProtocol.SubSystemDeviceId= 0x7E017BA4
-        // &VirtioDeviceProtocol.GetDeviceFeatures= 0x7E017BA8
-        // &VirtioDeviceProtocol.SetGuestFeatures= 0x7E017BB0
-        // &VirtioDeviceProtocol.SetQueueAddress= 0x7E017BB8
-        //
-
-        //
-        // Use the Next field type size to decide the current field alignment
-        //
-        if ((FieldIndex+1) < TypeStructureHeader->StructFieldNum){
-          NextStructFieldTypeHeader = GetStructFieldTypeInfo(&MergedTypeInfoList, TypeStructureHeader, FieldIndex+1);
-          if (NextStructFieldTypeHeader == NULL){
-            OUTPUT_LOG (("Error! NextStructFieldTypeHeader is NULL\n"));
-            continue;
-          }
-          if (NextStructFieldTypeHeader->TypeSize >= STRUCTURE_DEFAULT_ALIGNMENT){
-            Alignment = STRUCTURE_DEFAULT_ALIGNMENT;
-          } else {
-            Alignment = 4;
-          }
-
-          if ((UINTN)BufferPtr % Alignment != 0){
-            AlignmentOffset = Alignment - ((UINTN)BufferPtr % Alignment);
-          }else{
-            AlignmentOffset = 0;
-          }
-          OUTPUT_LOG (("AlignmentOffset = 0x%x\n", AlignmentOffset));
-          BufferPtr += AlignmentOffset;
-        }
-#endif
+        FieldBufferPtr = (VOID *)DataBuffer + StructFieldOffset;
+        OUTPUT_LOG (("FieldBufferPtr= 0x%x\n", (UINTN)FieldBufferPtr));
       }
       return RETURN_SUCCESS;
 
     default:
-      //ASSERT (ArgTypeHeader->TypeSize <= sizeof(*ArgBuffer)); //?
-      ZeroMem(ArgBuffer, ArgTypeHeader->TypeSize);
-      OUTPUT_LOG (("ZeroMem %a\n", ArgTypeHeader->TypeName));
-      //RandomBuffer(ArgBuffer, ArgTypeHeader->TypeSize);
+      //ASSERT (TypeHeader->TypeSize <= sizeof(DataBuffer)); //?
+      ZeroMem(DataBuffer, TypeHeader->TypeSize);
+      OUTPUT_LOG (("ZeroMem %a\n", TypeHeader->TypeName));
+      //RandomBuffer(DataBuffer, TypeHeader->TypeSize);
       return RETURN_SUCCESS;
   }
 }
@@ -502,6 +454,7 @@ FuzzingFunction (
   EFI_STATUS                Status;
   UEFI_CALL                 UefiCall;
   UINTN                     Arg[MAX_ARG_NUM];
+  UINTN                     ArgSize;
   TYPE_INFO_HEADER          *ArgTypeHeader;
   UINTN                     ArgIndex;
   SHELL_FILE_HANDLE         LogFileHandle;
@@ -616,10 +569,12 @@ FuzzFunction:
       OUTPUT_LOG (("Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex));
       goto ErrorExit;
     }
-    Status = MutateFunArg(
+    ArgSize = ArgTypeHeader->TypeSize;
+    Status = GenMutatedData(
                 &MergedTypeInfoList,
                 ArgTypeHeader,
-                &Arg[ArgIndex]
+                &ArgSize,
+                (VOID*)&Arg[ArgIndex]
                 );
     if (EFI_ERROR (Status)){
       OUTPUT_LOG (("Fun Arg type %a fails to instantiate\n\n", ArgTypeHeader->TypeName));
@@ -935,6 +890,7 @@ GenParameter(
   TYPE__EFI_FUNCTION_HEADER   *FunctionTypeInfo;
   TYPE_INFO_HEADER            *ArgTypeHeader;
   EFI_STATUS                  Status;
+  UINTN                       ArgTypeSize;
 
   if (TypeInfo == NULL || ParameterAddress == NULL){
     return EFI_INVALID_PARAMETER;
@@ -946,10 +902,11 @@ GenParameter(
     OUTPUT_LOG (("GenParameter Error! Cannot get the function %a NO. %d argument type\n", FunctionTypeInfo->TypeName, ArgIndex));
     return RETURN_NOT_FOUND;
   }
-
-  Status = MutateFunArg(
+  ArgTypeSize = ArgTypeHeader->TypeSize;
+  Status = GenMutatedData(
               &MergedTypeInfoList,
               ArgTypeHeader,
+              &ArgTypeSize,
               ParameterAddress
               );
   if (EFI_ERROR (Status)){

@@ -9962,9 +9962,9 @@ FUNCTION_TYPE_MAP EFI_UsbMassStorageDxe_FunctionTypeMapList []={
 // Not interest
 //{(void *)(UINTN)ProcessLibraryConstructorList, &TypeInfo__ProcessLibraryConstructorList, (void *)(UINTN)Invoke_ProcessLibraryConstructorList},
 //{(void *)(UINTN)ProcessLibraryDestructorList, &TypeInfo__ProcessLibraryDestructorList, (void *)(UINTN)Invoke_ProcessLibraryDestructorList},
-{(void *)(UINTN)ProcessModuleEntryPointList, &TypeInfo__ProcessModuleEntryPointList, (void *)(UINTN)Invoke_ProcessModuleEntryPointList},
-{(void *)(UINTN)ExitDriver, &TypeInfo__ExitDriver, (void *)(UINTN)Invoke_ExitDriver},
-{(void *)(UINTN)ProcessModuleUnloadList, &TypeInfo__ProcessModuleUnloadList, (void *)(UINTN)Invoke_ProcessModuleUnloadList},
+//{(void *)(UINTN)ProcessModuleEntryPointList, &TypeInfo__ProcessModuleEntryPointList, (void *)(UINTN)Invoke_ProcessModuleEntryPointList},
+//{(void *)(UINTN)ExitDriver, &TypeInfo__ExitDriver, (void *)(UINTN)Invoke_ExitDriver},
+//{(void *)(UINTN)ProcessModuleUnloadList, &TypeInfo__ProcessModuleUnloadList, (void *)(UINTN)Invoke_ProcessModuleUnloadList},
 {NULL,NULL}
 };
 
