@@ -273,7 +273,7 @@ GenMutatedData(
 
     case TYPE_CLASS_FUNCTION:
       *DataBuffer = (UINTN)HelloWorld;
-      *DataSize = sizeof(HelloWorld);
+      *DataSize = sizeof(UINTN);//sizeof(HelloWorld);
       OUTPUT_LOG (("Type %a is a function, and set as HelloWorld\n", TypeHeader->TypeName));
       OUTPUT_LOG (("HelloWorld address=0x%x\n", (UINTN)HelloWorld));
       return RETURN_SUCCESS;
@@ -325,7 +325,7 @@ GenMutatedData(
         OUTPUT_LOG (("FieldIndex %d NextTypeStructFieldOffset=0x%x\n", FieldIndex, NextTypeStructFieldOffset));
         StructFieldOffset = *(UINTN*)((CHAR8*)&TypeStructureHeader->StructFieldOffset_1 + NextTypeStructFieldOffset);
         OUTPUT_LOG (("FieldIndex 0x%x StructFieldOffset=0x%x\n", FieldIndex, StructFieldOffset));
-        FieldBufferPtr = (VOID *)DataBuffer + StructFieldOffset;
+        FieldBufferPtr = (CHAR8 *)DataBuffer + StructFieldOffset;
         OUTPUT_LOG (("FieldBufferPtr= 0x%x\n", (UINTN)FieldBufferPtr));
       }
       return RETURN_SUCCESS;

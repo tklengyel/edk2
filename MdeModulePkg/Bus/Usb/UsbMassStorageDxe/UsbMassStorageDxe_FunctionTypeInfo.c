@@ -9930,7 +9930,8 @@ FUNCTION_TYPE_MAP EFI_UsbMassStorageDxe_FunctionTypeMapList []={
 {(void *)(UINTN)USBMassDriverBindingSupported, &TypeInfo__USBMassDriverBindingSupported, (void *)(UINTN)Invoke_USBMassDriverBindingSupported},
 {(void *)(UINTN)USBMassDriverBindingStart, &TypeInfo__USBMassDriverBindingStart, (void *)(UINTN)Invoke_USBMassDriverBindingStart},
 {(void *)(UINTN)USBMassDriverBindingStop, &TypeInfo__USBMassDriverBindingStop, (void *)(UINTN)Invoke_USBMassDriverBindingStop},
-{(void *)(UINTN)USBMassStorageEntryPoint, &TypeInfo__USBMassStorageEntryPoint, (void *)(UINTN)Invoke_USBMassStorageEntryPoint},
+// This function will produce a driver binding protocol which cause system crash at any next application image run.
+//{(void *)(UINTN)USBMassStorageEntryPoint, &TypeInfo__USBMassStorageEntryPoint, (void *)(UINTN)Invoke_USBMassStorageEntryPoint},
 {(void *)(UINTN)UsbBootRequestSense, &TypeInfo__UsbBootRequestSense, (void *)(UINTN)Invoke_UsbBootRequestSense},
 {(void *)(UINTN)UsbBootExecCmd, &TypeInfo__UsbBootExecCmd, (void *)(UINTN)Invoke_UsbBootExecCmd},
 {(void *)(UINTN)UsbBootExecCmdWithRetry, &TypeInfo__UsbBootExecCmdWithRetry, (void *)(UINTN)Invoke_UsbBootExecCmdWithRetry},
