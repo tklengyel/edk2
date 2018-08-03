@@ -541,7 +541,8 @@
       FileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
   }
   AppPkg/Applications/ULibfuzzer/ULibfuzzer.inf
-
+  MdeModulePkg/Bus/Usb/UsbMassStorageDxe/ULibfuzzer.inf
+  MdeModulePkg/Bus/Usb/UsbBusDxe/ULibfuzzer.inf
 ###################################################################################################
 #
 # BuildOptions Section - Define the module specific tool chain flags that should be used as
