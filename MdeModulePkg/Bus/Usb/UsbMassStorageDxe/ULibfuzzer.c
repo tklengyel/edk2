@@ -12,7 +12,7 @@
     WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 **/
 #include "ULibfuzzer.h"
-#include "UsbMass.h"
+
 
 //
 // Configures:
@@ -438,11 +438,7 @@ CheckFunctionFromBlackList (
   return FALSE;
 }
 
-EFI_STATUS
-UsbBotInit (
-  IN  EFI_USB_IO_PROTOCOL       *UsbIo,
-  OUT VOID                      **Context OPTIONAL
-  );
+
   
 EFI_STATUS
 EFIAPI
