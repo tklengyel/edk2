@@ -308,21 +308,6 @@ class DscBuildData(PlatformBuildClassObject):
     def _GetArch(self):
         return self._Arch
 
-    ## Set architecture
-    #
-    #   Changing the default ARCH to another may affect all other information
-    # because all information in a platform may be ARCH-related. That's
-    # why we need to clear all internal used members, in order to cause all
-    # information to be re-retrieved.
-    #
-    #   @param  Value   The value of ARCH
-    #
-    def _SetArch(self, Value):
-        if self._Arch == Value:
-            return
-        self._Arch = Value
-        self._Clear()
-
     ## Retrieve all information in [Defines] section
     #
     #   (Retriving all [Defines] information in one-shot is just to save time.)
@@ -1536,6 +1521,13 @@ class DscBuildData(PlatformBuildClassObject):
             if Setting is None:
                 continue
             PcdValue, DatumType, MaxDatumSize = self._ValidatePcd(PcdCName, TokenSpaceGuid, Setting, Type, Dummy4)
+            if MaxDatumSize:
+                if int(MaxDatumSize, 0) > 0xFFFF:
+                    EdkLogger.error('build', FORMAT_INVALID, "The size value must not exceed the maximum value of 0xFFFF (UINT16) for %s." % ".".join((TokenSpaceGuid, PcdCName)),
+                                    File=self.MetaFile, Line=Dummy4)
+                if int(MaxDatumSize, 0) < 0:
+                    EdkLogger.error('build', FORMAT_INVALID, "The size value can't be set to negative value for %s." % ".".join((TokenSpaceGuid, PcdCName)),
+                                    File=self.MetaFile, Line=Dummy4)
             if (PcdCName, TokenSpaceGuid) in PcdValueDict:
                 PcdValueDict[PcdCName, TokenSpaceGuid][SkuName] = (PcdValue, DatumType, MaxDatumSize)
             else:
@@ -2381,6 +2373,13 @@ class DscBuildData(PlatformBuildClassObject):
                 continue
 
             PcdValue, DatumType, MaxDatumSize = self._ValidatePcd(PcdCName, TokenSpaceGuid, Setting, Type, Dummy4)
+            if MaxDatumSize:
+                if int(MaxDatumSize, 0) > 0xFFFF:
+                    EdkLogger.error('build', FORMAT_INVALID, "The size value must not exceed the maximum value of 0xFFFF (UINT16) for %s." % ".".join((TokenSpaceGuid, PcdCName)),
+                                    File=self.MetaFile, Line=Dummy4)
+                if int(MaxDatumSize, 0) < 0:
+                    EdkLogger.error('build', FORMAT_INVALID, "The size value can't be set to negative value for %s." % ".".join((TokenSpaceGuid, PcdCName)),
+                                    File=self.MetaFile, Line=Dummy4)
             SkuInfo = SkuInfoClass(SkuName, self.SkuIds[SkuName][0], '', '', '', '', '', PcdValue)
             if (PcdCName, TokenSpaceGuid) in Pcds:
                 pcdObject = Pcds[PcdCName, TokenSpaceGuid]
@@ -2714,6 +2713,13 @@ class DscBuildData(PlatformBuildClassObject):
             # until the DEC parser has been called.
             #
             VpdOffset, MaxDatumSize, InitialValue = self._ValidatePcd(PcdCName, TokenSpaceGuid, Setting, Type, Dummy4)
+            if MaxDatumSize:
+                if int(MaxDatumSize, 0) > 0xFFFF:
+                    EdkLogger.error('build', FORMAT_INVALID, "The size value must not exceed the maximum value of 0xFFFF (UINT16) for %s." % ".".join((TokenSpaceGuid, PcdCName)),
+                                    File=self.MetaFile, Line=Dummy4)
+                if int(MaxDatumSize, 0) < 0:
+                    EdkLogger.error('build', FORMAT_INVALID, "The size value can't be set to negative value for %s." % ".".join((TokenSpaceGuid, PcdCName)),
+                                    File=self.MetaFile, Line=Dummy4)
             SkuInfo = SkuInfoClass(SkuName, self.SkuIds[SkuName][0], '', '', '', '', VpdOffset, InitialValue)
             if (PcdCName, TokenSpaceGuid) in Pcds:
                 pcdObject = Pcds[PcdCName, TokenSpaceGuid]
@@ -2828,7 +2834,7 @@ class DscBuildData(PlatformBuildClassObject):
             self._DecPcds, self._GuidDict = GetDeclaredPcd(self, self._Bdb, self._Arch, self._Target, self._Toolchain, PkgSet)
         return self._DecPcds
     _Macros             = property(_GetMacros)
-    Arch                = property(_GetArch, _SetArch)
+    Arch                = property(_GetArch)
     Platform            = property(_GetPlatformName)
     PlatformName        = property(_GetPlatformName)
     Guid                = property(_GetFileGuid)
