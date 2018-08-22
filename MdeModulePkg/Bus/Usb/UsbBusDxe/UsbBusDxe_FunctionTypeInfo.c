@@ -10077,62 +10077,6 @@ static TYPE__UsbHubCtrlGetPortStatus TypeInfo__UsbHubCtrlGetPortStatus = {
   .ParameterTypeName_3 = "void *"
 };
 
-//TYPE:UsbHubCtrlResetTT
-
-typedef struct _TYPE__UsbHubCtrlResetTT{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-} TYPE__UsbHubCtrlResetTT;
-
-static TYPE__UsbHubCtrlResetTT TypeInfo__UsbHubCtrlResetTT = {
-  .TypeName = "UsbHubCtrlResetTT",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 2,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_DEVICE *",
-  .ParameterInOut_2 = IO_IN,
-  .ParameterTypeName_2 = "UINT8"
-};
-
-//TYPE:UsbHubCtrlSetHubFeature
-
-typedef struct _TYPE__UsbHubCtrlSetHubFeature{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-} TYPE__UsbHubCtrlSetHubFeature;
-
-static TYPE__UsbHubCtrlSetHubFeature TypeInfo__UsbHubCtrlSetHubFeature = {
-  .TypeName = "UsbHubCtrlSetHubFeature",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 2,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_DEVICE *",
-  .ParameterInOut_2 = IO_IN,
-  .ParameterTypeName_2 = "UINT8"
-};
-
 //TYPE:UsbHubCtrlSetPortFeature
 
 typedef struct _TYPE__UsbHubCtrlSetPortFeature{
@@ -11471,130 +11415,6 @@ static TYPE__UsbHcSyncInterruptTransfer TypeInfo__UsbHcSyncInterruptTransfer = {
   .ParameterTypeName_10 = "EFI_USB2_HC_TRANSACTION_TRANSLATOR *",
   .ParameterInOut_11 = IO_OUT,
   .ParameterTypeName_11 = "UINT32 *"
-};
-
-//TYPE:UsbHcIsochronousTransfer
-
-typedef struct _TYPE__UsbHcIsochronousTransfer{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-  const UINTN ParameterInOut_3;
-  const CHAR8* ParameterTypeName_3;
-  const UINTN ParameterInOut_4;
-  const CHAR8* ParameterTypeName_4;
-  const UINTN ParameterInOut_5;
-  const CHAR8* ParameterTypeName_5;
-  const UINTN ParameterInOut_6;
-  const CHAR8* ParameterTypeName_6;
-  const UINTN ParameterInOut_7;
-  const CHAR8* ParameterTypeName_7;
-  const UINTN ParameterInOut_8;
-  const CHAR8* ParameterTypeName_8;
-  const UINTN ParameterInOut_9;
-  const CHAR8* ParameterTypeName_9;
-  const UINTN ParameterInOut_10;
-  const CHAR8* ParameterTypeName_10;
-} TYPE__UsbHcIsochronousTransfer;
-
-static TYPE__UsbHcIsochronousTransfer TypeInfo__UsbHcIsochronousTransfer = {
-  .TypeName = "UsbHcIsochronousTransfer",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 10,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_BUS *",
-  .ParameterInOut_2 = IO_IN,
-  .ParameterTypeName_2 = "UINT8",
-  .ParameterInOut_3 = IO_IN,
-  .ParameterTypeName_3 = "UINT8",
-  .ParameterInOut_4 = IO_IN,
-  .ParameterTypeName_4 = "UINT8",
-  .ParameterInOut_5 = IO_IN,
-  .ParameterTypeName_5 = "UINTN",
-  .ParameterInOut_6 = IO_IN,
-  .ParameterTypeName_6 = "UINT8",
-  .ParameterInOut_7 = IO_IN_OUT,
-  .ParameterTypeName_7 = "void * *",
-  .ParameterInOut_8 = IO_IN,
-  .ParameterTypeName_8 = "UINTN",
-  .ParameterInOut_9 = IO_IN,
-  .ParameterTypeName_9 = "EFI_USB2_HC_TRANSACTION_TRANSLATOR *",
-  .ParameterInOut_10 = IO_OUT,
-  .ParameterTypeName_10 = "UINT32 *"
-};
-
-//TYPE:UsbHcAsyncIsochronousTransfer
-
-typedef struct _TYPE__UsbHcAsyncIsochronousTransfer{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-  const UINTN ParameterInOut_3;
-  const CHAR8* ParameterTypeName_3;
-  const UINTN ParameterInOut_4;
-  const CHAR8* ParameterTypeName_4;
-  const UINTN ParameterInOut_5;
-  const CHAR8* ParameterTypeName_5;
-  const UINTN ParameterInOut_6;
-  const CHAR8* ParameterTypeName_6;
-  const UINTN ParameterInOut_7;
-  const CHAR8* ParameterTypeName_7;
-  const UINTN ParameterInOut_8;
-  const CHAR8* ParameterTypeName_8;
-  const UINTN ParameterInOut_9;
-  const CHAR8* ParameterTypeName_9;
-  const UINTN ParameterInOut_10;
-  const CHAR8* ParameterTypeName_10;
-  const UINTN ParameterInOut_11;
-  const CHAR8* ParameterTypeName_11;
-} TYPE__UsbHcAsyncIsochronousTransfer;
-
-static TYPE__UsbHcAsyncIsochronousTransfer TypeInfo__UsbHcAsyncIsochronousTransfer = {
-  .TypeName = "UsbHcAsyncIsochronousTransfer",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 11,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_BUS *",
-  .ParameterInOut_2 = IO_IN,
-  .ParameterTypeName_2 = "UINT8",
-  .ParameterInOut_3 = IO_IN,
-  .ParameterTypeName_3 = "UINT8",
-  .ParameterInOut_4 = IO_IN,
-  .ParameterTypeName_4 = "UINT8",
-  .ParameterInOut_5 = IO_IN,
-  .ParameterTypeName_5 = "UINTN",
-  .ParameterInOut_6 = IO_IN,
-  .ParameterTypeName_6 = "UINT8",
-  .ParameterInOut_7 = IO_IN_OUT,
-  .ParameterTypeName_7 = "void * *",
-  .ParameterInOut_8 = IO_IN,
-  .ParameterTypeName_8 = "UINTN",
-  .ParameterInOut_9 = IO_IN,
-  .ParameterTypeName_9 = "EFI_USB2_HC_TRANSACTION_TRANSLATOR *",
-  .ParameterInOut_10 = IO_IN,
-  .ParameterTypeName_10 = "EFI_ASYNC_USB_TRANSFER_CALLBACK",
-  .ParameterInOut_11 = IO_IN,
-  .ParameterTypeName_11 = "void *"
 };
 
 //TYPE:UsbOpenHostProtoByChild
@@ -13413,43 +13233,6 @@ Invoke_UsbHubCtrlGetPortStatus(){
   return RETURN_SUCCESS;
 }
 
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbHubCtrlResetTT(){
-  EFI_STATUS  Status;
-  USB_DEVICE *  Parameter_1;
-  UINT8  Parameter_2;
-
-  Status = GenParameter(&TypeInfo__UsbHubCtrlResetTT,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHubCtrlResetTT,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHubCtrlResetTT(Parameter_1,Parameter_2);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbHubCtrlSetHubFeature(){
-  EFI_STATUS  Status;
-  USB_DEVICE *  Parameter_1;
-  UINT8  Parameter_2;
-
-  Status = GenParameter(&TypeInfo__UsbHubCtrlSetHubFeature,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHubCtrlSetHubFeature,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHubCtrlSetHubFeature(Parameter_1,Parameter_2);
-  return RETURN_SUCCESS;
-}
-
-
 EFI_STATUS
 EFIAPI
 Invoke_UsbHubCtrlSetPortFeature(){
@@ -13884,60 +13667,6 @@ Invoke_UsbHcGetCapability(){
 
 EFI_STATUS
 EFIAPI
-Invoke_UsbHcReset(){
-  EFI_STATUS  Status;
-  USB_BUS *  Parameter_1;
-  UINT16  Parameter_2;
-
-  Status = GenParameter(&TypeInfo__UsbHcReset,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcReset,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHcReset(Parameter_1,Parameter_2);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbHcGetState(){
-  EFI_STATUS  Status;
-  USB_BUS *  Parameter_1;
-  EFI_USB_HC_STATE *  Parameter_2;
-
-  Status = GenParameter(&TypeInfo__UsbHcGetState,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcGetState,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHcGetState(Parameter_1,Parameter_2);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbHcSetState(){
-  EFI_STATUS  Status;
-  USB_BUS *  Parameter_1;
-  EFI_USB_HC_STATE  Parameter_2;
-
-  Status = GenParameter(&TypeInfo__UsbHcSetState,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcSetState,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHcSetState(Parameter_1,Parameter_2);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
 Invoke_UsbHcGetRootHubPortStatus(){
   EFI_STATUS  Status;
   USB_BUS *  Parameter_1;
@@ -14222,110 +13951,6 @@ Invoke_UsbHcSyncInterruptTransfer(){
   if (EFI_ERROR(Status)) { return Status; }
 
   UsbHcSyncInterruptTransfer(Parameter_1,Parameter_2,Parameter_3,Parameter_4,Parameter_5,Parameter_6,Parameter_7,Parameter_8,Parameter_9,Parameter_10,Parameter_11);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbHcIsochronousTransfer(){
-  EFI_STATUS  Status;
-  USB_BUS *  Parameter_1;
-  UINT8  Parameter_2;
-  UINT8  Parameter_3;
-  UINT8  Parameter_4;
-  UINTN  Parameter_5;
-  UINT8  Parameter_6;
-  void * *  Parameter_7;
-  UINTN  Parameter_8;
-  EFI_USB2_HC_TRANSACTION_TRANSLATOR *  Parameter_9;
-  UINT32 *  Parameter_10;
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,3,(void*)&Parameter_3);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,4,(void*)&Parameter_4);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,5,(void*)&Parameter_5);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,6,(void*)&Parameter_6);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,7,(void*)&Parameter_7);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,8,(void*)&Parameter_8);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,9,(void*)&Parameter_9);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcIsochronousTransfer,10,(void*)&Parameter_10);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHcIsochronousTransfer(Parameter_1,Parameter_2,Parameter_3,Parameter_4,Parameter_5,Parameter_6,Parameter_7,Parameter_8,Parameter_9,Parameter_10);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbHcAsyncIsochronousTransfer(){
-  EFI_STATUS  Status;
-  USB_BUS *  Parameter_1;
-  UINT8  Parameter_2;
-  UINT8  Parameter_3;
-  UINT8  Parameter_4;
-  UINTN  Parameter_5;
-  UINT8  Parameter_6;
-  void * *  Parameter_7;
-  UINTN  Parameter_8;
-  EFI_USB2_HC_TRANSACTION_TRANSLATOR *  Parameter_9;
-  EFI_ASYNC_USB_TRANSFER_CALLBACK  Parameter_10;
-  void *  Parameter_11;
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,3,(void*)&Parameter_3);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,4,(void*)&Parameter_4);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,5,(void*)&Parameter_5);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,6,(void*)&Parameter_6);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,7,(void*)&Parameter_7);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,8,(void*)&Parameter_8);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,9,(void*)&Parameter_9);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,10,(void*)&Parameter_10);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbHcAsyncIsochronousTransfer,11,(void*)&Parameter_11);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbHcAsyncIsochronousTransfer(Parameter_1,Parameter_2,Parameter_3,Parameter_4,Parameter_5,Parameter_6,Parameter_7,Parameter_8,Parameter_9,Parameter_10,Parameter_11);
   return RETURN_SUCCESS;
 }
 
@@ -14670,8 +14295,6 @@ FUNCTION_TYPE_MAP EFI_UsbBusDxe_FunctionTypeMapList []={
 {(void *)(UINTN)UsbHubCtrlGetHubDesc, &TypeInfo__UsbHubCtrlGetHubDesc, (void *)(UINTN)Invoke_UsbHubCtrlGetHubDesc},
 {(void *)(UINTN)UsbHubCtrlGetHubStatus, &TypeInfo__UsbHubCtrlGetHubStatus, (void *)(UINTN)Invoke_UsbHubCtrlGetHubStatus},
 {(void *)(UINTN)UsbHubCtrlGetPortStatus, &TypeInfo__UsbHubCtrlGetPortStatus, (void *)(UINTN)Invoke_UsbHubCtrlGetPortStatus},
-{(void *)(UINTN)UsbHubCtrlResetTT, &TypeInfo__UsbHubCtrlResetTT, (void *)(UINTN)Invoke_UsbHubCtrlResetTT},
-{(void *)(UINTN)UsbHubCtrlSetHubFeature, &TypeInfo__UsbHubCtrlSetHubFeature, (void *)(UINTN)Invoke_UsbHubCtrlSetHubFeature},
 {(void *)(UINTN)UsbHubCtrlSetPortFeature, &TypeInfo__UsbHubCtrlSetPortFeature, (void *)(UINTN)Invoke_UsbHubCtrlSetPortFeature},
 {(void *)(UINTN)UsbHubReadDesc, &TypeInfo__UsbHubReadDesc, (void *)(UINTN)Invoke_UsbHubReadDesc},
 {(void *)(UINTN)UsbHubAckHubStatus, &TypeInfo__UsbHubAckHubStatus, (void *)(UINTN)Invoke_UsbHubAckHubStatus},
@@ -14694,9 +14317,6 @@ FUNCTION_TYPE_MAP EFI_UsbBusDxe_FunctionTypeMapList []={
 {(void *)(UINTN)UsbBusComponentNameGetDriverName, &TypeInfo__UsbBusComponentNameGetDriverName, (void *)(UINTN)Invoke_UsbBusComponentNameGetDriverName},
 {(void *)(UINTN)UsbBusComponentNameGetControllerName, &TypeInfo__UsbBusComponentNameGetControllerName, (void *)(UINTN)Invoke_UsbBusComponentNameGetControllerName},
 {(void *)(UINTN)UsbHcGetCapability, &TypeInfo__UsbHcGetCapability, (void *)(UINTN)Invoke_UsbHcGetCapability},
-{(void *)(UINTN)UsbHcReset, &TypeInfo__UsbHcReset, (void *)(UINTN)Invoke_UsbHcReset},
-{(void *)(UINTN)UsbHcGetState, &TypeInfo__UsbHcGetState, (void *)(UINTN)Invoke_UsbHcGetState},
-{(void *)(UINTN)UsbHcSetState, &TypeInfo__UsbHcSetState, (void *)(UINTN)Invoke_UsbHcSetState},
 {(void *)(UINTN)UsbHcGetRootHubPortStatus, &TypeInfo__UsbHcGetRootHubPortStatus, (void *)(UINTN)Invoke_UsbHcGetRootHubPortStatus},
 {(void *)(UINTN)UsbHcSetRootHubPortFeature, &TypeInfo__UsbHcSetRootHubPortFeature, (void *)(UINTN)Invoke_UsbHcSetRootHubPortFeature},
 {(void *)(UINTN)UsbHcClearRootHubPortFeature, &TypeInfo__UsbHcClearRootHubPortFeature, (void *)(UINTN)Invoke_UsbHcClearRootHubPortFeature},
@@ -14704,8 +14324,6 @@ FUNCTION_TYPE_MAP EFI_UsbBusDxe_FunctionTypeMapList []={
 {(void *)(UINTN)UsbHcBulkTransfer, &TypeInfo__UsbHcBulkTransfer, (void *)(UINTN)Invoke_UsbHcBulkTransfer},
 {(void *)(UINTN)UsbHcAsyncInterruptTransfer, &TypeInfo__UsbHcAsyncInterruptTransfer, (void *)(UINTN)Invoke_UsbHcAsyncInterruptTransfer},
 {(void *)(UINTN)UsbHcSyncInterruptTransfer, &TypeInfo__UsbHcSyncInterruptTransfer, (void *)(UINTN)Invoke_UsbHcSyncInterruptTransfer},
-{(void *)(UINTN)UsbHcIsochronousTransfer, &TypeInfo__UsbHcIsochronousTransfer, (void *)(UINTN)Invoke_UsbHcIsochronousTransfer},
-{(void *)(UINTN)UsbHcAsyncIsochronousTransfer, &TypeInfo__UsbHcAsyncIsochronousTransfer, (void *)(UINTN)Invoke_UsbHcAsyncIsochronousTransfer},
 {(void *)(UINTN)UsbOpenHostProtoByChild, &TypeInfo__UsbOpenHostProtoByChild, (void *)(UINTN)Invoke_UsbOpenHostProtoByChild},
 {(void *)(UINTN)UsbCloseHostProtoByChild, &TypeInfo__UsbCloseHostProtoByChild, (void *)(UINTN)Invoke_UsbCloseHostProtoByChild},
 {(void *)(UINTN)UsbGetCurrentTpl, &TypeInfo__UsbGetCurrentTpl, (void *)(UINTN)Invoke_UsbGetCurrentTpl},
@@ -15039,8 +14657,6 @@ void* EFI_UsbBusDxe_TypeInfoList []={
 &TypeInfo__UsbHubCtrlGetHubDesc,
 &TypeInfo__UsbHubCtrlGetHubStatus,
 &TypeInfo__UsbHubCtrlGetPortStatus,
-&TypeInfo__UsbHubCtrlResetTT,
-&TypeInfo__UsbHubCtrlSetHubFeature,
 &TypeInfo__UsbHubCtrlSetPortFeature,
 &TypeInfo__UsbHubReadDesc,
 &TypeInfo__EFI_USB_HUB_DESCRIPTOR_sp__star_,
@@ -15082,8 +14698,6 @@ void* EFI_UsbBusDxe_TypeInfoList []={
 &TypeInfo__UsbHcBulkTransfer,
 &TypeInfo__UsbHcAsyncInterruptTransfer,
 &TypeInfo__UsbHcSyncInterruptTransfer,
-&TypeInfo__UsbHcIsochronousTransfer,
-&TypeInfo__UsbHcAsyncIsochronousTransfer,
 &TypeInfo__UsbOpenHostProtoByChild,
 &TypeInfo__UsbCloseHostProtoByChild,
 &TypeInfo__UsbGetCurrentTpl,
