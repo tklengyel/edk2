@@ -127,4 +127,30 @@ typedef struct _LOG__FUNCTION{
   void  *FunctionPointer;
   UINTN Arg[MAX_ARG_NUM];
 } LOG__FUNCTION;
+
+//
+// Correlation info of branch condition
+//
+typedef struct _CORRELATION_BRANCH_CONDITION_INFO{
+  const UINTN  CorrelationTypeClass;
+  const CHAR8* FunctionTypeName;
+  const UINTN  ParameterNO;
+  const CHAR8* ParameterTypeName;
+  const UINTN  CorrelatedConditionNum;
+  const CHAR8* ConditionType_1;
+  const UINTN  ConditionValue_1;
+} CORRELATION_BRANCH_CONDITION_INFO;
+
+//
+// Correlation info of containing record
+//
+typedef struct _CORRELATION_CONTAINING_RECORD_INFO{
+  const UINTN  CorrelationTypeClass;
+  const CHAR8* FunctionTypeName;
+  const UINTN  ParameterNO;
+  const CHAR8* ParameterTypeName;
+  const CHAR8* RetrievedPrivateType;
+  const UINT32 PrivateSignature;
+} CORRELATION_CONTAINING_RECORD_INFO;
+
 #endif
