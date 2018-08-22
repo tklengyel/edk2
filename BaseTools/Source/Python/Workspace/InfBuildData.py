@@ -173,36 +173,10 @@ class InfBuildData(ModuleBuildClassObject):
     def _GetArch(self):
         return self._Arch
 
-    ## Set architecture
-    #
-    #   Changing the default ARCH to another may affect all other information
-    # because all information in a platform may be ARCH-related. That's
-    # why we need to clear all internal used members, in order to cause all
-    # information to be re-retrieved.
-    #
-    #   @param  Value   The value of ARCH
-    #
-    def _SetArch(self, Value):
-        if self._Arch == Value:
-            return
-        self._Arch = Value
-        self._Clear()
-
     ## Return the name of platform employing this module
     def _GetPlatform(self):
         return self._Platform
 
-    ## Change the name of platform employing this module
-    #
-    #   Changing the default name of platform to another may affect some information
-    # because they may be PLATFORM-related. That's why we need to clear all internal
-    # used members, in order to cause all information to be re-retrieved.
-    #
-    def _SetPlatform(self, Value):
-        if self._Platform == Value:
-            return
-        self._Platform = Value
-        self._Clear()
     def _GetHeaderComments(self):
         if not self._HeaderComments:
             self._HeaderComments = []
@@ -370,11 +344,7 @@ class InfBuildData(ModuleBuildClassObject):
                     self._Sources.append(File)
                 else:
                     ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
-                    if len(ToolList) == 0 or len(ToolList) != 1:
-                        pass
-#                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name,
-#                                       File=self.MetaFile, Line=LineNo)
-                    else:
+                    if len(ToolList) == 1:
                         if self._BuildOptions is None:
                             self._BuildOptions = OrderedDict()
 
@@ -1158,8 +1128,8 @@ class InfBuildData(ModuleBuildClassObject):
             return False
 
     _Macros = property(_GetMacros)
-    Arch = property(_GetArch, _SetArch)
-    Platform = property(_GetPlatform, _SetPlatform)
+    Arch = property(_GetArch)
+    Platform = property(_GetPlatform)
 
     HeaderComments = property(_GetHeaderComments)
     TailComments = property(_GetTailComments)
