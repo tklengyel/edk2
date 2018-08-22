@@ -16,8 +16,12 @@ typedef enum {
   TYPE_CLASS_ARRAY,
   TYPE_CLASS_TYPEDEF,
   TYPE_CLASS_ENUM,
+  TYPE_CLASS_BIT_FIELD,
   TYPE_CLASS_VARIABLE,
-  TYPE_CLASS_PRIVATE_DATA_STRUCTURE
+  TYPE_CLASS_PRIVATE_DATA_STRUCTURE,
+  TYPE_CLASS_CORRELATION_BRANCH_CONDITION,
+  TYPE_CLASS_CORRELATION_CONTAINING_RECORD,
+  TYPE_CLASS_CORRELATION_HAS_PROTOCOL
 } TYPE_CLASS;
 typedef enum {
   IO_IN,
@@ -8204,6 +8208,53 @@ static TYPE__UsbCbiDataTransfer TypeInfo__UsbCbiDataTransfer = {
   .ParameterTypeName_5 = "UINT32"
 };
 
+typedef struct _CORRELATION_BRANCH_CONDITION__UsbCbiDataTransfer_Parameter2{
+  const UINTN  CorrelationTypeClass;
+  const CHAR8* FunctionTypeName;
+  const UINTN  ParameterNO;
+  const CHAR8* ParameterTypeName;
+  const UINTN  CorrelatedConditionNum;
+  const CHAR8* ConditionType_1;
+  const UINTN  ConditionValue_1;
+  const CHAR8* ConditionType_2;
+  const UINTN  ConditionValue_2;
+} CORRELATION_BRANCH_CONDITION__UsbCbiDataTransfer_Parameter2;
+
+static CORRELATION_BRANCH_CONDITION__UsbCbiDataTransfer_Parameter2 \
+BranchConditionInfo__UsbCbiDataTransfer_Parameter2 = {
+  .CorrelationTypeClass = TYPE_CLASS_CORRELATION_BRANCH_CONDITION,
+  .FunctionTypeName = "UsbCbiDataTransfer",
+  .ParameterNO = 2,
+  .ParameterTypeName = "EFI_USB_DATA_DIRECTION",
+  .CorrelatedConditionNum = 2,
+  .ConditionType_1 = "EFI_USB_DATA_DIRECTION",
+  .ConditionValue_1 = EfiUsbNoData,
+  .ConditionType_2 = "EFI_USB_DATA_DIRECTION",
+  .ConditionValue_2 = EfiUsbDataIn
+};
+
+typedef struct _CORRELATION_BRANCH_CONDITION__UsbCbiDataTransfer_Parameter4{
+  const UINTN CorrelationTypeClass;
+  const CHAR8* FunctionTypeName;
+  const UINTN ParameterNO;
+  const CHAR8* ParameterTypeName;
+  const UINTN CorrelatedConditionNum;
+  const CHAR8* ConditionType_1;
+  const UINTN ConditionValue_1;
+} CORRELATION_BRANCH_CONDITION__UsbCbiDataTransfer_Parameter4;
+
+static CORRELATION_BRANCH_CONDITION__UsbCbiDataTransfer_Parameter4 \
+BranchConditionInfo__UsbCbiDataTransfer_Parameter4 = {
+  .CorrelationTypeClass = TYPE_CLASS_CORRELATION_BRANCH_CONDITION,
+  .FunctionTypeName = "UsbCbiDataTransfer",
+  .ParameterNO = 4,
+  .ParameterTypeName = "UINTN *",
+  .CorrelatedConditionNum = 1,
+  .ConditionType_1 = "UINTN",
+  .ConditionValue_1 = 0
+};
+
+
 //TYPE:UsbCbiGetStatus
 
 typedef struct _TYPE__UsbCbiGetStatus{
@@ -8443,6 +8494,26 @@ static TYPE__UsbDiskInfoInquiry TypeInfo__UsbDiskInfoInquiry = {
   .ParameterInOut_3 = IO_IN_OUT,
   .ParameterTypeName_3 = "UINT32 *"
 };
+
+typedef struct _CORRELATION_CONTAINING_RECORD__UsbDiskInfoInquiry_Parameter1{
+  const UINTN CorrelationTypeClass;
+  const CHAR8* FunctionTypeName;
+  const UINTN ParameterNO;
+  const CHAR8* ParameterTypeName;
+  const CHAR8* RetrievedPrivateType;
+  const UINT32 PrivateSignature;
+} CORRELATION_CONTAINING_RECORD__UsbDiskInfoInquiry_Parameter1;
+
+static CORRELATION_CONTAINING_RECORD__UsbDiskInfoInquiry_Parameter1 \
+ContainingRecordInfo__UsbDiskInfoInquiry_Parameter1 = {
+  .CorrelationTypeClass = TYPE_CLASS_CORRELATION_CONTAINING_RECORD,
+  .FunctionTypeName = "UsbDiskInfoInquiry",
+  .ParameterNO = 1,
+  .ParameterTypeName = "EFI_DISK_INFO_PROTOCOL *",
+  .RetrievedPrivateType = "USB_MASS_DEVICE",
+  .PrivateSignature = USB_MASS_SIGNATURE
+};
+
 
 //TYPE:UsbDiskInfoIdentify
 
@@ -9969,7 +10040,161 @@ FUNCTION_TYPE_MAP EFI_UsbMassStorageDxe_FunctionTypeMapList []={
 {NULL,NULL}
 };
 
+//TYPE:gEfiUsbIoProtocolGuid
+
+typedef struct _TYPE__gEfiUsbIoProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiUsbIoProtocolGuid;
+
+static TYPE__gEfiUsbIoProtocolGuid TypeInfo__gEfiUsbIoProtocolGuid = {
+  .TypeName = "gEfiUsbIoProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiUsbIoProtocolGuid,
+  .InterfaceStructName = "EFI_USB_IO_PROTOCOL"
+};
+
+//TYPE:gEfiDevicePathProtocolGuid
+
+typedef struct _TYPE__gEfiDevicePathProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiDevicePathProtocolGuid;
+
+static TYPE__gEfiDevicePathProtocolGuid TypeInfo__gEfiDevicePathProtocolGuid = {
+  .TypeName = "gEfiDevicePathProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiDevicePathProtocolGuid,
+  .InterfaceStructName = "EFI_DEVICE_PATH_PROTOCOL"
+};
+
+//TYPE:gEfiBlockIoProtocolGuid
+
+typedef struct _TYPE__gEfiBlockIoProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiBlockIoProtocolGuid;
+
+static TYPE__gEfiBlockIoProtocolGuid TypeInfo__gEfiBlockIoProtocolGuid = {
+  .TypeName = "gEfiBlockIoProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiBlockIoProtocolGuid,
+  .InterfaceStructName = "EFI_BLOCK_IO_PROTOCOL"
+};
+
+//TYPE:gEfiDiskInfoProtocolGuid
+
+typedef struct _TYPE__gEfiDiskInfoProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiDiskInfoProtocolGuid;
+
+static TYPE__gEfiDiskInfoProtocolGuid TypeInfo__gEfiDiskInfoProtocolGuid = {
+  .TypeName = "gEfiDiskInfoProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiDiskInfoProtocolGuid,
+  .InterfaceStructName = "EFI_DISK_INFO_PROTOCOL"
+};
+
+//TYPE:gEfiDriverBindingProtocolGuid
+
+typedef struct _TYPE__gEfiDriverBindingProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiDriverBindingProtocolGuid;
+
+static TYPE__gEfiDriverBindingProtocolGuid TypeInfo__gEfiDriverBindingProtocolGuid = {
+  .TypeName = "gEfiDriverBindingProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiDriverBindingProtocolGuid,
+  .InterfaceStructName = "EFI_DRIVER_BINDING_PROTOCOL"
+};
+
+//TYPE:gEfiComponentName2ProtocolGuid
+
+typedef struct _TYPE__gEfiComponentName2ProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiComponentName2ProtocolGuid;
+
+static TYPE__gEfiComponentName2ProtocolGuid TypeInfo__gEfiComponentName2ProtocolGuid = {
+  .TypeName = "gEfiComponentName2ProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiComponentName2ProtocolGuid,
+  .InterfaceStructName = "EFI_COMPONENT_NAME2_PROTOCOL"
+};
+
+//TYPE:gEfiComponentNameProtocolGuid
+
+typedef struct _TYPE__gEfiComponentNameProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiComponentNameProtocolGuid;
+
+static TYPE__gEfiComponentNameProtocolGuid TypeInfo__gEfiComponentNameProtocolGuid = {
+  .TypeName = "gEfiComponentNameProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiComponentNameProtocolGuid,
+  .InterfaceStructName = "EFI_COMPONENT_NAME_PROTOCOL"
+};
+
+//TYPE:gEfiLoadedImageProtocolGuid
+
+typedef struct _TYPE__gEfiLoadedImageProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiLoadedImageProtocolGuid;
+
+static TYPE__gEfiLoadedImageProtocolGuid TypeInfo__gEfiLoadedImageProtocolGuid = {
+  .TypeName = "gEfiLoadedImageProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiLoadedImageProtocolGuid,
+  .InterfaceStructName = "EFI_LOADED_IMAGE_PROTOCOL"
+};
+
+
+
 void* EFI_UsbMassStorageDxe_TypeInfoList []={
+&TypeInfo__gEfiUsbIoProtocolGuid,
+&TypeInfo__gEfiDevicePathProtocolGuid,
+&TypeInfo__gEfiBlockIoProtocolGuid,
+&TypeInfo__gEfiDiskInfoProtocolGuid,
+&TypeInfo__gEfiDriverBindingProtocolGuid,
+&TypeInfo__gEfiComponentName2ProtocolGuid,
+&TypeInfo__gEfiComponentNameProtocolGuid,
+&TypeInfo__gEfiLoadedImageProtocolGuid,
 &TypeInfo__UsbBotInit,
 &TypeInfo__EFI_STATUS,
 &TypeInfo__RETURN_STATUS,
@@ -10245,5 +10470,16 @@ void* EFI_UsbMassStorageDxe_TypeInfoList []={
 &TypeInfo__ProcessModuleEntryPointList,
 &TypeInfo__ExitDriver,
 &TypeInfo__ProcessModuleUnloadList,
+NULL
+};
+
+void* EFI_UsbMassStorageDxe_BranchConditionInfoList []={
+&BranchConditionInfo__UsbCbiDataTransfer_Parameter2,
+&BranchConditionInfo__UsbCbiDataTransfer_Parameter4,
+NULL
+};
+
+void* EFI_UsbMassStorageDxe_ContainingRecordInfoList []={
+&ContainingRecordInfo__UsbDiskInfoInquiry_Parameter1,
 NULL
 };
