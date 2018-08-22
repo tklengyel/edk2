@@ -36,6 +36,18 @@ FUNCTION_TYPE_MAP *ToMergeFunctionTypeMapList[] = {
   NULL
 };
 
+extern CORRELATION_BRANCH_CONDITION_INFO EFI_UsbMassStorageDxe_BranchConditionInfoList[];
+CORRELATION_BRANCH_CONDITION_INFO *CorrelationBranchConditionInfoList[] = {
+  EFI_UsbMassStorageDxe_BranchConditionInfoList,
+  NULL
+};
+
+extern CORRELATION_CONTAINING_RECORD_INFO EFI_UsbMassStorageDxe_ContainingRecordInfoList[];
+CORRELATION_CONTAINING_RECORD_INFO *CorrelationContainingRecordInfoList[] = {
+  EFI_UsbMassStorageDxe_ContainingRecordInfoList,
+  NULL
+};
+
 LIST_ENTRY  MergedTypeInfoList;
 LIST_ENTRY  MergedFunctionTypeMapList;
 LIST_ENTRY  AllocatedBufferList;
@@ -210,6 +222,83 @@ GetStructFieldTypeInfo (
   return GetTypeInfo(TypeInfoList, TypeInfoName);
 }
 
+TYPE__EFI_PROTOCOL*
+EFIAPI
+GetProtocolTypeHeaderByInterfaceStructureName(
+  IN      const LIST_ENTRY        *TypeInfoList,
+  IN      const CHAR8             *InterfaceStructName
+  )
+{
+  LIST_ENTRY                *Link;
+  TYPE_INFO_NODE            *NodePtr;
+  TYPE_INFO_HEADER          *TypeInfoPtr;
+
+  if (TypeInfoList == NULL || InterfaceStructName == NULL){
+    return NULL;
+  }
+
+  for(Link = GetFirstNode (TypeInfoList);
+      !IsNull (TypeInfoList, Link);
+      Link = GetNextNode (TypeInfoList, Link)){
+    NodePtr = TYPE_INFO_NODE_FROM_LINK (Link);
+    TypeInfoPtr = NodePtr->TypeInfoHdr;
+    if (TypeInfoPtr->TypeClass == TYPE_CLASS_PROTOCOL){
+      if (AsciiStrCmp(((TYPE__EFI_PROTOCOL*)TypeInfoPtr)->InterfaceStructName, InterfaceStructName) == 0){
+        return (TYPE__EFI_PROTOCOL*)TypeInfoPtr;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+//
+// This function try to locate the protocol interface specified by TypeHeader
+// The TypeHeader can be TYPE_CLASS_PROTOCOL or TYPE_CLASS_STRUCTURE class
+// When TypeHeader is TYPE_CLASS_STRUCTURE, it is the protocol Interface
+// Structure TypeHeader which need to covert to protocol guid TypeHeader
+//
+EFI_STATUS
+EFIAPI
+LocateProtocolByType(
+  IN      const LIST_ENTRY         *TypeInfoList,
+  IN      const TYPE_INFO_HEADER   *TypeHeader,
+  OUT     VOID               **Interface
+  )
+{
+  TYPE__EFI_PROTOCOL *ProtocolTypeHeader;
+  EFI_GUID           *ProtocolGuid;
+  EFI_STATUS         Status;
+
+  if(TypeInfoList == NULL || TypeHeader == NULL || Interface == NULL){
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (TypeHeader->TypeClass != TYPE_CLASS_STRUCTURE &&
+      TypeHeader->TypeClass != TYPE_CLASS_PROTOCOL){
+    return EFI_INVALID_PARAMETER;
+  }
+
+  ProtocolTypeHeader = (TYPE__EFI_PROTOCOL *)TypeHeader;
+  if (TypeHeader->TypeClass == TYPE_CLASS_STRUCTURE){
+    ProtocolTypeHeader = GetProtocolTypeHeaderByInterfaceStructureName(TypeInfoList, TypeHeader->TypeName);
+    if(ProtocolTypeHeader == NULL){
+      return EFI_NOT_FOUND;
+    }
+    ASSERT (ProtocolTypeHeader->TypeClass == TYPE_CLASS_PROTOCOL);
+  }
+
+  OUTPUT_LOG (("LocateProtocolByType is going to locate the protocol in system: %a\n", ProtocolTypeHeader->TypeName));
+  ProtocolGuid = (EFI_GUID*)ProtocolTypeHeader->ProtocolGuid;
+  Status = gBS->LocateProtocol (ProtocolGuid, NULL, Interface);
+  if (!EFI_ERROR (Status)) {
+    OUTPUT_LOG (("find protocol! : %a\n", ProtocolTypeHeader->TypeName));
+  } else {
+    OUTPUT_LOG (("Cannot find protocol in current system: %a\n", ProtocolTypeHeader->TypeName));
+  }
+  return Status;
+
+}
 
 EFI_STATUS
 EFIAPI
@@ -232,6 +321,7 @@ GenMutatedData(
   UINTN                     Size;
   UINTN                     FieldSize;
   VOID                      *Buffer;
+  VOID                      *Interface;
 
   switch (TypeHeader->TypeClass){
     case TYPE_CLASS_POINTER:
@@ -247,6 +337,19 @@ GenMutatedData(
         return EFI_NOT_FOUND;
       }
       OUTPUT_LOG (("Get the PointedType=%a, PointedType size=%d\n", PointedTypeInfo->TypeName, PointedTypeInfo->TypeSize));
+
+      //
+      // Check whether it is a protocol type pointer firstly, if yes
+      // try to locate and return the first protocol interface as the
+      // pointer value
+      //
+      Status = LocateProtocolByType(TypeInfoList, PointedTypeInfo, &Interface);
+      if (!EFI_ERROR (Status)){
+        *DataBuffer = (UINTN)Interface;
+        *DataSize = PointedTypeInfo->TypeSize;
+        return RETURN_SUCCESS;
+      }
+
       //
       // Check whether it is a pointer of pointer
       //
