@@ -438,6 +438,7 @@ GenMutatedData(
       ZeroMem(DataBuffer, TypeHeader->TypeSize);
       OUTPUT_LOG (("ZeroMem %a\n", TypeHeader->TypeName));
       //RandomBuffer(DataBuffer, TypeHeader->TypeSize);
+      *(UINT8*)DataBuffer = 1; // set the first byte as value 1
       return RETURN_SUCCESS;
   }
 }

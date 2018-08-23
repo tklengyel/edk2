@@ -16,6 +16,7 @@ typedef enum {
   TYPE_CLASS_ARRAY,
   TYPE_CLASS_TYPEDEF,
   TYPE_CLASS_ENUM,
+  TYPE_CLASS_BIT_FIELD,
   TYPE_CLASS_VARIABLE,
   TYPE_CLASS_PRIVATE_DATA_STRUCTURE
 } TYPE_CLASS;
@@ -5085,6 +5086,42 @@ static TYPE__UsbRootHubEnumeration TypeInfo__UsbRootHubEnumeration = {
   .ParameterTypeName_2 = "void *"
 };
 
+//TYPE:gEfiDevicePathProtocolGuid
+
+typedef struct _TYPE__gEfiDevicePathProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiDevicePathProtocolGuid;
+
+static TYPE__gEfiDevicePathProtocolGuid TypeInfo__gEfiDevicePathProtocolGuid = {
+  .TypeName = "gEfiDevicePathProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiDevicePathProtocolGuid,
+  .InterfaceStructName = "EFI_DEVICE_PATH_PROTOCOL"
+};
+
+//TYPE:gEfiUsbIoProtocolGuid
+
+typedef struct _TYPE__gEfiUsbIoProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiUsbIoProtocolGuid;
+
+static TYPE__gEfiUsbIoProtocolGuid TypeInfo__gEfiUsbIoProtocolGuid = {
+  .TypeName = "gEfiUsbIoProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiUsbIoProtocolGuid,
+  .InterfaceStructName = "EFI_USB_IO_PROTOCOL"
+};
+
 //TYPE:UsbIoControlTransfer
 
 typedef struct _TYPE__UsbIoControlTransfer{
@@ -9857,6 +9894,42 @@ static TYPE__UsbBusControllerDriverStop TypeInfo__UsbBusControllerDriverStop = {
   .ParameterTypeName_4 = "EFI_HANDLE *"
 };
 
+//TYPE:gEfiUsb2HcProtocolGuid
+
+typedef struct _TYPE__gEfiUsb2HcProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiUsb2HcProtocolGuid;
+
+static TYPE__gEfiUsb2HcProtocolGuid TypeInfo__gEfiUsb2HcProtocolGuid = {
+  .TypeName = "gEfiUsb2HcProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiUsb2HcProtocolGuid,
+  .InterfaceStructName = "EFI_USB2_HC_PROTOCOL"
+};
+
+//TYPE:gEfiUsbHcProtocolGuid
+
+typedef struct _TYPE__gEfiUsbHcProtocolGuid{
+  const CHAR8* TypeName;
+  const UINTN TypeClass;
+  const UINTN TypeSize;
+  const GUID* ProtocolGuid;
+  const CHAR8* InterfaceStructName;
+} TYPE__gEfiUsbHcProtocolGuid;
+
+static TYPE__gEfiUsbHcProtocolGuid TypeInfo__gEfiUsbHcProtocolGuid = {
+  .TypeName = "gEfiUsbHcProtocolGuid",
+  .TypeClass = TYPE_CLASS_PROTOCOL,
+  .TypeSize = sizeof(GUID),
+  .ProtocolGuid = &gEfiUsbHcProtocolGuid,
+  .InterfaceStructName = "EFI_USB_HC_PROTOCOL"
+};
+
 //TYPE:UsbHubCtrlSetHubDepth
 
 typedef struct _TYPE__UsbHubCtrlSetHubDepth{
@@ -10971,90 +11044,6 @@ static TYPE__UsbHcGetCapability TypeInfo__UsbHcGetCapability = {
   .ParameterTypeName_3 = "UINT8 *",
   .ParameterInOut_4 = IO_OUT,
   .ParameterTypeName_4 = "UINT8 *"
-};
-
-//TYPE:UsbHcReset
-
-typedef struct _TYPE__UsbHcReset{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-} TYPE__UsbHcReset;
-
-static TYPE__UsbHcReset TypeInfo__UsbHcReset = {
-  .TypeName = "UsbHcReset",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 2,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_BUS *",
-  .ParameterInOut_2 = IO_IN,
-  .ParameterTypeName_2 = "UINT16"
-};
-
-//TYPE:UsbHcGetState
-
-typedef struct _TYPE__UsbHcGetState{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-} TYPE__UsbHcGetState;
-
-static TYPE__UsbHcGetState TypeInfo__UsbHcGetState = {
-  .TypeName = "UsbHcGetState",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 2,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_BUS *",
-  .ParameterInOut_2 = IO_OUT,
-  .ParameterTypeName_2 = "EFI_USB_HC_STATE *"
-};
-
-//TYPE:UsbHcSetState
-
-typedef struct _TYPE__UsbHcSetState{
-  const CHAR8* TypeName;
-  const UINTN TypeClass;
-  const UINTN TypeSize;
-  const CHAR8* ReturnType;
-  const BOOLEAN HasVarArg;
-  const UINTN ParameterNum;
-  const UINTN ParameterInOut_1;
-  const CHAR8* ParameterTypeName_1;
-  const UINTN ParameterInOut_2;
-  const CHAR8* ParameterTypeName_2;
-} TYPE__UsbHcSetState;
-
-static TYPE__UsbHcSetState TypeInfo__UsbHcSetState = {
-  .TypeName = "UsbHcSetState",
-  .TypeClass = TYPE_CLASS_FUNCTION,
-  .TypeSize = sizeof(UINTN),
-  .ReturnType = "EFI_STATUS",
-  .HasVarArg = FALSE,
-  .ParameterNum = 2,
-  .ParameterInOut_1 = IO_IN,
-  .ParameterTypeName_1 = "USB_BUS *",
-  .ParameterInOut_2 = IO_IN,
-  .ParameterTypeName_2 = "EFI_USB_HC_STATE"
 };
 
 //TYPE:UsbHcGetRootHubPortStatus
@@ -13233,6 +13222,7 @@ Invoke_UsbHubCtrlGetPortStatus(){
   return RETURN_SUCCESS;
 }
 
+
 EFI_STATUS
 EFIAPI
 Invoke_UsbHubCtrlSetPortFeature(){
@@ -14344,6 +14334,38 @@ FUNCTION_TYPE_MAP EFI_UsbBusDxe_FunctionTypeMapList []={
 {NULL,NULL}
 };
 
+void* TypeInfoList_HandleProtocol []={
+&TypeInfo__gEfiDevicePathProtocolGuid,
+&TypeInfo__gEfiUsbIoProtocolGuid,
+NULL
+};
+
+void* TypeInfoList_InstallMultipleProtocolInterfaces []={
+&TypeInfo__gEfiDevicePathProtocolGuid,
+&TypeInfo__gEfiUsbIoProtocolGuid,
+NULL
+};
+
+void* TypeInfoList_InstallProtocolInterface []={
+NULL
+};
+
+void* TypeInfoList_LocateProtocol []={
+NULL
+};
+
+void* TypeInfoList_OpenProtocol []={
+&TypeInfo__gEfiDevicePathProtocolGuid,
+&TypeInfo__gEfiUsb2HcProtocolGuid,
+&TypeInfo__gEfiUsbHcProtocolGuid,
+&TypeInfo__gEfiUsbIoProtocolGuid,
+NULL
+};
+
+void* TypeInfoList_ReinstallProtocolInterface []={
+NULL
+};
+
 void* EFI_UsbBusDxe_TypeInfoList []={
 &TypeInfo__UsbFreeInterfaceDesc,
 &TypeInfo__USB_INTERFACE_SETTING_sp__star_,
@@ -14503,6 +14525,8 @@ void* EFI_UsbBusDxe_TypeInfoList []={
 &TypeInfo__UsbEnumeratePort,
 &TypeInfo__UsbHubEnumeration,
 &TypeInfo__UsbRootHubEnumeration,
+&TypeInfo__gEfiDevicePathProtocolGuid,
+&TypeInfo__gEfiUsbIoProtocolGuid,
 &TypeInfo__UsbIoControlTransfer,
 &TypeInfo__UsbIoBulkTransfer,
 &TypeInfo__UsbIoSyncInterruptTransfer,
@@ -14650,6 +14674,8 @@ void* EFI_UsbBusDxe_TypeInfoList []={
 &TypeInfo__UsbBusControllerDriverSupported,
 &TypeInfo__UsbBusControllerDriverStart,
 &TypeInfo__UsbBusControllerDriverStop,
+&TypeInfo__gEfiUsb2HcProtocolGuid,
+&TypeInfo__gEfiUsbHcProtocolGuid,
 &TypeInfo__UsbHubCtrlSetHubDepth,
 &TypeInfo__UsbHubCtrlClearHubFeature,
 &TypeInfo__UsbHubCtrlClearPortFeature,
@@ -14688,9 +14714,6 @@ void* EFI_UsbBusDxe_TypeInfoList []={
 &TypeInfo__EFI_COMPONENT_NAME_GET_CONTROLLER_NAME,
 &TypeInfo__UsbBusComponentNameGetControllerName,
 &TypeInfo__UsbHcGetCapability,
-&TypeInfo__UsbHcReset,
-&TypeInfo__UsbHcGetState,
-&TypeInfo__UsbHcSetState,
 &TypeInfo__UsbHcGetRootHubPortStatus,
 &TypeInfo__UsbHcSetRootHubPortFeature,
 &TypeInfo__UsbHcClearRootHubPortFeature,
