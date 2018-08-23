@@ -814,14 +814,13 @@ UsbBootReadBlocks (
   USB_BOOT_READ10_CMD       ReadCmd;
   EFI_STATUS                Status;
   UINT16                    Count;
-  UINT16                    CountMax;
+  UINT32                    CountMax;
   UINT32                    BlockSize;
   UINT32                    ByteSize;
   UINT32                    Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
-  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
-  CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
+  CountMax = USB_BOOT_MAX_CARRY_SIZE / BlockSize;
   Status    = EFI_SUCCESS;
 
   while (TotalBlock > 0) {
@@ -893,14 +892,13 @@ UsbBootWriteBlocks (
   USB_BOOT_WRITE10_CMD  WriteCmd;
   EFI_STATUS            Status;
   UINT16                Count;
-  UINT16                CountMax;
+  UINT32                CountMax;
   UINT32                BlockSize;
   UINT32                ByteSize;
   UINT32                Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
-  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
-  CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
+  CountMax = USB_BOOT_MAX_CARRY_SIZE / BlockSize;
   Status    = EFI_SUCCESS;
 
   while (TotalBlock > 0) {
@@ -972,14 +970,13 @@ UsbBootReadBlocks16 (
   UINT8                     ReadCmd[16];
   EFI_STATUS                Status;
   UINT16                    Count;
-  UINT16                    CountMax;
+  UINT32                    CountMax;
   UINT32                    BlockSize;
   UINT32                    ByteSize;
   UINT32                    Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
-  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
-  CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
+  CountMax = USB_BOOT_MAX_CARRY_SIZE / BlockSize;
   Status    = EFI_SUCCESS;
 
   while (TotalBlock > 0) {
@@ -1049,14 +1046,13 @@ UsbBootWriteBlocks16 (
   UINT8                 WriteCmd[16];
   EFI_STATUS            Status;
   UINT16                Count;
-  UINT16                CountMax;
+  UINT32                CountMax;
   UINT32                BlockSize;
   UINT32                ByteSize;
   UINT32                Timeout;
 
   BlockSize = UsbMass->BlockIoMedia.BlockSize;
-  if (BlockSize == 0){BlockSize = 512;}// ULibfuzzer work around
-  CountMax = (UINT16)(USB_BOOT_MAX_CARRY_SIZE / BlockSize);
+  CountMax = USB_BOOT_MAX_CARRY_SIZE / BlockSize;
   Status    = EFI_SUCCESS;
 
   while (TotalBlock > 0) {
