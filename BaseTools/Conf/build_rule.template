@@ -134,6 +134,12 @@
     <Command.GCC, Command.GCCLD, Command.RVCT>
         # For RVCTCYGWIN CC_FLAGS must be first to work around pathing issues
         "$(CC)" $(CC_FLAGS) -c -o ${dst} $(INC) ${src}
+        echo '"$(CC)" $(CC_FLAGS) -c -o ${dst} $(INC) ${src}' >> $(DEBUG_DIR)(+)build.echo
+        echo '"$(CC)"' > $(DEBUG_DIR)(+)cc.echo
+        echo '$(CC_FLAGS)' > $(DEBUG_DIR)(+)cc_flags.echo
+        echo '$(INC)' > $(DEBUG_DIR)(+)inc.echo
+        echo '${src}' >> $(DEBUG_DIR)(+)src.echo
+
 
     <Command.XCODE>
         "$(CC)" $(CC_FLAGS) -o ${dst} $(INC) ${src}
@@ -226,7 +232,16 @@
     <Command>
         "$(PP)" $(PP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
         Trim --trim-long --source-code -o ${d_path}(+)${s_base}.iii ${d_path}(+)${s_base}.i
-        "$(NASM)" -I${s_path}(+) $(NASM_INC) $(NASM_FLAGS) -o $dst ${d_path}(+)${s_base}.iii
+
+        #"$(NASM)" -I${s_path}(+) $(NASM_FLAGS) -o $dst ${d_path}(+)${s_base}.iii
+        touch ${d_path}(+)blank.c
+        "$(CC)" $(CC_FLAGS) -c -o ${dst} $(INC) ${d_path}(+)blank.c
+        Trim --extract-nasm-FunName -o ${d_path}(+)${s_base}.AsmFunName ${src}
+        #"$(CC)" $(CC_FLAGS) -Wno-error -Wno-return-type -Wno-int-conversion -c -o ${dst} $(INC) ${d_path}(+)${s_base}.c
+        touch $(DEBUG_DIR)(+)cc.echo
+        touch $(DEBUG_DIR)(+)cc_flags.echo
+        touch $(DEBUG_DIR)(+)inc.echo
+        touch $(DEBUG_DIR)(+)src.echo
 
 [Device-Tree-Source-File]
     <InputFile>
@@ -270,9 +285,22 @@
         "$(SLINK)" $(SLINK_FLAGS) /OUT:${dst} @$(OBJECT_FILES_LIST)
 
     <Command.GCC, Command.GCCLD>
-        $(RM) ${dst}
-        "$(SLINK)" cr ${dst} $(SLINK_FLAGS) @$(OBJECT_FILES_LIST)
-    
+        touch ${d_path}/asm2c.c
+        python $(WORKSPACE)/Dongao_tool/asm2cgen.py ${d_path}/../OUTPUT ${d_path}/asm2c.c
+        "$(CC)" $(CC_FLAGS) -Wno-return-type -c $(INC) -o ${d_path}/asm2c.obj  ${d_path}/asm2c.c
+        "$(SLINK)" -o ${dst} $(SLINK_FLAGS) -disable-lazy-loading @$(OBJECT_FILES_LIST) ${d_path}/asm2c.obj
+    #    python $(WORKSPACE)/Dongao_tool/function_gen.py $(DEBUG_DIR)/../ \
+    #           $(DEBUG_DIR)/$(MODULE_NAME)_FunctionTypeInfo.h \
+    #           $(DEBUG_DIR)/$(MODULE_NAME)_FunctionTypeInfo.c \
+    #           $(DEBUG_DIR)/$(MODULE_NAME)_FunctionWarning.txt \
+		#	   --peach 	$(DEBUG_DIR)/$(MODULE_NAME)_FunctionTypeInfo.xml
+    #    $(MD) $(WORKSPACE)/Build/FuncInfo/
+    #    $(CP) $(DEBUG_DIR)/$(MODULE_NAME)_FunctionTypeInfo.c $(WORKSPACE)/Build/FuncInfo/$(MODULE_NAME)_FunctionTypeInfo.c
+    #    $(CP) $(DEBUG_DIR)/$(MODULE_NAME)_FunctionTypeInfo.h $(WORKSPACE)/Build/FuncInfo/$(MODULE_NAME)_FunctionTypeInfo.h
+		#    $(CP) $(DEBUG_DIR)/$(MODULE_NAME)_FunctionTypeInfo.xml $(WORKSPACE)/Build/FuncInfo/$(MODULE_NAME)_FunctionTypeInfo.xml
+		#    "$(CC)" $(CC_FLAGS) -c \
+    #           $(INC) -o ${DEBUG_DIR}/$(MODULE_NAME)_FunctionTypeInfo.obj  ${DEBUG_DIR}/$(MODULE_NAME)_FunctionTypeInfo.c
+
     <Command.RVCT>
         "$(SLINK)" $(SLINK_FLAGS) ${dst} --via $(OBJECT_FILES_LIST)
     
@@ -298,9 +326,47 @@
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST)
 
     <Command.GCC>
-        "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -Wl,--start-group,@$(STATIC_LIBRARY_FILES_LIST),--end-group $(CC_FLAGS) $(DLINK2_FLAGS)
-        "$(OBJCOPY)" $(OBJCOPY_FLAGS) ${dst}
-
+        "$(SLINK)" -o ${dst}.NoOpt.bc @$(STATIC_LIBRARY_FILES_LIST)
+        "$(OPT)" -o ${dst}.internalized.bc -internalize -globaldce -internalize-public-api-list=_ModuleEntryPoint ${dst}.NoOpt.bc
+        "$(OPT)" -o ${dst}.Oz.bc -Oz -internalize -globaldce -internalize-public-api-list=_ModuleEntryPoint ${dst}.NoOpt.bc
+        "$(LLVM-DIS)" ${dst}.Oz.bc -o ${dst}.Oz.ll
+        "$(LLVM-DIS)" ${dst}.internalized.bc -o $(DEBUG_DIR)(+)llvm-IR.ll
+        #"$(DLINK)" -o ${dst} $(DLINK_FLAGS) -Wl,--start-group,${dst}.internalized.bc,--end-group $(CC_FLAGS) $(DLINK2_FLAGS)
+        #"$(OBJCOPY)" $(OBJCOPY_FLAGS) ${dst}
+        touch ${dst}
+        echo ${dst} > ${dst}
+        #"$(OPT)" -dot-callgraph ${dst}.NoOpt.bc -o ${dst}.callgraph_NoOpt.bc
+        #mv callgraph.dot ${dst}.callgraph_NoOpt.dot
+        #"$(OPT)" -dot-callgraph ${dst}.internalized.bc -o ${dst}.callgraph_internalized.bc
+        #mv callgraph.dot ${dst}.callgraph_internalized.dot
+        #Trim --gen-svg-call-graph -o ${dst}.callgraph_internalized.svg ${dst}.callgraph_internalized.dot
+        #dot -Tsvg -o ${dst}.callgraph_internalized.svg ${dst}.callgraph_internalized.dot
+        #"$(OPT)" -dot-callgraph ${dst}.Oz.bc -o ${dst}.callgraph_Oz.bc
+        #mv callgraph.dot ${dst}.callgraph_Oz.dot
+        #Trim --gen-svg-call-graph -o ${dst}.callgraph_Oz.svg ${dst}.callgraph_Oz.dot
+        #dot -Tsvg -o ${dst}.callgraph_Oz.svg ${dst}.callgraph_Oz.dot
+        "$(OPT)" -load GlobalIdRetriever.so -output=$(DEBUG_DIR)(+)llvm-link.dbg -global_symbol ${dst}.internalized.bc > /dev/null
+        "$(OPT)" -load GlobalIdRetriever.so -output=$(DEBUG_DIR)(+)full_callgraph.dbg -global_symbol ${dst}.NoOpt.bc > /dev/null
+        #"$(OPT)" -load DotCallGraph.so -outputFile=$(DEBUG_DIR)(+)llvm-link -print-dot ${dst}.internalized.bc > /dev/null
+        #"$(OPT)" -load DotCallGraph.so -outputFile=$(DEBUG_DIR)(+)full_callgraph -print-dot ${dst}.NoOpt.bc > /dev/null
+        #python $(WORKSPACE)/Dongao_tool/ifgen.py $(DEBUG_DIR)/../ \
+        #       $(DEBUG_DIR)/IfTypeInfo.h \
+        #       $(DEBUG_DIR)/IfTypeInfo.c \
+        #       $(DEBUG_DIR)(+)llvm-link.dbg \
+        #       $(DEBUG_DIR)/Warning.txt \
+        #	      $(DEBUG_DIR)/searchPath.txt
+        #python $(WORKSPACE)/Dongao_tool/cmd_convert.py "$(CC)" $(CC_FLAGS) -c \
+        #       {$(DEBUG_DIR)/searchPath.txt} -o ${DEBUG_DIR}/IfTypeInfo.obj  ${DEBUG_DIR}/IfTypeInfo.c
+        #$(RD) $(WORKSPACE)/Build/InterfaceType/${d_base}
+        #$(MD) $(WORKSPACE)/Build/InterfaceType/${d_base}
+        #$(CP) ${DEBUG_DIR}/IfTypeInfo.c $(WORKSPACE)/Build/InterfaceType/${d_base}/IfTypeInfo.c
+        #$(CP) ${DEBUG_DIR}/IfTypeInfo.h $(WORKSPACE)/Build/InterfaceType/${d_base}/IfTypeInfo.h
+        python $(WORKSPACE)/Dongao_tool/inf_check.py \
+               ${MODULE_DIR}(+)$(MODULE_FILE) \
+               $(WORKSPACE) \
+               $(MODULE_BUILD_DIR) \
+               $(BUILD_DIR)/$(ARCH)/InfCheck/$(MODULE_NAME)/InfWarning.txt \
+               $(BUILD_DIR)/$(ARCH)/inflog.txt
     <Command.GCCLD>
         "$(DLINK)" -o ${dst} $(DLINK_FLAGS) --start-group $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST) --end-group $(DLINK2_FLAGS)
         "$(OBJCOPY)" $(OBJCOPY_FLAGS) ${dst}
@@ -376,18 +442,19 @@
         -$(CP) $(DEBUG_DIR)(+)*.pdb $(OUTPUT_DIR) 
     <Command.GCC, Command.GCCLD>
         $(CP) ${src} $(DEBUG_DIR)(+)$(MODULE_NAME).debug
-        $(OBJCOPY) --strip-unneeded -R .eh_frame ${src}
+        #$(OBJCOPY) --strip-unneeded -R .eh_frame ${src}
 
         #
         #The below 2 lines are only needed for UNIXGCC tool chain, which genereates PE image directly
         #
-        -$(OBJCOPY) $(OBJCOPY_ADDDEBUGFLAG) ${src}
+        #-$(OBJCOPY) $(OBJCOPY_ADDDEBUGFLAG) ${src}
         -$(CP) $(DEBUG_DIR)(+)$(MODULE_NAME).debug $(BIN_DIR)(+)$(MODULE_NAME_GUID).debug
 
-        "$(GENFW)" -e $(MODULE_TYPE) -o ${dst} ${src} $(GENFW_FLAGS)
+        #"$(GENFW)" -e $(MODULE_TYPE) -o ${dst} ${src} $(GENFW_FLAGS)
+        $(CP) ${src} ${dst}
         $(CP) ${dst} $(OUTPUT_DIR)
         $(CP) ${dst} $(BIN_DIR)(+)$(MODULE_NAME_GUID).efi
-        -$(CP) $(DEBUG_DIR)(+)*.map $(OUTPUT_DIR)
+        #-$(CP) $(DEBUG_DIR)(+)*.map $(OUTPUT_DIR)
         
     <Command.XCODE>
         # tool to convert Mach-O to PE/COFF
@@ -647,7 +714,8 @@
 
     <Command.GCC, Command.GCCLD>
         "$(GENFW)" -o $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc -g $(MODULE_GUID) --hiibinpackage $(HII_BINARY_PACKAGES) $(GENFW_FLAGS)
-        "$(RC)" $(RC_FLAGS) $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc ${dst}
+        #"$(RC)" $(RC_FLAGS) $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc ${dst}
+        touch ${dst}
         
     <Command.XCODE, Command.RVCT>
         GenFw -o $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc -g $(MODULE_GUID) --hiibinpackage $(HII_BINARY_PACKAGES)

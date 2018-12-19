@@ -17,6 +17,8 @@
 import Common.LongFilePathOs as os
 import sys
 import re
+import StringIO
+import subprocess as sub
 from io import BytesIO
 
 from optparse import OptionParser
@@ -250,6 +252,118 @@ def TrimPreprocessedFile(Source, Target, ConvertHex, TrimLong):
         EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
     f.writelines(NewLines)
     f.close()
+
+## Convert Nasm assembly function to same name but blank C function
+#
+# enable line number generation option when preprocessing.
+#
+# @param  Source    File to convert
+# @param  Target    File to store the converted content
+#
+def ConvertNasmToC(Source, Target):
+    CreateDirectory(os.path.dirname(Target))
+    print("Steven: source=%s" % Source)
+    print("Steven: Target=%s" % Target)
+
+    try:
+        f = open (Source,'r')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Source)
+    # read whole file
+    Lines = f.readlines()
+    f.close()
+
+    FoundTypedef = False
+    Brace = 0
+    TypedefStart = 0
+    TypedefEnd = 0
+    NewFileContent = []
+    for Index in range(len(Lines)):
+        Line = Lines[Index]
+        print("Steven: Line=%s" % Line)
+        if Line.startswith("global ASM_PFX") and Lines[Index - 1].startswith(";-"):
+            print("Found: Line=%s" % Line)
+            End = Index - 2
+            Begin = Index - 2
+            while (Lines[Begin].find (';--') != 0) and Begin > 0:
+                Begin = Begin - 1
+            if Begin > 0:
+                Begin = Begin + 1
+            else:
+                EdkLogger.error("Nasm2C", "Failed to find C function definition in file %s comments" % Source)
+            print("Found: Begin=%d, End=%d" % (Begin, End))
+            for i in range(0, End-Begin+1):
+                Line = Lines[Begin + i]
+                StripLine =Line.strip().strip(';')
+                print("Begin+i: StripLine=%s" % StripLine)
+                NewFileContent.append(StripLine)
+            NewFileContent.append('{return NULL;}')
+    print("Steven: NewFileContent=")
+    print (NewFileContent)
+    # save all lines trimmed
+    try:
+        f = open (Target,'w')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
+    f.writelines(NewFileContent)
+    f.close()
+
+## Extract Nasm assembly function name
+#
+# @param  Source    Nasm File to extract
+# @param  Target    File to store the assembly function name
+#
+def ExtractNasmFunName(Source, Target):
+    CreateDirectory(os.path.dirname(Target))
+
+    try:
+        f = open (Source,'r')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Source)
+    # read whole file
+    Lines = f.readlines()
+    f.close()
+
+    FoundTypedef = False
+    Brace = 0
+    TypedefStart = 0
+    TypedefEnd = 0
+    NewFileContent = []
+    for Index in range(len(Lines)):
+        Line = Lines[Index]
+        pattern = re.compile('^\s*global\s+ASM_PFX')
+        MatchList = pattern.findall(Line)
+        if MatchList != []:
+            print("Found: Line=%s" % Line)
+            FunName = re.findall(r'[^()]+', Line)[1]
+            print("FunName=%s" % FunName)
+            NewFileContent.append(FunName)
+            NewFileContent.append("\n")
+    print("NewFileContent=")
+    print (NewFileContent)
+    # save all lines trimmed
+    try:
+        f = open (Target,'w')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
+    f.writelines(NewFileContent)
+    f.close()
+
+## Generate svg format call graph from dot file
+#
+# @param  Source    Nasm File to extract
+# @param  Target    File to store the assembly function name
+#
+def GenerateSvgCallGraph(Source, Target):
+    p = sub.Popen(['stat', '-c', '%s', Source],stdout=sub.PIPE,stderr=sub.PIPE)
+    output, errors = p.communicate()
+    print Source + " size = " + output
+    if int(output) < 102400:
+      p = sub.Popen(['dot', '-Tsvg', '-o', Target, Source],stdout=sub.PIPE,stderr=sub.PIPE)
+      output, errors = p.communicate()
+    else:
+      print Source + "is too bigger than 100KB. " + "Skip its svg call graph generation!"
+
 
 ## Trim preprocessed VFR file
 #
@@ -597,6 +711,12 @@ def TrimEdkSourceCode(Source, Target):
 #
 def Options():
     OptionList = [
+        make_option("-n", "--nasm-2-c", dest="FileType", const="Nasm", action="store_const",
+                          help="The input file is nasm assembly source code"),
+        make_option("-e", "--extract-nasm-FunName", dest="FileType", const="ExtractNasm", action="store_const",
+                          help="The input file is nasm assembly source code"),
+        make_option("-g", "--gen-svg-call-graph", dest="FileType", const="CallGraph", action="store_const",
+                          help="The input file is dot format"),
         make_option("-s", "--source-code", dest="FileType", const="SourceCode", action="store_const",
                           help="The input file is preprocessed source code, including C or assembly code"),
         make_option("-r", "--vfr-file", dest="FileType", const="Vfr", action="store_const",
@@ -686,6 +806,16 @@ def Main():
             TrimEdkSources(InputFile, CommandOptions.OutputFile)
         elif CommandOptions.FileType == "VfrOffsetBin":
             GenerateVfrBinSec(CommandOptions.ModuleName, CommandOptions.DebugDir, CommandOptions.OutputFile)
+        elif CommandOptions.FileType == "Nasm":
+            if CommandOptions.OutputFile == None:
+                CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.c'
+            ConvertNasmToC(InputFile, CommandOptions.OutputFile)
+        elif CommandOptions.FileType == "ExtractNasm":
+            if CommandOptions.OutputFile == None:
+                CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.txt'
+            ExtractNasmFunName(InputFile, CommandOptions.OutputFile)
+        elif CommandOptions.FileType == "CallGraph":
+            GenerateSvgCallGraph(InputFile, CommandOptions.OutputFile)
         else :
             if CommandOptions.OutputFile is None:
                 CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
