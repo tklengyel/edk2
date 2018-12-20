@@ -22,7 +22,9 @@ def MergeDict(a, b):
         if k in a:
             PrintDict(a)
             PrintDict(b)
-            raise ValueError("confilct dict merge for key {0}".format(k))
+            e = ValueError("conflict dict merge for key {0}".format(k))
+            e.conflict = k
+            raise e
         a[k] = b[k]
 
 def PrintDict(d):
@@ -30,10 +32,12 @@ def PrintDict(d):
         print "{0}:{1}".format(k, v)
 
 class InfFile(object):
-    def __init__(self, path):
+    def __init__(self, path, output):
+        self.output = output
         self.path = path
         self.rewriter = FileRewriter(path)
         self._Parse(FileBuffer(path))
+
 
     def __str__(self):
         return self.path
@@ -87,9 +91,10 @@ class InfFile(object):
                     try:
                         MergeDict(self.section[k], self.section[key])
                     except ValueError as e:
+
+                        self.output.write("\nconflict content {0} in inf file: {1}\n".format(e.conflict, self.path))
                         print "exception when parsing {0}".format(self.path)
                         print e.message
-                        raise e
                 else:
                     self.section[k] = copy.copy(self.section[key])
 
@@ -153,13 +158,15 @@ class InfFile(object):
 
 
 class InfChecker(object):
-    def __init__(self, module, edk2_path):
+    def __init__(self, module, edk2_path, output):
         self.edk2_path = edk2_path
         self.module = module
-        self.inf = InfFile(module.get_inf_path())
+        self.inf = InfFile(module.get_inf_path(), output)
+        self.output = output
         #content is Line
         self.del_list = []
-    def CheckLib(self, warning):
+    def CheckLib(self):
+        warning = self.output
         module = self.module
         if module.module_name.lower() == "secmain":
             print "secmain module can not be checked"
@@ -176,7 +183,7 @@ class InfChecker(object):
         lib_name_dict = {}  # key is lib name,value is lib(Edk2ModuleDir)
         used_lib_set = set()
         for lib in module_set:
-            inf = InfFile(lib.get_inf_path())
+            inf = InfFile(lib.get_inf_path(),self.output)
             name_list = inf.GetLibName(lib.makefile.macro["ARCH"])
             for name in name_list:
                 # NULL LIBRARY_CLASS will be used by dsc,not list in inf ,so skip it.
@@ -233,14 +240,16 @@ class InfChecker(object):
             rewriter.OverWrite(x.lineno, "")
         rewriter.Write(self.inf.path)
 
-    def CheckProtocols(self, warning):
-        return self._CheckGuid("Protocols", warning)
-    def CheckGuids(self, warning):
-        return self._CheckGuid("Guids", warning)
-    def CheckPpis(self, warning):
-        return self._CheckGuid("Ppis", warning)
+    def CheckProtocols(self):
 
-    def _CheckGuid(self, sec, warning):
+        return self._CheckGuid("Protocols")
+    def CheckGuids(self):
+        return self._CheckGuid("Guids")
+    def CheckPpis(self):
+        return self._CheckGuid("Ppis")
+
+    def _CheckGuid(self, sec):
+        warning = self.output
         #section could be [Guids],[Protocols],[Ppis]
         module = self.module
         inf = self.inf
@@ -273,14 +282,15 @@ class SymbolChecker(object):
     #compare opt_callgraph and full_callgraph
     #check function and global variable except static.
     #parameter CallGraph
-    def __init__(self, module, edk2_path):
+    def __init__(self, module, edk2_path, output):
         self.edk2_path = edk2_path
         self.opt_callgraph = GlobalSymbol(os.path.join(edk2_path, os.path.pardir), module.get_callgraph())
         self.full_callgraph = GlobalSymbol(os.path.join(edk2_path, os.path.pardir), module.get_full_callgraph())
         self.module = module
-
-    def CheckGlobalVar(self, warning):
+        self.output = output
+    def CheckGlobalVar(self):
         #check global var in thie module, don;t include library.
+        warning = self.output
         src_list = self.module.get_src_without_AUTOGEN()
         var_dict = self._CheckGlobalVar(src_list)
         for key in var_dict:
@@ -305,7 +315,8 @@ class SymbolChecker(object):
             result[file].extend(f for f in full_dict[file] if f not in opt_dict[file])
         return result
 
-    def CheckFunc(self, warning):
+    def CheckFunc(self):
+        warning = self.output
         src_list = self.module.get_src_without_AUTOGEN()
         func_dict = self._CheckFunc(src_list)
 
@@ -345,14 +356,14 @@ def Run():
     module = Edk2ModuleDir(args.module_dir)
     warning = StringIO()
 
-    checker = InfChecker(module, args.edk2_path)
-    checker.CheckLib(warning)
-    checker.CheckProtocols(warning)
-    checker.CheckPpis(warning)
-    checker.CheckGuids(warning)
-    symbol_checker = SymbolChecker(module, args.edk2_path)
-    func_dict = symbol_checker.CheckFunc(warning)
-    var_dict = symbol_checker.CheckGlobalVar(warning)
+    checker = InfChecker(module, args.edk2_path,warning)
+    checker.CheckLib()
+    checker.CheckProtocols()
+    checker.CheckPpis()
+    checker.CheckGuids()
+    symbol_checker = SymbolChecker(module, args.edk2_path,warning)
+    func_dict = symbol_checker.CheckFunc()
+    var_dict = symbol_checker.CheckGlobalVar()
     content = warning.getvalue()
     if len(content) > 0:
         par_dir = os.path.dirname(args.warn_path)
