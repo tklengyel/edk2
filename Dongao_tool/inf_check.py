@@ -92,7 +92,8 @@ class InfFile(object):
                         MergeDict(self.section[k], self.section[key])
                     except ValueError as e:
 
-                        self.output.write("\nconflict content {0} in inf file: {1}\n".format(e.conflict, self.path))
+                        self.output.write("\nrepeat content {0} in inf file: {1}\n".format(e.conflict, self.path))
+                        log.write("\nrepeat content {0} in inf file: {1}\n".format(e.conflict, self.path))
                         print "exception when parsing {0}".format(self.path)
                         print e.message
                 else:
