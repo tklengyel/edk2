@@ -1,0 +1,23 @@
+#include <PiDxe.h>
+#include <Library/BaseLib.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/UefiLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
+#include "PlatformConfig.h"
+#include <Library/DevicePathLib.h>
+#include <Library/HiiLib.h>
+#include <Library/PrintLib.h>
+#include <Library/UefiHiiServicesLib.h>
+#include <Protocol/DevicePath.h>
+#include <Protocol/GraphicsOutput.h>
+#include <Protocol/HiiConfigAccess.h>
+#include <Guid/MdeModuleHii.h>
+#include "Platform.h"
+typedef struct {
+VENDOR_DEVICE_PATH       VendorDevicePath;
+EFI_DEVICE_PATH_PROTOCOL End;
+} PKG_DEVICE_PATH;

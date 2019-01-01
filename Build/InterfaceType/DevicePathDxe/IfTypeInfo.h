@@ -1,0 +1,11 @@
+#include <Uefi.h>
+#include <Protocol/DevicePathUtilities.h>
+#include <Protocol/DevicePathToText.h>
+#include <Protocol/DevicePathFromText.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/DevicePathLib.h>
+#include <Library/PcdLib.h>
+#include <PiDxe.h>
+#include <Library/BaseLib.h>
+#include <Library/DebugLib.h>

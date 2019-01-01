@@ -1,0 +1,11 @@
+#include <Uefi.h>
+#include <Protocol/HiiDatabase.h>
+#include <Protocol/GraphicsOutput.h>
+#include <Protocol/HiiImageEx.h>
+#include <Protocol/PlatformLogo.h>
+#include <Protocol/HiiPackageList.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/DebugLib.h>
+#include <PiDxe.h>
+#include <Library/BaseLib.h>
+#include <Library/UefiDriverEntryPoint.h>

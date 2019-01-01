@@ -1,0 +1,14 @@
+#include <IndustryStandard/Pci.h>
+#include <IndustryStandard/Virtio.h>
+#include <Protocol/PciIo.h>
+#include <Protocol/PciRootBridgeIo.h>
+#include <Protocol/VirtioDevice.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/DebugLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+#include "Virtio10.h"
+#include <Uefi.h>
+#include <Library/BaseLib.h>
+#include <Library/UefiDriverEntryPoint.h>

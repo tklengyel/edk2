@@ -1,0 +1,10 @@
+#include <Uefi.h>
+#include <Protocol/Security.h>
+#include <Protocol/Security2.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <Library/SecurityManagementLib.h>
+#include "Defer3rdPartyImageLoad.h"
+#include <PiDxe.h>
+#include <Library/BaseLib.h>

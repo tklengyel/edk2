@@ -1,0 +1,17 @@
+#include <Base.h>
+#include <Library/SynchronizationLib.h>
+#include "XenBusDxe.h"
+#include <Library/PrintLib.h>
+#include "XenBus.h"
+#include "GrantTable.h"
+#include "XenStore.h"
+#include "EventChannel.h"
+#include <IndustryStandard/Xen/io/xenbus.h>
+#include <IndustryStandard/Xen/hvm/params.h>
+#include <Library/XenHypercallLib.h>
+#include <IndustryStandard/Xen/memory.h>
+#include <Library/DebugLib.h>
+#include <Uefi.h>
+#include <Library/BaseLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiDriverEntryPoint.h>

@@ -1,0 +1,17 @@
+#include <PiPei.h>
+#include <Library/DebugLib.h>
+#include <Library/PeimEntryPoint.h>
+#include <Library/BaseLib.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/PeiServicesLib.h>
+#include <Library/PcdLib.h>
+#include <Library/UefiCpuLib.h>
+#include <Library/DebugAgentLib.h>
+#include <Library/IoLib.h>
+#include <Library/PeCoffLib.h>
+#include <Library/PeCoffGetEntryPointLib.h>
+#include <Library/PeCoffExtraActionLib.h>
+#include <Library/ExtractGuidedSectionLib.h>
+#include <Library/LocalApicLib.h>
+#include <Library/PciCf8Lib.h>
+#include <Ppi/TemporaryRamSupport.h>

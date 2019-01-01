@@ -1,0 +1,12 @@
+#include <Uefi.h>
+#include <Library/BaseLib.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <IndustryStandard/Acpi.h>
+#include <IndustryStandard/Pci.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/UefiLib.h>
+#include <Protocol/PciIo.h>
+#include <Protocol/XenIo.h>

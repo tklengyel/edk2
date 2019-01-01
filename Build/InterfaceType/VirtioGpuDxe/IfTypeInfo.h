@@ -1,0 +1,15 @@
+#include <Library/VirtioLib.h>
+#include "VirtioGpu.h"
+#include <Library/MemoryAllocationLib.h>
+#include <Library/DevicePathLib.h>
+#include <Library/PrintLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+#include <Protocol/ComponentName2.h>
+#include <Protocol/DevicePath.h>
+#include <Protocol/DriverBinding.h>
+#include <Protocol/PciIo.h>
+#include <Uefi.h>
+#include <Library/BaseLib.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiDriverEntryPoint.h>

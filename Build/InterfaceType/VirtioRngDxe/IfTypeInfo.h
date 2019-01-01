@@ -1,0 +1,10 @@
+#include <Library/BaseMemoryLib.h>
+#include <Library/DebugLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+#include <Library/VirtioLib.h>
+#include "VirtioRng.h"
+#include <Uefi.h>
+#include <Library/BaseLib.h>
+#include <Library/UefiDriverEntryPoint.h>

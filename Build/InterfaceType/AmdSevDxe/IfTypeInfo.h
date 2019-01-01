@@ -1,0 +1,10 @@
+#include <PiDxe.h>
+#include <Library/BaseLib.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/DxeServicesTableLib.h>
+#include <Library/MemEncryptSevLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/PcdLib.h>

@@ -1,0 +1,10 @@
+#include <Library/UefiBootServicesTableLib.h>
+#include "VirtioNet.h"
+#include <Library/MemoryAllocationLib.h>
+#include <Library/UefiLib.h>
+#include <Library/BaseLib.h>
+#include <Library/BaseMemoryLib.h>
+#include <Library/DevicePathLib.h>
+#include <Uefi.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiDriverEntryPoint.h>

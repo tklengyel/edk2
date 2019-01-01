@@ -1,0 +1,9 @@
+#include <PiDxe.h>
+#include <Library/BaseLib.h>
+#include <Library/DebugLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiDriverEntryPoint.h>
+#include <Protocol/AcpiTable.h>
+#include <Protocol/FirmwareVolume2.h>
+#include <Library/PcdLib.h>
+#include <IndustryStandard/Acpi.h>
