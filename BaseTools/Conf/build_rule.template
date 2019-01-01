@@ -298,7 +298,25 @@
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST)
 
     <Command.GCC>
-        "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -Wl,--start-group,@$(STATIC_LIBRARY_FILES_LIST),--end-group $(CC_FLAGS) $(DLINK2_FLAGS)
+        if [ -e $(WORKSPACE)/Build/InterfaceType/${d_base}/IfTypeInfo.c ]; \
+        then \
+          echo find $(WORKSPACE)/Build/InterfaceType/${d_base}/IfTypeInfo.c!; \
+          "$(CC)" $(CC_FLAGS) -c $(INC) -o ${d_path}/IfTypeInfo.obj  $(WORKSPACE)/Build/InterfaceType/${d_base}/IfTypeInfo.c; \
+          "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -Wl,--start-group,@$(STATIC_LIBRARY_FILES_LIST),--end-group ${d_path}/IfTypeInfo.obj $(CC_FLAGS) $(DLINK2_FLAGS); \
+          $(MD) $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH); \
+          "$(DLINK)" -o $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.dll $(DLINK_FLAGS) -Wl,--entry,TypeInfo_ModuleEntryPoint -u TypeInfo_ModuleEntryPoint -Wl,--start-group,@$(STATIC_LIBRARY_FILES_LIST),--end-group ${d_path}/IfTypeInfo.obj $(CC_FLAGS) $(DLINK2_FLAGS); \
+          "$(OBJCOPY)" $(OBJCOPY_FLAGS) $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.dll; \
+          $(OBJCOPY) --strip-unneeded -R .eh_frame $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.dll; \
+          "$(GENFW)" -e $(MODULE_TYPE) -o $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.efi $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.dll $(GENFW_FLAGS); \
+          $(MD) $(WORKSPACE)/Build/TypeInfo/$(TARGET)/$(ARCH); \
+          $(CP) $(WORKSPACE)/Build/TypeInfoTmp/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.efi $(WORKSPACE)/Build/TypeInfo/$(TARGET)/$(ARCH)/${d_base}_TypeInfo.efi; \
+        else \
+          echo Not find $(WORKSPACE)/Build/InterfaceType/${d_base}/IfTypeInfo.c; \
+          touch ${d_path}/BlankTypeInfo.c; \
+          echo "void *TypeInfoList[] = {0};" > ${d_path}/BlankTypeInfo.c; \
+          "$(CC)" $(CC_FLAGS) -c $(INC) -o ${d_path}/BlankTypeInfo.obj  ${d_path}/BlankTypeInfo.c; \
+          "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -Wl,--start-group,@$(STATIC_LIBRARY_FILES_LIST),--end-group ${d_path}/BlankTypeInfo.obj $(CC_FLAGS) $(DLINK2_FLAGS); \
+        fi
         "$(OBJCOPY)" $(OBJCOPY_FLAGS) ${dst}
 
     <Command.GCCLD>

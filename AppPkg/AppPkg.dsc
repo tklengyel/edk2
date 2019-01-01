@@ -133,7 +133,7 @@
 #### Un-comment the following line to build Lua.
 #  AppPkg/Applications/Lua/Lua.inf
 
-
+  AppPkg/Applications/Mfuzzer/MFuzzer.inf
 ##############################################################################
 #
 # Specify whether we are running in an emulation environment, or not.

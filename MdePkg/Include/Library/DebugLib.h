@@ -273,7 +273,30 @@ DebugPrintLevelEnabled (
 #define _DEBUG(Expression)   DebugPrint Expression
 #endif
 
-/**
+VOID
+SerialOutput2(
+  IN  CONST CHAR8      *String
+  );
+
+VOID
+SerialOutput(
+  IN  CONST CHAR8      *String
+  );
+
+VOID
+Num2Str64bit(
+  IN  UINT64 Number,
+  IN  CHAR8* NumStr
+  );
+
+VOID
+Num2Str8bit(
+  IN  UINT8 Number,
+  IN  CHAR8* NumStr
+  );
+
+void __asan_load8(unsigned long addr);
+/**  
   Macro that calls DebugAssert() if an expression evaluates to FALSE.
 
   If MDEPKG_NDEBUG is not defined and the DEBUG_PROPERTY_DEBUG_ASSERT_ENABLED
@@ -290,6 +313,7 @@ DebugPrintLevelEnabled (
     do {                            \
       if (DebugAssertEnabled ()) {  \
         if (!(Expression)) {        \
+          __asan_load8(0x0);        \
           _ASSERT (Expression);     \
           ANALYZER_UNREACHABLE ();  \
         }                           \
@@ -339,6 +363,7 @@ DebugPrintLevelEnabled (
     do {                                                                                 \
       if (DebugAssertEnabled ()) {                                                       \
         if (EFI_ERROR (StatusParameter)) {                                               \
+          __asan_load8(0x0);                                                             \
           DEBUG ((EFI_D_ERROR, "\nASSERT_EFI_ERROR (Status = %r)\n", StatusParameter));  \
           _ASSERT (!EFI_ERROR (StatusParameter));                                        \
         }                                                                                \
@@ -365,6 +390,7 @@ DebugPrintLevelEnabled (
     do {                                                                \
       if (DebugAssertEnabled ()) {                                      \
         if (RETURN_ERROR (StatusParameter)) {                           \
+          __asan_load8(0x0);                                            \
           DEBUG ((DEBUG_ERROR, "\nASSERT_RETURN_ERROR (Status = %r)\n", \
             StatusParameter));                                          \
           _ASSERT (!RETURN_ERROR (StatusParameter));                    \

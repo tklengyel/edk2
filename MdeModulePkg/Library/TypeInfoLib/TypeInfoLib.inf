@@ -1,0 +1,42 @@
+## @file
+#
+#  Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php.
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = TypeInfoLib
+  MODULE_UNI_FILE                = TypeInfoLib.uni
+  FILE_GUID                      = A069C0C2-6304-497f-98A1-581EFD4F8DAD
+  MODULE_TYPE                    = DXE_CORE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = TypeInfoLib|DXE_DRIVER DXE_RUNTIME_DRIVER DXE_SAL_DRIVER DXE_SMM_DRIVER UEFI_APPLICATION UEFI_DRIVER DXE_CORE SMM_CORE
+  CONSTRUCTOR                    = TypeInfoLibConstructor
+  DESTRUCTOR                     = TypeInfoLibDestructor
+
+#
+#  VALID_ARCHITECTURES           = IA32 X64 
+#
+
+[Sources]
+  TypeInfo.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiBootServicesTableLib
+  DebugLib
+
+[Protocols]
+  gInterfaceTypeInfoProtocolGuid   ## SOMETIMES_PRODUCES

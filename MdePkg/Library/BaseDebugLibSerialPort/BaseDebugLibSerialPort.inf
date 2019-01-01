@@ -30,6 +30,7 @@
 
 [Sources]
   DebugLib.c
+  SerialDebug.c
 
 [Packages]
   MdePkg/MdePkg.dec

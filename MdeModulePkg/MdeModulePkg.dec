@@ -626,6 +626,8 @@
 #   0x80000005 | Invalid background color specified.
 #   0x80000006 | Incorrect error code provided.
 #
+  ## Include/Protocol/TypeInfo.h
+  gInterfaceTypeInfoProtocolGuid = { 0x56d307ee, 0xa115, 0x4e8c, { 0x8a, 0xf8, 0xff, 0xfe, 0xc4, 0xd4, 0xa9, 0x77 } }
 
 [PcdsFeatureFlag]
   ## Indicates if the platform can support update capsule across a system reset.<BR><BR>

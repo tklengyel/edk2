@@ -1,0 +1,50 @@
+## @file
+#   A uefi module fuzzer (UMfuzzer) executor which do the fuzz testing on the 
+#   Uefi modules according to modules' published interfaces type info.
+#
+#   Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+#   This program and the accompanying materials
+#   are licensed and made available under the terms and conditions of the BSD License
+#   which accompanies this distribution. The full text of the license may be found at
+#   http://opensource.org/licenses/bsd-license.
+#
+#   THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = UMfuzzer
+  FILE_GUID                      = 5A08C180-5FE3-432c-9DF3-FE0799951A3E
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = ShellCEntryLib
+
+[Sources]
+  UMfuzzer.c
+  UMfuzzer.h
+  DpUtilities.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ShellPkg/ShellPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  ShellCEntryLib
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  HiiLib
+  DxeServicesLib
+  PeCoffGetEntryPointLib
+  ShellLib
+
+[Protocols]
+  gInterfaceTypeInfoProtocolGuid
+  gEfiLoadedImageProtocolGuid                             ## CONSUMES
+  gEfiDriverBindingProtocolGuid                           ## SOMETIMES_CONSUMES
+  gEfiComponentName2ProtocolGuid                          ## SOMETIMES_CONSUMES
+  gEfiLoadedImageDevicePathProtocolGuid                   ## SOMETIMES_CONSUMES
