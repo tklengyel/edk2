@@ -9562,108 +9562,108 @@ Invoke_UsbBootDetectMedia(){
 }
 
 
-EFI_STATUS
-EFIAPI
-Invoke_UsbBootReadBlocks(){
-  EFI_STATUS  Status;
-  USB_MASS_DEVICE *  Parameter_1;
-  UINT32  Parameter_2;
-  UINTN  Parameter_3;
-  UINT8 *  Parameter_4;
+// EFI_STATUS
+// EFIAPI
+// Invoke_UsbBootReadBlocks(){
+  // EFI_STATUS  Status;
+  // USB_MASS_DEVICE *  Parameter_1;
+  // UINT32  Parameter_2;
+  // UINTN  Parameter_3;
+  // UINT8 *  Parameter_4;
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks,1,(void*)&Parameter_1);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks,2,(void*)&Parameter_2);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks,3,(void*)&Parameter_3);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks,3,(void*)&Parameter_3);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks,4,(void*)&Parameter_4);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks,4,(void*)&Parameter_4);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  UsbBootReadBlocks(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
-  return RETURN_SUCCESS;
-}
-
-
-EFI_STATUS
-EFIAPI
-Invoke_UsbBootWriteBlocks(){
-  EFI_STATUS  Status;
-  USB_MASS_DEVICE *  Parameter_1;
-  UINT32  Parameter_2;
-  UINTN  Parameter_3;
-  UINT8 *  Parameter_4;
-
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,3,(void*)&Parameter_3);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,4,(void*)&Parameter_4);
-  if (EFI_ERROR(Status)) { return Status; }
-
-  UsbBootWriteBlocks(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
-  return RETURN_SUCCESS;
-}
+  // UsbBootReadBlocks(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
+  // return RETURN_SUCCESS;
+// }
 
 
-EFI_STATUS
-EFIAPI
-Invoke_UsbBootReadBlocks16(){
-  EFI_STATUS  Status;
-  USB_MASS_DEVICE *  Parameter_1;
-  UINT64  Parameter_2;
-  UINTN  Parameter_3;
-  UINT8 *  Parameter_4;
+// EFI_STATUS
+// EFIAPI
+// Invoke_UsbBootWriteBlocks(){
+  // EFI_STATUS  Status;
+  // USB_MASS_DEVICE *  Parameter_1;
+  // UINT32  Parameter_2;
+  // UINTN  Parameter_3;
+  // UINT8 *  Parameter_4;
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,1,(void*)&Parameter_1);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,2,(void*)&Parameter_2);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,3,(void*)&Parameter_3);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,3,(void*)&Parameter_3);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,4,(void*)&Parameter_4);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks,4,(void*)&Parameter_4);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  UsbBootReadBlocks16(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
-  return RETURN_SUCCESS;
-}
+  // UsbBootWriteBlocks(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
+  // return RETURN_SUCCESS;
+// }
 
 
-EFI_STATUS
-EFIAPI
-Invoke_UsbBootWriteBlocks16(){
-  EFI_STATUS  Status;
-  USB_MASS_DEVICE *  Parameter_1;
-  UINT64  Parameter_2;
-  UINTN  Parameter_3;
-  UINT8 *  Parameter_4;
+// EFI_STATUS
+// EFIAPI
+// Invoke_UsbBootReadBlocks16(){
+  // EFI_STATUS  Status;
+  // USB_MASS_DEVICE *  Parameter_1;
+  // UINT64  Parameter_2;
+  // UINTN  Parameter_3;
+  // UINT8 *  Parameter_4;
 
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,1,(void*)&Parameter_1);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,1,(void*)&Parameter_1);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,2,(void*)&Parameter_2);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,2,(void*)&Parameter_2);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,3,(void*)&Parameter_3);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,3,(void*)&Parameter_3);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,4,(void*)&Parameter_4);
-  if (EFI_ERROR(Status)) { return Status; }
+  // Status = GenParameter(&TypeInfo__UsbBootReadBlocks16,4,(void*)&Parameter_4);
+  // if (EFI_ERROR(Status)) { return Status; }
 
-  UsbBootWriteBlocks16(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
-  return RETURN_SUCCESS;
-}
+  // UsbBootReadBlocks16(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
+  // return RETURN_SUCCESS;
+// }
+
+
+// EFI_STATUS
+// EFIAPI
+// Invoke_UsbBootWriteBlocks16(){
+  // EFI_STATUS  Status;
+  // USB_MASS_DEVICE *  Parameter_1;
+  // UINT64  Parameter_2;
+  // UINTN  Parameter_3;
+  // UINT8 *  Parameter_4;
+
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,1,(void*)&Parameter_1);
+  // if (EFI_ERROR(Status)) { return Status; }
+
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,2,(void*)&Parameter_2);
+  // if (EFI_ERROR(Status)) { return Status; }
+
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,3,(void*)&Parameter_3);
+  // if (EFI_ERROR(Status)) { return Status; }
+
+  // Status = GenParameter(&TypeInfo__UsbBootWriteBlocks16,4,(void*)&Parameter_4);
+  // if (EFI_ERROR(Status)) { return Status; }
+
+  // UsbBootWriteBlocks16(Parameter_1,Parameter_2,Parameter_3,Parameter_4);
+  // return RETURN_SUCCESS;
+// }
 
 
 EFI_STATUS
@@ -10084,10 +10084,10 @@ FUNCTION_TYPE_MAP EFI_UsbMassStorageDxe_FunctionTypeMapList []={
 {(void *)(UINTN)UsbScsiModeSense, &TypeInfo__UsbScsiModeSense, (void *)(UINTN)Invoke_UsbScsiModeSense},
 {(void *)(UINTN)UsbBootGetParams, &TypeInfo__UsbBootGetParams, (void *)(UINTN)Invoke_UsbBootGetParams},
 {(void *)(UINTN)UsbBootDetectMedia, &TypeInfo__UsbBootDetectMedia, (void *)(UINTN)Invoke_UsbBootDetectMedia},
-{(void *)(UINTN)UsbBootReadBlocks, &TypeInfo__UsbBootReadBlocks, (void *)(UINTN)Invoke_UsbBootReadBlocks},
-{(void *)(UINTN)UsbBootWriteBlocks, &TypeInfo__UsbBootWriteBlocks, (void *)(UINTN)Invoke_UsbBootWriteBlocks},
-{(void *)(UINTN)UsbBootReadBlocks16, &TypeInfo__UsbBootReadBlocks16, (void *)(UINTN)Invoke_UsbBootReadBlocks16},
-{(void *)(UINTN)UsbBootWriteBlocks16, &TypeInfo__UsbBootWriteBlocks16, (void *)(UINTN)Invoke_UsbBootWriteBlocks16},
+//{(void *)(UINTN)UsbBootReadBlocks, &TypeInfo__UsbBootReadBlocks, (void *)(UINTN)Invoke_UsbBootReadBlocks},
+//{(void *)(UINTN)UsbBootWriteBlocks, &TypeInfo__UsbBootWriteBlocks, (void *)(UINTN)Invoke_UsbBootWriteBlocks},
+//{(void *)(UINTN)UsbBootReadBlocks16, &TypeInfo__UsbBootReadBlocks16, (void *)(UINTN)Invoke_UsbBootReadBlocks16},
+//{(void *)(UINTN)UsbBootWriteBlocks16, &TypeInfo__UsbBootWriteBlocks16, (void *)(UINTN)Invoke_UsbBootWriteBlocks16},
 {(void *)(UINTN)UsbClearEndpointStall, &TypeInfo__UsbClearEndpointStall, (void *)(UINTN)Invoke_UsbClearEndpointStall},
 {(void *)(UINTN)UsbCbiInit, &TypeInfo__UsbCbiInit, (void *)(UINTN)Invoke_UsbCbiInit},
 {(void *)(UINTN)UsbCbiSendCommand, &TypeInfo__UsbCbiSendCommand, (void *)(UINTN)Invoke_UsbCbiSendCommand},
