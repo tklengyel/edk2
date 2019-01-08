@@ -1262,7 +1262,7 @@ AsciiStriCmp (
 
   UpperFirstString  = InternalBaseLibAsciiToUpper (*FirstString);
   UpperSecondString = InternalBaseLibAsciiToUpper (*SecondString);
-  while ((*FirstString != '\0') && (UpperFirstString == UpperSecondString)) {
+  while ((*FirstString != '\0') && (*SecondString != '\0') && (UpperFirstString == UpperSecondString)) {
     FirstString++;
     SecondString++;
     UpperFirstString  = InternalBaseLibAsciiToUpper (*FirstString);
@@ -1746,7 +1746,7 @@ AsciiStrToUnicodeStr (
 
   ReturnValue = Destination;
   while (*Source != '\0') {
-    *(Destination++) = (CHAR16) *(Source++);
+    *(Destination++) = (CHAR16)(UINT8) *(Source++);
   }
   //
   // End the Destination with a NULL.

@@ -3,6 +3,7 @@
 #
 #  Copyright (c) 2014, Hewlett-Packard Development Company, L.P.<BR>
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2018, Hewlett Packard Enterprise Development, L.P.<BR>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -36,14 +37,13 @@ from subprocess import *
 from Common import Misc as Utils
 
 from Common.LongFilePathSupport import OpenLongFilePath as open
-from Common.LongFilePathSupport import LongFilePath
 from Common.TargetTxtClassObject import *
 from Common.ToolDefClassObject import *
 from Common.DataType import *
 from Common.BuildVersion import gBUILD_VERSION
 from AutoGen.AutoGen import *
 from Common.BuildToolError import *
-from Workspace.WorkspaceDatabase import *
+from Workspace.WorkspaceDatabase import WorkspaceDatabase
 from Common.MultipleWorkspace import MultipleWorkspace as mws
 
 from BuildReport import BuildReport
@@ -52,7 +52,7 @@ from PatchPcdValue.PatchPcdValue import *
 
 import Common.EdkLogger
 import Common.GlobalData as GlobalData
-from GenFds.GenFds import GenFds
+from GenFds.GenFds import GenFds, GenFdsApi
 
 from collections import OrderedDict, defaultdict
 
@@ -827,10 +827,7 @@ class Build():
         GlobalData.gConfDirectory = ConfDirectoryPath
         GlobalData.gDatabasePath = os.path.normpath(os.path.join(ConfDirectoryPath, GlobalData.gDatabasePath))
 
-        if BuildOptions.DisableCache:
-            self.Db         = WorkspaceDatabase(":memory:")
-        else:
-            self.Db = WorkspaceDatabase(GlobalData.gDatabasePath, self.Reparse)
+        self.Db = WorkspaceDatabase()
         self.BuildDatabase = self.Db.BuildObject
         self.Platform = None
         self.ToolChainFamily = None
@@ -933,7 +930,7 @@ class Build():
             if TAB_TOD_DEFINES_FAMILY not in ToolDefinition or Tool not in ToolDefinition[TAB_TOD_DEFINES_FAMILY] \
                or not ToolDefinition[TAB_TOD_DEFINES_FAMILY][Tool]:
                 EdkLogger.warn("build", "No tool chain family found in configuration for %s. Default to MSFT." % Tool)
-                ToolChainFamily.append("MSFT")
+                ToolChainFamily.append(TAB_COMPILER_MSFT)
             else:
                 ToolChainFamily.append(ToolDefinition[TAB_TOD_DEFINES_FAMILY][Tool])
         self.ToolChainFamily = ToolChainFamily
@@ -983,9 +980,6 @@ class Build():
         if ErrorCode != 0:
             EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
-        # create metafile database
-        if not self.Db_Flag:
-            self.Db.InitDatabase()
 
     def InitPreBuild(self):
         self.LoadConfiguration()
@@ -1004,9 +998,8 @@ class Build():
         if 'PREBUILD' in GlobalData.gCommandLineDefines:
             self.Prebuild   = GlobalData.gCommandLineDefines.get('PREBUILD')
         else:
-            self.Db.InitDatabase()
             self.Db_Flag = True
-            Platform = self.Db._MapPlatform(str(self.PlatformFile))
+            Platform = self.Db.MapPlatform(str(self.PlatformFile))
             self.Prebuild = str(Platform.Prebuild)
         if self.Prebuild:
             PrebuildList = []
@@ -1045,7 +1038,7 @@ class Build():
         if 'POSTBUILD' in GlobalData.gCommandLineDefines:
             self.Postbuild = GlobalData.gCommandLineDefines.get('POSTBUILD')
         else:
-            Platform = self.Db._MapPlatform(str(self.PlatformFile))
+            Platform = self.Db.MapPlatform(str(self.PlatformFile))
             self.Postbuild = str(Platform.Postbuild)
         if self.Postbuild:
             PostbuildList = []
@@ -1392,7 +1385,8 @@ class Build():
 
         # genfds
         if Target == 'fds':
-            LaunchCommand(AutoGenObject.GenFdsCommand, AutoGenObject.MakeFileDir)
+            if GenFdsApi(AutoGenObject.GenFdsCommandDict, self.Db):
+                EdkLogger.error("build", COMMAND_FAILURE)
             return True
 
         # run
@@ -2083,13 +2077,7 @@ class Build():
                     self.MakeTime += int(round((time.time() - MakeStart)))
 
                 MakeContiue = time.time()
-                #
-                # Save temp tables to a TmpTableDict.
-                #
-                for Key in Wa.BuildDatabase._CACHE_:
-                    if Wa.BuildDatabase._CACHE_[Key]._RawData and Wa.BuildDatabase._CACHE_[Key]._RawData._Table and Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table:
-                        if TemporaryTablePattern.match(Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table):
-                            TmpTableDict[Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Table] = Wa.BuildDatabase._CACHE_[Key]._RawData._Table.Cur
+
                 #
                 #
                 # All modules have been put in build tasks queue. Tell task scheduler
@@ -2136,7 +2124,8 @@ class Build():
                         # Generate FD image if there's a FDF file found
                         #
                         GenFdsStart = time.time()
-                        LaunchCommand(Wa.GenFdsCommand, os.getcwd())
+                        if GenFdsApi(Wa.GenFdsCommandDict, self.Db):
+                            EdkLogger.error("build", COMMAND_FAILURE)
 
                         #
                         # Create MAP file for all platform FVs after GenFds.
@@ -2231,7 +2220,6 @@ class Build():
             self._BuildModule()
 
         if self.Target == 'cleanall':
-            self.Db.Close()
             RemoveDirectory(os.path.dirname(GlobalData.gDatabasePath), True)
 
     def CreateAsBuiltInf(self):
@@ -2492,10 +2480,7 @@ def Main():
         GlobalData.gCommandLineDefines['ARCH'] = ' '.join(MyBuild.ArchList)
         if not (MyBuild.LaunchPrebuildFlag and os.path.exists(MyBuild.PlatformBuildPath)):
             MyBuild.Launch()
-        # Drop temp tables to avoid database locked.
-        for TmpTableName in TmpTableDict:
-            SqlCommand = """drop table IF EXISTS %s""" % TmpTableName
-            TmpTableDict[TmpTableName].execute(SqlCommand)
+
         #MyBuild.DumpBuildData()
         #
         # All job done, no error found and no exception raised
@@ -2567,7 +2552,7 @@ def Main():
     if MyBuild is not None:
         if not BuildError:
             MyBuild.BuildReport.GenerateReport(BuildDurationStr, LogBuildTime(MyBuild.AutoGenTime), LogBuildTime(MyBuild.MakeTime), LogBuildTime(MyBuild.GenFdsTime))
-        MyBuild.Db.Close()
+
     EdkLogger.SetLevel(EdkLogger.QUIET)
     EdkLogger.quiet("\n- %s -" % Conclusion)
     EdkLogger.quiet(time.strftime("Build end time: %H:%M:%S, %b.%d %Y", time.localtime()))

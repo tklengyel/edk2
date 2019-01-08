@@ -63,6 +63,21 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #define SD_MMC_HC_CTRL_VER            0xFE
 
 //
+// SD Host Controller bits to HOST_CTRL2 register
+//
+#define SD_MMC_HC_CTRL_UHS_MASK       0x0007
+#define SD_MMC_HC_CTRL_UHS_SDR12      0x0000
+#define SD_MMC_HC_CTRL_UHS_SDR25      0x0001
+#define SD_MMC_HC_CTRL_UHS_SDR50      0x0002
+#define SD_MMC_HC_CTRL_UHS_SDR104     0x0003
+#define SD_MMC_HC_CTRL_UHS_DDR50      0x0004
+#define SD_MMC_HC_CTRL_MMC_LEGACY     0x0000
+#define SD_MMC_HC_CTRL_MMC_HS_SDR     0x0001
+#define SD_MMC_HC_CTRL_MMC_HS_DDR     0x0004
+#define SD_MMC_HC_CTRL_MMC_HS200      0x0003
+#define SD_MMC_HC_CTRL_MMC_HS400      0x0005
+
+//
 // The transfer modes supported by SD Host Controller
 // Simplified Spec 3.0 Table 1-2
 //
@@ -134,6 +149,16 @@ typedef struct {
   UINT32   Reserved6:7;       // bit 56:62
   UINT32   Hs400:1;           // bit 63
 } SD_MMC_HC_SLOT_CAP;
+
+//
+// SD Host controller version
+//
+#define SD_MMC_HC_CTRL_VER_100      0x00
+#define SD_MMC_HC_CTRL_VER_200      0x01
+#define SD_MMC_HC_CTRL_VER_300      0x02
+#define SD_MMC_HC_CTRL_VER_400      0x03
+#define SD_MMC_HC_CTRL_VER_410      0x04
+#define SD_MMC_HC_CTRL_VER_420      0x05
 
 /**
   Dump the content of SD/MMC host controller's Capability Register.
@@ -398,7 +423,7 @@ SdMmcHcStopClock (
   @param[in] PciIo          The PCI IO protocol instance.
   @param[in] Slot           The slot number of the SD card to send the command to.
   @param[in] ClockFreq      The max clock frequency to be set. The unit is KHz.
-  @param[in] Capability     The capability of the slot.
+  @param[in] BaseClkFreq    The base clock frequency of host controller in MHz.
 
   @retval EFI_SUCCESS       The clock is supplied successfully.
   @retval Others            The clock isn't supplied successfully.
@@ -409,7 +434,7 @@ SdMmcHcClockSupply (
   IN EFI_PCI_IO_PROTOCOL    *PciIo,
   IN UINT8                  Slot,
   IN UINT64                 ClockFreq,
-  IN SD_MMC_HC_SLOT_CAP     Capability
+  IN UINT32                 BaseClkFreq
   );
 
 /**
@@ -457,7 +482,7 @@ SdMmcHcSetBusWidth (
 
   @param[in] PciIo          The PCI IO protocol instance.
   @param[in] Slot           The slot number of the SD card to send the command to.
-  @param[in] Capability     The capability of the slot.
+  @param[in] BaseClkFreq    The base clock frequency of host controller in MHz.
 
   @retval EFI_SUCCESS       The clock is supplied successfully.
   @retval Others            The clock isn't supplied successfully.
@@ -467,7 +492,7 @@ EFI_STATUS
 SdMmcHcInitClockFreq (
   IN EFI_PCI_IO_PROTOCOL    *PciIo,
   IN UINT8                  Slot,
-  IN SD_MMC_HC_SLOT_CAP     Capability
+  IN UINT32                 BaseClkFreq
   );
 
 /**
@@ -506,6 +531,25 @@ EFI_STATUS
 SdMmcHcInitTimeoutCtrl (
   IN EFI_PCI_IO_PROTOCOL    *PciIo,
   IN UINT8                  Slot
+  );
+
+/**
+  Set SD Host Controller control 2 registry according to selected speed.
+
+  @param[in] ControllerHandle The handle of the controller.
+  @param[in] PciIo            The PCI IO protocol instance.
+  @param[in] Slot             The slot number of the SD card to send the command to.
+  @param[in] Timing           The timing to select.
+
+  @retval EFI_SUCCESS         The timing is set successfully.
+  @retval Others              The timing isn't set successfully.
+**/
+EFI_STATUS
+SdMmcHcUhsSignaling (
+  IN EFI_HANDLE             ControllerHandle,
+  IN EFI_PCI_IO_PROTOCOL    *PciIo,
+  IN UINT8                  Slot,
+  IN SD_MMC_BUS_MODE        Timing
   );
 
 #endif

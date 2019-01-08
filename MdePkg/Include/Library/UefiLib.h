@@ -26,6 +26,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #ifndef __UEFI_LIB_H__
 #define __UEFI_LIB_H__
 
+#include <IndustryStandard/Acpi.h>
+
 #include <Protocol/DriverBinding.h>
 #include <Protocol/DriverConfiguration.h>
 #include <Protocol/ComponentName.h>
@@ -33,6 +35,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Protocol/DriverDiagnostics.h>
 #include <Protocol/DriverDiagnostics2.h>
 #include <Protocol/GraphicsOutput.h>
+#include <Protocol/DevicePath.h>
+#include <Protocol/SimpleFileSystem.h>
 
 #include <Library/BaseLib.h>
 
@@ -1520,4 +1524,143 @@ EfiLocateProtocolBuffer (
   OUT UINTN     *NoProtocols,
   OUT VOID      ***Buffer
   );
+
+/**
+  Open or create a file or directory, possibly creating the chain of
+  directories leading up to the directory.
+
+  EfiOpenFileByDevicePath() first locates EFI_SIMPLE_FILE_SYSTEM_PROTOCOL on
+  FilePath, and opens the root directory of that filesystem with
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL.OpenVolume().
+
+  On the remaining device path, the longest initial sequence of
+  FILEPATH_DEVICE_PATH nodes is node-wise traversed with
+  EFI_FILE_PROTOCOL.Open().
+
+  (As a consequence, if OpenMode includes EFI_FILE_MODE_CREATE, and Attributes
+  includes EFI_FILE_DIRECTORY, and each FILEPATH_DEVICE_PATH specifies a single
+  pathname component, then EfiOpenFileByDevicePath() ensures that the specified
+  series of subdirectories exist on return.)
+
+  The EFI_FILE_PROTOCOL identified by the last FILEPATH_DEVICE_PATH node is
+  output to the caller; intermediate EFI_FILE_PROTOCOL instances are closed. If
+  there are no FILEPATH_DEVICE_PATH nodes past the node that identifies the
+  filesystem, then the EFI_FILE_PROTOCOL of the root directory of the
+  filesystem is output to the caller. If a device path node that is different
+  from FILEPATH_DEVICE_PATH is encountered relative to the filesystem, the
+  traversal is stopped with an error, and a NULL EFI_FILE_PROTOCOL is output.
+
+  @param[in,out] FilePath  On input, the device path to the file or directory
+                           to open or create. The caller is responsible for
+                           ensuring that the device path pointed-to by FilePath
+                           is well-formed. On output, FilePath points one past
+                           the last node in the original device path that has
+                           been successfully processed. FilePath is set on
+                           output even if EfiOpenFileByDevicePath() returns an
+                           error.
+
+  @param[out] File         On error, File is set to NULL. On success, File is
+                           set to the EFI_FILE_PROTOCOL of the root directory
+                           of the filesystem, if there are no
+                           FILEPATH_DEVICE_PATH nodes in FilePath; otherwise,
+                           File is set to the EFI_FILE_PROTOCOL identified by
+                           the last node in FilePath.
+
+  @param[in] OpenMode      The OpenMode parameter to pass to
+                           EFI_FILE_PROTOCOL.Open().
+
+  @param[in] Attributes    The Attributes parameter to pass to
+                           EFI_FILE_PROTOCOL.Open().
+
+  @retval EFI_SUCCESS            The file or directory has been opened or
+                                 created.
+
+  @retval EFI_INVALID_PARAMETER  FilePath is NULL; or File is NULL; or FilePath
+                                 contains a device path node, past the node
+                                 that identifies
+                                 EFI_SIMPLE_FILE_SYSTEM_PROTOCOL, that is not a
+                                 FILEPATH_DEVICE_PATH node.
+
+  @retval EFI_OUT_OF_RESOURCES   Memory allocation failed.
+
+  @return                        Error codes propagated from the
+                                 LocateDevicePath() and OpenProtocol() boot
+                                 services, and from the
+                                 EFI_SIMPLE_FILE_SYSTEM_PROTOCOL.OpenVolume()
+                                 and EFI_FILE_PROTOCOL.Open() member functions.
+**/
+EFI_STATUS
+EFIAPI
+EfiOpenFileByDevicePath (
+  IN OUT EFI_DEVICE_PATH_PROTOCOL  **FilePath,
+  OUT    EFI_FILE_PROTOCOL         **File,
+  IN     UINT64                    OpenMode,
+  IN     UINT64                    Attributes
+  );
+
+/**
+  This function locates next ACPI table in XSDT/RSDT based on Signature and
+  previous returned Table.
+
+  If PreviousTable is NULL:
+  This function will locate the first ACPI table in XSDT/RSDT based on
+  Signature in gEfiAcpi20TableGuid system configuration table first, and then
+  gEfiAcpi10TableGuid system configuration table.
+  This function will locate in XSDT first, and then RSDT.
+  For DSDT, this function will locate XDsdt in FADT first, and then Dsdt in
+  FADT.
+  For FACS, this function will locate XFirmwareCtrl in FADT first, and then
+  FirmwareCtrl in FADT.
+
+  If PreviousTable is not NULL:
+  1. If it could be located in XSDT in gEfiAcpi20TableGuid system configuration
+     table, then this function will just locate next table in XSDT in
+     gEfiAcpi20TableGuid system configuration table.
+  2. If it could be located in RSDT in gEfiAcpi20TableGuid system configuration
+     table, then this function will just locate next table in RSDT in
+     gEfiAcpi20TableGuid system configuration table.
+  3. If it could be located in RSDT in gEfiAcpi10TableGuid system configuration
+     table, then this function will just locate next table in RSDT in
+     gEfiAcpi10TableGuid system configuration table.
+
+  It's not supported that PreviousTable is not NULL but PreviousTable->Signature
+  is not same with Signature, NULL will be returned.
+
+  @param Signature          ACPI table signature.
+  @param PreviousTable      Pointer to previous returned table to locate next
+                            table, or NULL to locate first table.
+
+  @return Next ACPI table or NULL if not found.
+
+**/
+EFI_ACPI_COMMON_HEADER *
+EFIAPI
+EfiLocateNextAcpiTable (
+  IN UINT32                     Signature,
+  IN EFI_ACPI_COMMON_HEADER     *PreviousTable OPTIONAL
+  );
+
+/**
+  This function locates first ACPI table in XSDT/RSDT based on Signature.
+
+  This function will locate the first ACPI table in XSDT/RSDT based on
+  Signature in gEfiAcpi20TableGuid system configuration table first, and then
+  gEfiAcpi10TableGuid system configuration table.
+  This function will locate in XSDT first, and then RSDT.
+  For DSDT, this function will locate XDsdt in FADT first, and then Dsdt in
+  FADT.
+  For FACS, this function will locate XFirmwareCtrl in FADT first, and then
+  FirmwareCtrl in FADT.
+
+  @param Signature          ACPI table signature.
+
+  @return First ACPI table or NULL if not found.
+
+**/
+EFI_ACPI_COMMON_HEADER *
+EFIAPI
+EfiLocateFirstAcpiTable (
+  IN UINT32                     Signature
+  );
+
 #endif

@@ -444,7 +444,8 @@ SdMmcHcReset (
     Status = mOverride->NotifyPhase (
                           Private->ControllerHandle,
                           Slot,
-                          EdkiiSdMmcResetPre);
+                          EdkiiSdMmcResetPre,
+                          NULL);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_WARN,
         "%a: SD/MMC pre reset notifier callback failed - %r\n",
@@ -454,11 +455,11 @@ SdMmcHcReset (
   }
 
   PciIo   = Private->PciIo;
-  SwReset = 0xFF;
-  Status  = SdMmcHcRwMmio (PciIo, Slot, SD_MMC_HC_SW_RST, FALSE, sizeof (SwReset), &SwReset);
+  SwReset = BIT0;
+  Status  = SdMmcHcOrMmio (PciIo, Slot, SD_MMC_HC_SW_RST, sizeof (SwReset), &SwReset);
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "SdMmcHcReset: write full 1 fails: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "SdMmcHcReset: write SW Reset for All fails: %r\n", Status));
     return Status;
   }
 
@@ -467,7 +468,7 @@ SdMmcHcReset (
              Slot,
              SD_MMC_HC_SW_RST,
              sizeof (SwReset),
-             0xFF,
+             BIT0,
              0x00,
              SD_MMC_HC_GENERIC_TIMEOUT
              );
@@ -494,7 +495,8 @@ SdMmcHcReset (
     Status = mOverride->NotifyPhase (
                           Private->ControllerHandle,
                           Slot,
-                          EdkiiSdMmcResetPost);
+                          EdkiiSdMmcResetPost,
+                          NULL);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_WARN,
         "%a: SD/MMC post reset notifier callback failed - %r\n",
@@ -719,7 +721,7 @@ SdMmcHcStopClock (
   @param[in] PciIo          The PCI IO protocol instance.
   @param[in] Slot           The slot number of the SD card to send the command to.
   @param[in] ClockFreq      The max clock frequency to be set. The unit is KHz.
-  @param[in] Capability     The capability of the slot.
+  @param[in] BaseClkFreq    The base clock frequency of host controller in MHz.
 
   @retval EFI_SUCCESS       The clock is supplied successfully.
   @retval Others            The clock isn't supplied successfully.
@@ -730,11 +732,10 @@ SdMmcHcClockSupply (
   IN EFI_PCI_IO_PROTOCOL    *PciIo,
   IN UINT8                  Slot,
   IN UINT64                 ClockFreq,
-  IN SD_MMC_HC_SLOT_CAP     Capability
+  IN UINT32                 BaseClkFreq
   )
 {
   EFI_STATUS                Status;
-  UINT32                    BaseClkFreq;
   UINT32                    SettingFreq;
   UINT32                    Divisor;
   UINT32                    Remainder;
@@ -744,9 +745,8 @@ SdMmcHcClockSupply (
   //
   // Calculate a divisor for SD clock frequency
   //
-  ASSERT (Capability.BaseClkFreq != 0);
+  ASSERT (BaseClkFreq != 0);
 
-  BaseClkFreq = Capability.BaseClkFreq;
   if (ClockFreq == 0) {
     return EFI_INVALID_PARAMETER;
   }
@@ -782,7 +782,8 @@ SdMmcHcClockSupply (
   //
   // Set SDCLK Frequency Select and Internal Clock Enable fields in Clock Control register.
   //
-  if ((ControllerVer & 0xFF) == 2) {
+  if (((ControllerVer & 0xFF) >= SD_MMC_HC_CTRL_VER_300) &&
+      ((ControllerVer & 0xFF) <= SD_MMC_HC_CTRL_VER_420)) {
     ASSERT (Divisor <= 0x3FF);
     ClockCtrl = ((Divisor & 0xFF) << 8) | ((Divisor & 0x300) >> 2);
   } else if (((ControllerVer & 0xFF) == 0) || ((ControllerVer & 0xFF) == 1)) {
@@ -937,7 +938,7 @@ SdMmcHcSetBusWidth (
 
   @param[in] PciIo          The PCI IO protocol instance.
   @param[in] Slot           The slot number of the SD card to send the command to.
-  @param[in] Capability     The capability of the slot.
+  @param[in] BaseClkFreq    The base clock frequency of host controller in MHz.
 
   @retval EFI_SUCCESS       The clock is supplied successfully.
   @retval Others            The clock isn't supplied successfully.
@@ -947,16 +948,19 @@ EFI_STATUS
 SdMmcHcInitClockFreq (
   IN EFI_PCI_IO_PROTOCOL    *PciIo,
   IN UINT8                  Slot,
-  IN SD_MMC_HC_SLOT_CAP     Capability
+  IN UINT32                 BaseClkFreq
   )
 {
   EFI_STATUS                Status;
   UINT32                    InitFreq;
 
   //
-  // Calculate a divisor for SD clock frequency
+  // According to SDHCI specification ver. 4.2, BaseClkFreq field value of
+  // the Capability Register 1 can be zero, which means a need for obtaining
+  // the clock frequency via another method. Fail in case it is not updated
+  // by SW at this point.
   //
-  if (Capability.BaseClkFreq == 0) {
+  if (BaseClkFreq == 0) {
     //
     // Don't support get Base Clock Frequency information via another method
     //
@@ -966,7 +970,7 @@ SdMmcHcInitClockFreq (
   // Supply 400KHz clock frequency at initialization phase.
   //
   InitFreq = 400;
-  Status = SdMmcHcClockSupply (PciIo, Slot, InitFreq, Capability);
+  Status = SdMmcHcClockSupply (PciIo, Slot, InitFreq, BaseClkFreq);
   return Status;
 }
 
@@ -1087,7 +1091,8 @@ SdMmcHcInitHost (
     Status = mOverride->NotifyPhase (
                           Private->ControllerHandle,
                           Slot,
-                          EdkiiSdMmcInitHostPre);
+                          EdkiiSdMmcInitHostPre,
+                          NULL);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_WARN,
         "%a: SD/MMC pre init notifier callback failed - %r\n",
@@ -1099,7 +1104,7 @@ SdMmcHcInitHost (
   PciIo = Private->PciIo;
   Capability = Private->Capability[Slot];
 
-  Status = SdMmcHcInitClockFreq (PciIo, Slot, Capability);
+  Status = SdMmcHcInitClockFreq (PciIo, Slot, Private->BaseClkFreq[Slot]);
   if (EFI_ERROR (Status)) {
     return Status;
   }
@@ -1122,7 +1127,8 @@ SdMmcHcInitHost (
     Status = mOverride->NotifyPhase (
                           Private->ControllerHandle,
                           Slot,
-                          EdkiiSdMmcInitHostPost);
+                          EdkiiSdMmcInitHostPost,
+                          NULL);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_WARN,
         "%a: SD/MMC post init notifier callback failed - %r\n",
@@ -1130,6 +1136,95 @@ SdMmcHcInitHost (
     }
   }
   return Status;
+}
+
+/**
+  Set SD Host Controler control 2 registry according to selected speed.
+
+  @param[in] ControllerHandle The handle of the controller.
+  @param[in] PciIo            The PCI IO protocol instance.
+  @param[in] Slot             The slot number of the SD card to send the command to.
+  @param[in] Timing           The timing to select.
+
+  @retval EFI_SUCCESS         The timing is set successfully.
+  @retval Others              The timing isn't set successfully.
+**/
+EFI_STATUS
+SdMmcHcUhsSignaling (
+  IN EFI_HANDLE             ControllerHandle,
+  IN EFI_PCI_IO_PROTOCOL    *PciIo,
+  IN UINT8                  Slot,
+  IN SD_MMC_BUS_MODE        Timing
+  )
+{
+  EFI_STATUS                 Status;
+  UINT8                      HostCtrl2;
+
+  HostCtrl2 = (UINT8)~SD_MMC_HC_CTRL_UHS_MASK;
+  Status = SdMmcHcAndMmio (PciIo, Slot, SD_MMC_HC_HOST_CTRL2, sizeof (HostCtrl2), &HostCtrl2);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  switch (Timing) {
+    case SdMmcUhsSdr12:
+      HostCtrl2 = SD_MMC_HC_CTRL_UHS_SDR12;
+      break;
+    case SdMmcUhsSdr25:
+      HostCtrl2 = SD_MMC_HC_CTRL_UHS_SDR25;
+      break;
+    case SdMmcUhsSdr50:
+      HostCtrl2 = SD_MMC_HC_CTRL_UHS_SDR50;
+      break;
+    case SdMmcUhsSdr104:
+      HostCtrl2 = SD_MMC_HC_CTRL_UHS_SDR104;
+      break;
+    case SdMmcUhsDdr50:
+      HostCtrl2 = SD_MMC_HC_CTRL_UHS_DDR50;
+      break;
+    case SdMmcMmcLegacy:
+      HostCtrl2 = SD_MMC_HC_CTRL_MMC_LEGACY;
+      break;
+    case SdMmcMmcHsSdr:
+      HostCtrl2 = SD_MMC_HC_CTRL_MMC_HS_SDR;
+      break;
+    case SdMmcMmcHsDdr:
+      HostCtrl2 = SD_MMC_HC_CTRL_MMC_HS_DDR;
+      break;
+    case SdMmcMmcHs200:
+      HostCtrl2 = SD_MMC_HC_CTRL_MMC_HS200;
+      break;
+    case SdMmcMmcHs400:
+      HostCtrl2 = SD_MMC_HC_CTRL_MMC_HS400;
+      break;
+    default:
+     HostCtrl2 = 0;
+     break;
+  }
+  Status = SdMmcHcOrMmio (PciIo, Slot, SD_MMC_HC_HOST_CTRL2, sizeof (HostCtrl2), &HostCtrl2);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  if (mOverride != NULL && mOverride->NotifyPhase != NULL) {
+    Status = mOverride->NotifyPhase (
+                          ControllerHandle,
+                          Slot,
+                          EdkiiSdMmcUhsSignaling,
+                          &Timing
+                          );
+    if (EFI_ERROR (Status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "%a: SD/MMC uhs signaling notifier callback failed - %r\n",
+        __FUNCTION__,
+        Status
+        ));
+      return Status;
+    }
+  }
+
+  return EFI_SUCCESS;
 }
 
 /**

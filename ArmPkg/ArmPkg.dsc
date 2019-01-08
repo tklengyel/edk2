@@ -31,9 +31,6 @@
   SKUID_IDENTIFIER               = DEFAULT
 
 [BuildOptions]
-  XCODE:*_*_ARM_PLATFORM_FLAGS  == -arch armv7
-  GCC:*_*_ARM_PLATFORM_FLAGS    == -march=armv7-a -mfpu=neon
-
   RELEASE_*_*_CC_FLAGS  = -DMDEPKG_NDEBUG
   *_*_*_CC_FLAGS  = -DDISABLE_NEW_DEPRECATED_INTERFACES
 
@@ -71,6 +68,7 @@
   ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerPhyCounterLib/ArmGenericTimerPhyCounterLib.inf
   ArmSmcLib|ArmPkg/Library/ArmSmcLib/ArmSmcLib.inf
   ArmDisassemblerLib|ArmPkg/Library/ArmDisassemblerLib/ArmDisassemblerLib.inf
+  OpteeLib|ArmPkg/Library/OpteeLib/OpteeLib.inf
 
   UefiApplicationEntryPoint|MdePkg/Library/UefiApplicationEntryPoint/UefiApplicationEntryPoint.inf
   PerformanceLib|MdePkg/Library/BasePerformanceLibNull/BasePerformanceLibNull.inf
@@ -131,6 +129,7 @@
   ArmPkg/Library/ArmSmcLibNull/ArmSmcLibNull.inf
   ArmPkg/Library/ArmHvcLib/ArmHvcLib.inf
   ArmPkg/Library/ArmSvcLib/ArmSvcLib.inf
+  ArmPkg/Library/OpteeLib/OpteeLib.inf
 
   ArmPkg/Filesystem/SemihostFs/SemihostFs.inf
 
@@ -150,3 +149,4 @@
 
 [Components.AARCH64]
   ArmPkg/Library/ArmMmuLib/ArmMmuPeiLib.inf
+  ArmPkg/Library/StandaloneMmMmuLib/ArmMmuStandaloneMmLib.inf

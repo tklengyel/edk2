@@ -625,11 +625,16 @@ SdMmcPciHcDriverBindingStart (
     if (EFI_ERROR (Status)) {
       continue;
     }
+
+    Private->BaseClkFreq[Slot] = Private->Capability[Slot].BaseClkFreq;
+
     if (mOverride != NULL && mOverride->Capability != NULL) {
       Status = mOverride->Capability (
                             Controller,
                             Slot,
-                            &Private->Capability[Slot]);
+                            &Private->Capability[Slot],
+                            &Private->BaseClkFreq[Slot]
+                            );
       if (EFI_ERROR (Status)) {
         DEBUG ((DEBUG_WARN, "%a: Failed to override capability - %r\n",
           __FUNCTION__, Status));
@@ -637,6 +642,12 @@ SdMmcPciHcDriverBindingStart (
       }
     }
     DumpCapabilityReg (Slot, &Private->Capability[Slot]);
+    DEBUG ((
+      DEBUG_INFO,
+      "Slot[%d] Base Clock Frequency: %dMHz\n",
+      Slot,
+      Private->BaseClkFreq[Slot]
+      ));
 
     Support64BitDma &= Private->Capability[Slot].SysBus64;
 
@@ -661,12 +672,18 @@ SdMmcPciHcDriverBindingStart (
     //
     // Check whether there is a SD/MMC card attached
     //
-    Status = SdMmcHcCardDetect (PciIo, Slot, &MediaPresent);
-    if (EFI_ERROR (Status) && (Status != EFI_MEDIA_CHANGED)) {
-      continue;
-    } else if (!MediaPresent) {
-      DEBUG ((DEBUG_INFO, "SdMmcHcCardDetect: No device attached in Slot[%d]!!!\n", Slot));
-      continue;
+    if (Private->Slot[Slot].SlotType == RemovableSlot) {
+      Status = SdMmcHcCardDetect (PciIo, Slot, &MediaPresent);
+      if (EFI_ERROR (Status) && (Status != EFI_MEDIA_CHANGED)) {
+        continue;
+      } else if (!MediaPresent) {
+        DEBUG ((
+          DEBUG_INFO,
+          "SdMmcHcCardDetect: No device attached in Slot[%d]!!!\n",
+          Slot
+          ));
+        continue;
+      }
     }
 
     Status = SdMmcHcInitHost (Private, Slot);
