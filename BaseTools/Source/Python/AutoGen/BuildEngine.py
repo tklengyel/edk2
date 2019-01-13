@@ -110,7 +110,7 @@ class FileBuildRule:
         self.IncListFileMacro = self.INC_LIST_MACRO
 
         self.SourceFileType = Type
-        # source files listed not in "*" or "?" pattern format
+        # source files listed not in TAB_STAR or "?" pattern format
         if not ExtraDependency:
             self.ExtraSourceFileList = []
         else:
@@ -150,12 +150,12 @@ class FileBuildRule:
         self.SourceFileExtList = set()
         for File in Input:
             Base, Ext = os.path.splitext(File)
-            if Base.find("*") >= 0:
-                # There's "*" in the file name
+            if Base.find(TAB_STAR) >= 0:
+                # There's TAB_STAR in the file name
                 self.IsMultipleInput = True
                 self.GenFileListMacro = True
             elif Base.find("?") < 0:
-                # There's no "*" and "?" in file name
+                # There's no TAB_STAR and "?" in file name
                 self.ExtraSourceFileList.append(File)
                 continue
             self.SourceFileExtList.add(Ext)
@@ -318,7 +318,7 @@ class BuildRule:
     #   @param  LineIndex           The line number from which the parsing will begin
     #   @param  SupportedFamily     The list of supported tool chain families
     #
-    def __init__(self, File=None, Content=None, LineIndex=0, SupportedFamily=["MSFT", "INTEL", "GCC", "RVCT"]):
+    def __init__(self, File=None, Content=None, LineIndex=0, SupportedFamily=[TAB_COMPILER_MSFT, "INTEL", "GCC", "RVCT"]):
         self.RuleFile = File
         # Read build rules from file if it's not none
         if File is not None:
@@ -553,7 +553,7 @@ class BuildRule:
     #
     #   @param  FileExt             The extension of a file
     #   @param  ToolChainFamily     The tool chain family name
-    #   @param  BuildVersion        The build version number. "*" means any rule
+    #   @param  BuildVersion        The build version number. TAB_STAR means any rule
     #                               is applicalbe.
     #
     #   @retval FileType        The file type string
@@ -596,17 +596,17 @@ if __name__ == '__main__':
     EdkLogger.Initialize()
     if len(sys.argv) > 1:
         Br = BuildRule(sys.argv[1])
-        print(str(Br[".c", SUP_MODULE_DXE_DRIVER, "IA32", "MSFT"][1]))
+        print(str(Br[".c", SUP_MODULE_DXE_DRIVER, "IA32", TAB_COMPILER_MSFT][1]))
         print()
         print(str(Br[".c", SUP_MODULE_DXE_DRIVER, "IA32", "INTEL"][1]))
         print()
         print(str(Br[".c", SUP_MODULE_DXE_DRIVER, "IA32", "GCC"][1]))
         print()
-        print(str(Br[".ac", "ACPI_TABLE", "IA32", "MSFT"][1]))
+        print(str(Br[".ac", "ACPI_TABLE", "IA32", TAB_COMPILER_MSFT][1]))
         print()
         print(str(Br[".h", "ACPI_TABLE", "IA32", "INTEL"][1]))
         print()
-        print(str(Br[".ac", "ACPI_TABLE", "IA32", "MSFT"][1]))
+        print(str(Br[".ac", "ACPI_TABLE", "IA32", TAB_COMPILER_MSFT][1]))
         print()
         print(str(Br[".s", SUP_MODULE_SEC, "IPF", "COMMON"][1]))
         print()

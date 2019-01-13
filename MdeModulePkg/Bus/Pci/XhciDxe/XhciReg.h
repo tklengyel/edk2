@@ -2,7 +2,7 @@
 
   This file contains the register definition of XHCI host controller.
 
-Copyright (c) 2011 - 2017, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -25,6 +25,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #define XHC_PCI_BAR_OFFSET          0x10       // Memory Bar Register Offset
 #define XHC_PCI_BAR_MASK            0xFFFF     // Memory Base Address Mask
+
+#define XHC_PCI_SBRN_OFFSET         0x60       // Serial Bus Release Number Register Offset
 
 #define USB_HUB_CLASS_CODE          0x09
 #define USB_HUB_SUBCLASS_CODE       0x00
@@ -169,7 +171,7 @@ typedef union {
 #define XHC_PORTSC_RESET                   BIT4  // Port Reset
 #define XHC_PORTSC_PLS                     (BIT5|BIT6|BIT7|BIT8)     // Port Link State
 #define XHC_PORTSC_PP                      BIT9  // Port Power
-#define XHC_PORTSC_PS                      (BIT10|BIT11|BIT12)       // Port Speed
+#define XHC_PORTSC_PS                      (BIT10|BIT11|BIT12|BIT13) // Port Speed
 #define XHC_PORTSC_LWS                     BIT16 // Port Link State Write Strobe
 #define XHC_PORTSC_CSC                     BIT17 // Connect Status Change
 #define XHC_PORTSC_PEC                     BIT18 // Port Enabled/Disabled Change
