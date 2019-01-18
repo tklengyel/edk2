@@ -926,3 +926,5 @@
       NULL|SecurityPkg/Library/HashInstanceLibSha512/HashInstanceLibSha512.inf
   }
 !endif
+
+  MdeModulePkg/Application/HelloWorld/HelloWorld.inf
