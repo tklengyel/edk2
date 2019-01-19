@@ -40,7 +40,7 @@ from Common.LongFilePathSupport import CodecOpenLongFilePath
 ## A decorator used to parse macro definition
 def ParseMacro(Parser):
     def MacroParser(self):
-        Match = gMacroDefPattern.match(self._CurrentLine)
+        Match = GlobalData.gMacroDefPattern.match(self._CurrentLine)
         if not Match:
             # Not 'DEFINE/EDK_GLOBAL' statement, call decorated method
             Parser(self)
@@ -61,7 +61,7 @@ def ParseMacro(Parser):
             EdkLogger.error('Parser', FORMAT_INVALID, "%s can only be defined via environment variable" % Name,
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         # Only upper case letters, digit and '_' are allowed
-        if not gMacroNamePattern.match(Name):
+        if not GlobalData.gMacroNamePattern.match(Name):
             EdkLogger.error('Parser', FORMAT_INVALID, "The macro name must be in the pattern [A-Z][A-Z0-9_]*",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
 
@@ -609,17 +609,6 @@ class InfParser(MetaFileParser):
                 Value = self._ValueList[Index]
                 if not Value:
                     continue
-
-                if Value.upper().find('$(EFI_SOURCE)\Edk'.upper()) > -1 or Value.upper().find('$(EFI_SOURCE)/Edk'.upper()) > -1:
-                    Value = '$(EDK_SOURCE)' + Value[17:]
-                if Value.find('$(EFI_SOURCE)') > -1 or Value.find('$(EDK_SOURCE)') > -1:
-                    pass
-                elif Value.startswith('.'):
-                    pass
-                elif Value.startswith('$('):
-                    pass
-                else:
-                    Value = '$(EFI_SOURCE)/' + Value
 
                 self._ValueList[Index] = ReplaceMacro(Value, Macros)
 
@@ -1359,16 +1348,7 @@ class DscParser(MetaFileParser):
             # Allow using system environment variables  in path after !include
             #
             __IncludeMacros['WORKSPACE'] = GlobalData.gGlobalDefines['WORKSPACE']
-            if "ECP_SOURCE" in GlobalData.gGlobalDefines.keys():
-                __IncludeMacros['ECP_SOURCE'] = GlobalData.gGlobalDefines['ECP_SOURCE']
-            #
-            # During GenFds phase call DSC parser, will go into this branch.
-            #
-            elif "ECP_SOURCE" in GlobalData.gCommandLineDefines.keys():
-                __IncludeMacros['ECP_SOURCE'] = GlobalData.gCommandLineDefines['ECP_SOURCE']
 
-            __IncludeMacros['EFI_SOURCE'] = GlobalData.gGlobalDefines['EFI_SOURCE']
-            __IncludeMacros['EDK_SOURCE'] = GlobalData.gGlobalDefines['EDK_SOURCE']
             #
             # Allow using MACROs comes from [Defines] section to keep compatible.
             #

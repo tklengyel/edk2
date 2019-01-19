@@ -37,8 +37,8 @@ from subprocess import *
 from Common import Misc as Utils
 
 from Common.LongFilePathSupport import OpenLongFilePath as open
-from Common.TargetTxtClassObject import *
-from Common.ToolDefClassObject import *
+from Common.TargetTxtClassObject import TargetTxtClassObject
+from Common.ToolDefClassObject import ToolDefClassObject
 from Common.DataType import *
 from Common.BuildVersion import gBUILD_VERSION
 from AutoGen.AutoGen import *
@@ -122,64 +122,8 @@ def CheckEnvVariable():
             elif ' ' in Path:
                 EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in PACKAGES_PATH", ExtraData=Path)
 
-    #
-    # Check EFI_SOURCE (Edk build convention). EDK_SOURCE will always point to ECP
-    #
-    if "ECP_SOURCE" not in os.environ:
-        os.environ["ECP_SOURCE"] = mws.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
-    if "EFI_SOURCE" not in os.environ:
-        os.environ["EFI_SOURCE"] = os.environ["ECP_SOURCE"]
-    if "EDK_SOURCE" not in os.environ:
-        os.environ["EDK_SOURCE"] = os.environ["ECP_SOURCE"]
 
-    #
-    # Unify case of characters on case-insensitive systems
-    #
-    EfiSourceDir = os.path.normcase(os.path.normpath(os.environ["EFI_SOURCE"]))
-    EdkSourceDir = os.path.normcase(os.path.normpath(os.environ["EDK_SOURCE"]))
-    EcpSourceDir = os.path.normcase(os.path.normpath(os.environ["ECP_SOURCE"]))
-
-    os.environ["EFI_SOURCE"] = EfiSourceDir
-    os.environ["EDK_SOURCE"] = EdkSourceDir
-    os.environ["ECP_SOURCE"] = EcpSourceDir
     os.environ["EDK_TOOLS_PATH"] = os.path.normcase(os.environ["EDK_TOOLS_PATH"])
-
-    if not os.path.exists(EcpSourceDir):
-        EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. Edk modules could not be built." % EcpSourceDir)
-    elif ' ' in EcpSourceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in ECP_SOURCE path",
-                        ExtraData=EcpSourceDir)
-    if not os.path.exists(EdkSourceDir):
-        if EdkSourceDir == EcpSourceDir:
-            EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. Edk modules could not be built." % EdkSourceDir)
-        else:
-            EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE does not exist",
-                            ExtraData=EdkSourceDir)
-    elif ' ' in EdkSourceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EDK_SOURCE path",
-                        ExtraData=EdkSourceDir)
-    if not os.path.exists(EfiSourceDir):
-        if EfiSourceDir == EcpSourceDir:
-            EdkLogger.verbose("EFI_SOURCE = %s doesn't exist. Edk modules could not be built." % EfiSourceDir)
-        else:
-            EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE does not exist",
-                            ExtraData=EfiSourceDir)
-    elif ' ' in EfiSourceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EFI_SOURCE path",
-                        ExtraData=EfiSourceDir)
-
-    # check those variables on single workspace case
-    if not PackagesPath:
-        # change absolute path to relative path to WORKSPACE
-        if EfiSourceDir.upper().find(WorkspaceDir.upper()) != 0:
-            EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE is not under WORKSPACE",
-                            ExtraData="WORKSPACE = %s\n    EFI_SOURCE = %s" % (WorkspaceDir, EfiSourceDir))
-        if EdkSourceDir.upper().find(WorkspaceDir.upper()) != 0:
-            EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE is not under WORKSPACE",
-                            ExtraData="WORKSPACE = %s\n    EDK_SOURCE = %s" % (WorkspaceDir, EdkSourceDir))
-        if EcpSourceDir.upper().find(WorkspaceDir.upper()) != 0:
-            EdkLogger.error("build", PARAMETER_INVALID, "ECP_SOURCE is not under WORKSPACE",
-                            ExtraData="WORKSPACE = %s\n    ECP_SOURCE = %s" % (WorkspaceDir, EcpSourceDir))
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
@@ -192,14 +136,8 @@ def CheckEnvVariable():
                         ExtraData="PATH")
 
     GlobalData.gWorkspace = WorkspaceDir
-    GlobalData.gEfiSource = EfiSourceDir
-    GlobalData.gEdkSource = EdkSourceDir
-    GlobalData.gEcpSource = EcpSourceDir
 
     GlobalData.gGlobalDefines["WORKSPACE"]  = WorkspaceDir
-    GlobalData.gGlobalDefines["EFI_SOURCE"] = EfiSourceDir
-    GlobalData.gGlobalDefines["EDK_SOURCE"] = EdkSourceDir
-    GlobalData.gGlobalDefines["ECP_SOURCE"] = EcpSourceDir
     GlobalData.gGlobalDefines["EDK_TOOLS_PATH"] = os.environ["EDK_TOOLS_PATH"]
 
 ## Get normalized file path
@@ -848,9 +786,6 @@ class Build():
         if "PACKAGES_PATH" in os.environ:
             # WORKSPACE env has been converted before. Print the same path style with WORKSPACE env.
             EdkLogger.quiet("%-16s = %s" % ("PACKAGES_PATH", os.path.normcase(os.path.normpath(os.environ["PACKAGES_PATH"]))))
-        EdkLogger.quiet("%-16s = %s" % ("ECP_SOURCE", os.environ["ECP_SOURCE"]))
-        EdkLogger.quiet("%-16s = %s" % ("EDK_SOURCE", os.environ["EDK_SOURCE"]))
-        EdkLogger.quiet("%-16s = %s" % ("EFI_SOURCE", os.environ["EFI_SOURCE"]))
         EdkLogger.quiet("%-16s = %s" % ("EDK_TOOLS_PATH", os.environ["EDK_TOOLS_PATH"]))
         if "EDK_TOOLS_BIN" in os.environ:
             # Print the same path style with WORKSPACE env.
@@ -884,7 +819,7 @@ class Build():
         if os.path.isfile(BuildConfigurationFile) == True:
             StatusCode = self.TargetTxt.LoadTargetTxtFile(BuildConfigurationFile)
 
-            ToolDefinitionFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
+            ToolDefinitionFile = self.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
             if ToolDefinitionFile == '':
                 ToolDefinitionFile = gToolsDefinition
                 ToolDefinitionFile = os.path.normpath(mws.join(self.WorkspaceDir, 'Conf', ToolDefinitionFile))
@@ -897,16 +832,16 @@ class Build():
 
         # if no ARCH given in command line, get it from target.txt
         if not self.ArchList:
-            self.ArchList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
+            self.ArchList = self.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_TARGET_ARCH]
         self.ArchList = tuple(self.ArchList)
 
         # if no build target given in command line, get it from target.txt
         if not self.BuildTargetList:
-            self.BuildTargetList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
+            self.BuildTargetList = self.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_TARGET]
 
         # if no tool chain given in command line, get it from target.txt
         if not self.ToolChainList:
-            self.ToolChainList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
+            self.ToolChainList = self.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
             if self.ToolChainList is None or len(self.ToolChainList) == 0:
                 EdkLogger.error("build", RESOURCE_NOT_AVAILABLE, ExtraData="No toolchain given. Don't know how to build.\n")
 
@@ -936,7 +871,7 @@ class Build():
         self.ToolChainFamily = ToolChainFamily
 
         if self.ThreadNumber is None:
-            self.ThreadNumber = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
+            self.ThreadNumber = self.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
             if self.ThreadNumber == '':
                 self.ThreadNumber = 0
             else:
@@ -949,7 +884,7 @@ class Build():
                 self.ThreadNumber = 1
 
         if not self.PlatformFile:
-            PlatformFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
+            PlatformFile = self.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_ACTIVE_PLATFORM]
             if not PlatformFile:
                 # Try to find one in current directory
                 WorkingDirectory = os.getcwd()
@@ -1463,11 +1398,7 @@ class Build():
                             Name = StrList[1]
                             RelativeAddress = int (StrList[2], 16) - OrigImageBaseAddress
                             FunctionList.append ((Name, RelativeAddress))
-                            if ModuleInfo.Arch == 'IPF' and Name.endswith('_ModuleEntryPoint'):
-                                #
-                                # Get the real entry point address for IPF image.
-                                #
-                                ModuleInfo.Image.EntryPoint = RelativeAddress
+
                 ImageMap.close()
             #
             # Add general information.
@@ -1565,9 +1496,6 @@ class Build():
         RtSize  = 0
         # reserve 4K size in SMRAM to make SMM module address not from 0.
         SmmSize = 0x1000
-        IsIpfPlatform = False
-        if 'IPF' in self.ArchList:
-            IsIpfPlatform = True
         for ModuleGuid in ModuleList:
             Module = ModuleList[ModuleGuid]
             GlobalData.gProcessingFile = "%s [%s, %s, %s]" % (Module.MetaFile, Module.Arch, Module.ToolChain, Module.BuildTarget)
@@ -1591,9 +1519,6 @@ class Build():
                         BtSize += ImageInfo.Image.Size
                     elif Module.ModuleType in [SUP_MODULE_DXE_RUNTIME_DRIVER, EDK_COMPONENT_TYPE_RT_DRIVER, SUP_MODULE_DXE_SAL_DRIVER, EDK_COMPONENT_TYPE_SAL_RT_DRIVER]:
                         RtModuleList[Module.MetaFile] = ImageInfo
-                        #IPF runtime driver needs to be at 2 page alignment.
-                        if IsIpfPlatform and ImageInfo.Image.Size % 0x2000 != 0:
-                            ImageInfo.Image.Size = (ImageInfo.Image.Size / 0x2000 + 1) * 0x2000
                         RtSize += ImageInfo.Image.Size
                     elif Module.ModuleType in [SUP_MODULE_SMM_CORE, SUP_MODULE_DXE_SMM_DRIVER, SUP_MODULE_MM_STANDALONE, SUP_MODULE_MM_CORE_STANDALONE]:
                         SmmModuleList[Module.MetaFile] = ImageInfo
@@ -1640,10 +1565,6 @@ class Build():
             TopMemoryAddress = self.LoadFixAddress
             if TopMemoryAddress < RtSize + BtSize + PeiSize:
                 EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS is too low to load driver")
-            # Make IPF runtime driver at 2 page alignment.
-            if IsIpfPlatform:
-                ReservedRuntimeMemorySize = TopMemoryAddress % 0x2000
-                RtSize = RtSize + ReservedRuntimeMemorySize
 
         #
         # Patch FixAddress related PCDs into EFI image
@@ -2303,8 +2224,8 @@ def LogBuildTime(Time):
 #
 def MyOptionParser():
     Parser = OptionParser(description=__copyright__, version=__version__, prog="build.exe", usage="%prog [options] [all|fds|genc|genmake|clean|cleanall|cleanlib|modules|libraries|run]")
-    Parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32', 'X64', 'IPF', 'EBC', 'ARM', 'AARCH64'], dest="TargetArch",
-        help="ARCHS is one of list: IA32, X64, IPF, ARM, AARCH64 or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
+    Parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32', 'X64', 'EBC', 'ARM', 'AARCH64'], dest="TargetArch",
+        help="ARCHS is one of list: IA32, X64, ARM, AARCH64 or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
     Parser.add_option("-p", "--platform", action="callback", type="string", dest="PlatformFile", callback=SingleCheckCallback,
         help="Build the platform specified by the DSC file name argument, overriding target.txt's ACTIVE_PLATFORM definition.")
     Parser.add_option("-m", "--module", action="callback", type="string", dest="ModuleFile", callback=SingleCheckCallback,
