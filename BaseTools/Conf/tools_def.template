@@ -2433,6 +2433,7 @@ NOOPT_CLANG38_X64_DLINK2_FLAGS     = DEF(GCC5_X64_DLINK2_FLAGS) -O0
 #
 ####################################################################################
 *_CLANGCOV38_*_*_FAMILY                = GCC
+*_CLANGCOV38_*_*_BUILDRULEFAMILY       = SANITIZER
 *_CLANGCOV38_*_MAKE_PATH               = make
 *_CLANGCOV38_*_*_DLL                   = ENV(CLANGCOV38_DLL)
 *_CLANGCOV38_*_ASL_PATH                = DEF(UNIX_IASL_BIN)
@@ -2444,11 +2445,11 @@ NOOPT_CLANG38_X64_DLINK2_FLAGS     = DEF(GCC5_X64_DLINK2_FLAGS) -O0
 DEFINE CLANGCOV38_IA32_PREFIX          = ENV(CLANGCOV38_BIN)
 DEFINE CLANGCOV38_X64_PREFIX           = ENV(CLANGCOV38_BIN)
 
-DEFINE CLANGCOV38_IA32_TARGET          =
-DEFINE CLANGCOV38_X64_TARGET           =
+DEFINE CLANGCOV38_IA32_TARGET          = -target i686-pc-linux-gnu
+DEFINE CLANGCOV38_X64_TARGET           = -target x86_64-pc-linux-gnu
 
 DEFINE CLANGCOV38_WARNING_OVERRIDES    = -Wno-parentheses-equality -Wno-tautological-compare -Wno-tautological-constant-out-of-range-compare -Wno-empty-body -Wno-unused-const-variable -Wno-varargs -Wno-unknown-warning-option
-DEFINE CLANGCOV38_ALL_CC_FLAGS         = DEF(GCC48_ALL_CC_FLAGS) DEF(CLANGCOV38_WARNING_OVERRIDES) -fno-stack-protector -mms-bitfields -Wno-address -Wno-shift-negative-value -Wno-unknown-pragmas -Wno-incompatible-library-redeclaration -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -msoft-float -mno-implicit-float  -ftrap-function=undefined_behavior_has_been_optimized_away_by_clang -funsigned-char -fno-ms-extensions -Wno-null-dereference -fprofile-arcs -ftest-coverage
+DEFINE CLANGCOV38_ALL_CC_FLAGS         = DEF(GCC48_ALL_CC_FLAGS) DEF(CLANGCOV38_WARNING_OVERRIDES) -fno-stack-protector -mms-bitfields -Wno-address -Wno-shift-negative-value -Wno-unknown-pragmas -Wno-incompatible-library-redeclaration -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -msoft-float -mno-implicit-float  -ftrap-function=undefined_behavior_has_been_optimized_away_by_clang -funsigned-char -fno-ms-extensions -Wno-null-dereference
 ###########################
 # CLANGCOV38 IA32 definitions
 ###########################
@@ -2523,6 +2524,7 @@ NOOPT_CLANGCOV38_X64_CC_FLAGS         = DEF(CLANGCOV38_ALL_CC_FLAGS) -m64 "-DEFI
 NOOPT_CLANGCOV38_X64_DLINK_FLAGS      = DEF(GCC5_IA32_X64_DLINK_FLAGS) -Wl,-O0 -Wl,-melf_x86_64 -Wl,--oformat=elf64-x86-64 -Wl,-pie -mcmodel=small
 NOOPT_CLANGCOV38_X64_DLINK2_FLAGS     = DEF(GCC5_X64_DLINK2_FLAGS) -O0
 
+*_CLANGCOV38_X64_SAN_FLAGS            = -fprofile-arcs -ftest-coverage
 
 ##################
 # CLANG38 ARM definitions
