@@ -2524,9 +2524,9 @@ NOOPT_CLANGCOV38_X64_CC_FLAGS         = DEF(CLANGCOV38_ALL_CC_FLAGS) -m64 "-DEFI
 NOOPT_CLANGCOV38_X64_DLINK_FLAGS      = DEF(GCC5_IA32_X64_DLINK_FLAGS) -Wl,-O0 -Wl,-melf_x86_64 -Wl,--oformat=elf64-x86-64 -Wl,-pie -mcmodel=small
 NOOPT_CLANGCOV38_X64_DLINK2_FLAGS     = DEF(GCC5_X64_DLINK2_FLAGS) -O0
 
-# Not use profile and coverage options in linker option. Otherwise these profile 
-# and coverage options will force the linker to link the LLVM OS runtime lib 
-# which is not fit for firmware at all. 
+# Not use profile and coverage options in linker option. Otherwise these profile
+# and coverage options will force the linker to link the LLVM OS runtime lib
+# which is not fit for firmware at all.
 # Current link rule force to use CC_FLAGS, so we cannot directly add these
 # profile and coverage options in the CC_FLAGS. Have to introduce the SANITIZER
 # CC build rule in build_rule.template as below to make sure these options are
