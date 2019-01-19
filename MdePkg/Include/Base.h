@@ -870,7 +870,6 @@ typedef UINTN  *BASE_LIST;
 **/
 #define BASE_CR(Record, TYPE, Field)  ((TYPE *) ((CHAR8 *) (Record) - OFFSET_OF (TYPE, Field)))
 
-
 /**
   Rounds a value up to the next boundary using a specified alignment.
 
