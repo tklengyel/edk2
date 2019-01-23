@@ -2460,7 +2460,7 @@ DEFINE CLANGCOV38_ALL_CC_FLAGS         = DEF(GCC48_ALL_CC_FLAGS) DEF(CLANGCOV38_
 # only used in CC compiling, not in linking.
 #    <Command.SANITIZER>
 #        "$(CC)" $(CC_FLAGS) $(SAN_FLAGS) -c -o ${dst} $(INC) ${src}
-*_CLANGCOV38_*_SAN_FLAGS            = -fprofile-arcs -ftest-coverage
+*_CLANGCOV38_X64_SAN_FLAGS            = -fprofile-arcs -ftest-coverage
 ###########################
 # CLANGCOV38 IA32 definitions
 ###########################
