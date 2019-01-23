@@ -302,6 +302,7 @@
 !endif
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+  NULL|MdeModulePkg/Library/GcdaCovLib/GcdaCovLib.inf
 
 [LibraryClasses.common.DXE_RUNTIME_DRIVER]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -319,6 +320,7 @@
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/RuntimeCryptLib.inf
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
   QemuFwCfgS3Lib|OvmfPkg/Library/QemuFwCfgS3Lib/DxeQemuFwCfgS3LibFwCfg.inf
+  NULL|MdeModulePkg/Library/GcdaCovLib/GcdaCovLib.inf
 
 [LibraryClasses.common.UEFI_DRIVER]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -403,6 +405,7 @@
 !endif
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/SmmCryptLib.inf
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
+  NULL|MdeModulePkg/Library/GcdaCovLib/GcdaCovLib.inf
 
 [LibraryClasses.common.SMM_CORE]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -419,7 +422,7 @@
   DebugLib|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf
 !endif
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
-
+  NULL|MdeModulePkg/Library/GcdaCovLib/GcdaCovLib.inf
 ################################################################################
 #
 # Pcd Section - list of all EDK II PCD Entries defined by this Platform.
