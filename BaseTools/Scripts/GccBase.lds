@@ -38,6 +38,9 @@ SECTIONS {
      * LLVM and GCC address sanitizer has module constructor/destructor
      * pointers in .init_array and .fini_array sections, which are need
      * to call before module start and exit. Keep them in image.
+     *
+     * https://wiki.osdev.org/Calling_Global_Constructors
+     *
      */
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(SORT(.preinit_array.*)))
@@ -56,6 +59,16 @@ SECTIONS {
 
     KEEP(*(.init))
     KEEP(*(.fini))
+
+    PROVIDE_HIDDEN (__ctors_start = .);
+    KEEP (*(SORT(.ctors.*)))
+    KEEP (*(.ctors))
+    PROVIDE_HIDDEN (__ctors_end = .);
+
+    PROVIDE_HIDDEN (__dtors_start = .);
+    KEEP (*(SORT(.dtors.*)))
+    KEEP (*(.dtors))
+    PROVIDE_HIDDEN (__dtors_end = .);
   }
 
   /*
