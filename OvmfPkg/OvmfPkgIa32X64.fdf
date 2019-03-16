@@ -368,7 +368,6 @@ INF  SecurityPkg/Tcg/Tcg2Config/Tcg2ConfigDxe.inf
 INF  MdeModulePkg/Bus/Pci/SdMmcPciHcDxe/SdMmcPciHcDxe.inf
 INF  MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
 INF  MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
-
 INF  MdeModulePkg/Bus/Converge/ConvergeBus.inf
 
 ################################################################################
