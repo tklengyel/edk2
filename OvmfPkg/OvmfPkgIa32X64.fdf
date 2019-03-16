@@ -365,6 +365,10 @@ INF  SecurityPkg/Tcg/Tcg2Config/Tcg2ConfigDxe.inf
 !endif
 !endif
 
+INF  MdeModulePkg/Bus/Pci/SdMmcPciHcDxe/SdMmcPciHcDxe.inf
+INF  MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
+INF  MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
+
 ################################################################################
 
 [FV.FVMAIN_COMPACT]

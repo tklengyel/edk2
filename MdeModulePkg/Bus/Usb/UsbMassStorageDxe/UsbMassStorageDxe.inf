@@ -52,6 +52,7 @@
   UsbMassCbi.c
   UsbMassDiskInfo.h
   UsbMassDiskInfo.c
+  IdPairInvoker.c
 
 [Packages]
   MdePkg/MdePkg.dec
