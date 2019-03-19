@@ -11,7 +11,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiDriverEntryPoint.h>
 
-
+// Only support one CBI protocol instance for now
 static  USB_CBI_PROTOCOL     *UsbCbiTrace = NULL;
 
 EFI_STATUS
@@ -84,13 +84,20 @@ UsbCbi_IdPairTrace (
       }
     }
   }
-  *Trace = UsbCbi;
+
+  if (Trace != NULL && *Trace != NULL ){
+    *Trace = UsbCbi;
+  }
+
+  UsbCbiTrace = UsbCbi;
   return EFI_SUCCESS;
 
 ON_ERROR:
   if (UsbCbi != NULL) {
     FreePool (UsbCbi);
-    *Trace = NULL;
+    if (Trace != NULL && *Trace != NULL ){
+      *Trace = NULL;
+    }
   }
   return Status;
 }

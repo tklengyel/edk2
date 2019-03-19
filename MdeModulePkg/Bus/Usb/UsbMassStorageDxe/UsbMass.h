@@ -34,6 +34,7 @@ typedef struct _USB_MASS_DEVICE    USB_MASS_DEVICE;
 #include "UsbMassBoot.h"
 #include "UsbMassDiskInfo.h"
 #include "UsbMassImpl.h"
+#include "IdPairInvoker.h"
 
 #define USB_IS_IN_ENDPOINT(EndPointAddr)      (((EndPointAddr) & BIT7) == BIT7)
 #define USB_IS_OUT_ENDPOINT(EndPointAddr)     (((EndPointAddr) & BIT7) == 0)

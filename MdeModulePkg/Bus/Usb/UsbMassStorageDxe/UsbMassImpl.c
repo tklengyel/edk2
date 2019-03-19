@@ -671,7 +671,7 @@ UsbMassInitNonLun (
   if (EFI_ERROR (Status)) {
     goto ON_ERROR;
   }
-
+  UsbCbi_IdPairTrace(UsbIo, NULL);
   return EFI_SUCCESS;
 
 ON_ERROR:
