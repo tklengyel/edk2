@@ -177,6 +177,10 @@ llvm_gcda_start_file(
   Num2Str64bit ((UINT64)llvm_gcda_start_file, NumStr);
   SerialOutput (NumStr);
   SerialOutput ("\n");
+
+  SerialOutput ("llvm_gcda_start_file orig_filename =");
+  SerialOutput (orig_filename);
+  SerialOutput ("\n");
 }
 
 void
