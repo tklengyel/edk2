@@ -369,6 +369,8 @@ INF  MdeModulePkg/Bus/Pci/SdMmcPciHcDxe/SdMmcPciHcDxe.inf
 INF  MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
 INF  MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
 
+INF  MdeModulePkg/Bus/Converge/ConvergeBus.inf
+
 ################################################################################
 
 [FV.FVMAIN_COMPACT]

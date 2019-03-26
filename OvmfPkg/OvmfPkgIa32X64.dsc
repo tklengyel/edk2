@@ -930,3 +930,5 @@
   MdeModulePkg/Bus/Pci/SdMmcPciHcDxe/SdMmcPciHcDxe.inf
   MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
   MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
+
+  MdeModulePkg/Bus/Converge/ConvergeBus.inf

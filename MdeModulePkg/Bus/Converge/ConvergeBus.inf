@@ -1,0 +1,54 @@
+## @file
+#  The Converge Bus Dxe driver is used to enumerate and manage all attached ID-pair devices.
+#
+#  Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ConvergeBusDxe
+  FILE_GUID                      = 2334929D-F345-46c5-B178-062AA6E2C05F
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+
+  ENTRY_POINT                    = ConvergeBusAdaptorEntryPoint
+
+[Sources]
+  ConvergeBus.c
+  ConvergeBus.h
+  ConvergeBusProtocol.c
+  ConvergeBusProtocol.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  IntelFrameworkPkg/IntelFrameworkPkg.dec
+
+[LibraryClasses]
+  MemoryAllocationLib
+  DevicePathLib
+  UefiLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  BaseMemoryLib
+  DebugLib
+  ReportStatusCodeLib
+
+
+[Protocols]
+  gEfiDevicePathProtocolGuid                    
+  gEfiPciIoProtocolGuid
+  gEfiCpuArchProtocolGuid
+  gEfiLegacy8259ProtocolGuid
+
+[Depex]
+  gEfiCpuArchProtocolGuid AND gEfiLegacy8259ProtocolGuid
