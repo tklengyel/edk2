@@ -1,5 +1,5 @@
 /** @file
-  GUID for Converge Buss protocol
+  Converge Buss protocol
 
   Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
   This program and the accompanying materials

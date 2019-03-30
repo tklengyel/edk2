@@ -26,8 +26,7 @@
 [Sources]
   ConvergeBus.c
   ConvergeBus.h
-  ConvergeBusProtocol.c
-  ConvergeBusProtocol.h
+  ConvergeBusComponentName.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -49,6 +48,7 @@
   gEfiPciIoProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiLegacy8259ProtocolGuid
+  gConvergeBusProtocolGuid
 
 [Depex]
   gEfiCpuArchProtocolGuid AND gEfiLegacy8259ProtocolGuid
