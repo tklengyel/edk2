@@ -474,7 +474,7 @@ ConvergeBusAdaptorDriverBindingStart (
 
 
   //
-  // Demo code for how to change guest buffer in host device model
+  // Demo code for how to change guest buffer values in host device model
   //
   // Add below code in edu_mmio_write() of qemu-fork\hw\misc\edu_converge.c, which
   // is to immediately write the first 4 bytes of guest buffer whose address
