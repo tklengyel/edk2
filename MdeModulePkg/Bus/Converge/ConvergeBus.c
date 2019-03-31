@@ -390,6 +390,8 @@ ConvergeBusAdaptorDriverBindingStart (
 {
   EFI_STATUS                    Status;
   UINT32                        Num_usb_storage_dev;
+  UINT32                        Buffer[5];
+  UINT64                        Tmp;
   //
   // Init the global interrupt vector, and assume there is only one Converge Bus Adaptor
   // in the systme
@@ -459,14 +461,46 @@ ConvergeBusAdaptorDriverBindingStart (
     goto UninitDev;
   }
 
-  Status = mConvergeBusDevice->PciIo->Pci.Read (
+  Status = mConvergeBusDevice->PciIo->Mem.Read (
                         mConvergeBusDevice->PciIo,    // (protocol, device) handle
                         EfiPciIoWidthUint64,          // access width & copy mode
+                        EFI_EDU_BAR_INDEX,
                         0x100,                        // Offset
                         1, // Count
-                        &Num_usb_storage_dev                          // target buffer
+                        &Tmp          // target buffer
                         );
+  Num_usb_storage_dev = (UINT32)Tmp;
   DEBUG((DEBUG_ERROR, "Read Num_usb_storage_dev= %d\n", Num_usb_storage_dev));
+
+
+  //
+  // Demo code for how to change guest buffer in host device model
+  //
+  // Add below code in edu_mmio_write() of qemu-fork\hw\misc\edu_converge.c, which
+  // is to immediately write the first 4 bytes of guest buffer whose address
+  // specified in 0x100.
+  //
+  // case 0x100: // Guest output buffer address
+      // edu->GuestOutputBufferAddress = val;
+      // printf("GuestOutputBufferAddress = %ld\n", val);
+      // tmp[0] = 0x12345678;
+      // pci_dma_write(PCI_DEVICE(edu), edu->GuestOutputBufferAddress, tmp, 4);
+      // break;
+
+  ZeroMem(Buffer, sizeof(Buffer));
+  Buffer[0] = 0xffffffff;
+  DEBUG((DEBUG_ERROR, "Before write offset 0x100, Buffer[0]= 0x%x\n", Buffer[0]));
+  DEBUG((DEBUG_ERROR, "Before write offset 0x100, Buffer buffer address = 0x%x\n", Buffer));
+  Tmp = (UINT64)Buffer;
+  Status = mConvergeBusDevice->PciIo->Mem.Write (
+                        mConvergeBusDevice->PciIo,
+                        EfiPciIoWidthUint64,
+                        EFI_EDU_BAR_INDEX,
+                        0x100, //
+                        1,
+                        &Tmp
+                        );
+  DEBUG((DEBUG_ERROR, "After write offset 0x100, Buffer[0]= 0x%x\n", Buffer[0]));
 
   return EFI_SUCCESS;
 
