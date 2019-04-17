@@ -11,7 +11,7 @@
 **/
 
 #include "AtaBus.h"
-
+#include "s2e.h"
 //
 // ATA Bus Driver Binding Protocol Instance
 //
@@ -1033,6 +1033,8 @@ BlockIoReadWrite (
   UINTN                             NumberOfBlocks;
   UINTN                             IoAlign;
 
+  s2e_make_symbolic(&Lba, sizeof(EFI_LBA), "Lba");
+
   if (IsBlockIo2) {
    Media     = ((EFI_BLOCK_IO2_PROTOCOL *) This)->Media;
    AtaDevice = ATA_DEVICE_FROM_BLOCK_IO2 (This);
@@ -1083,7 +1085,7 @@ BlockIoReadWrite (
   Status = AccessAtaDevice (AtaDevice, Buffer, Lba, NumberOfBlocks, IsWrite, Token);
 
   gBS->RestoreTPL (OldTpl);
-
+  s2e_kill_state(0, "program terminated");
   return Status;
 }
 
