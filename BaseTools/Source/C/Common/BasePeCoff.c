@@ -4,13 +4,7 @@
 
 Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
 Portions Copyright (c) 2011 - 2013, ARM Ltd. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -217,7 +211,7 @@ Returns:
       ImageContext->ImageType != EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER && \
       ImageContext->ImageType != EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER) {
     //
-    // upsupported PeImage subsystem type
+    // unsupported PeImage subsystem type
     //
     return RETURN_UNSUPPORTED;
   }
@@ -483,7 +477,7 @@ Returns:
       // In Te image header there is not a field to describe the ImageSize.
       // Actually, the ImageSize equals the RVA plus the VirtualSize of
       // the last section mapped into memory (Must be rounded up to
-      // a mulitple of Section Alignment). Per the PE/COFF specification, the
+      // a multiple of Section Alignment). Per the PE/COFF specification, the
       // section headers in the Section Table must appear in order of the RVA
       // values for the corresponding sections. So the ImageSize can be determined
       // by the RVA and the VirtualSize of the last section header in the
@@ -1315,7 +1309,7 @@ PeCoffLoaderGetPdbPointer (
       break;
     default:
       //
-      // For unknow Machine field, use Magic in optional Header
+      // For unknown Machine field, use Magic in optional Header
       //
       Magic = Hdr.Pe32->OptionalHeader.Magic;
     }

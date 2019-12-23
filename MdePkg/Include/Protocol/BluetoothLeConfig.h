@@ -2,14 +2,8 @@
   EFI Bluetooth LE Config Protocol as defined in UEFI 2.7.
   This protocol abstracts user interface configuration for BluetoothLe device.
 
-  Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials are licensed and made available under
-  the terms and conditions of the BSD License that accompanies this distribution.
-  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2017 - 2019, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Revision Reference:
   This Protocol is introduced in UEFI Specification 2.7
@@ -457,6 +451,8 @@ typedef enum {
   EfiBluetoothSmpLocalCSRK, /* If Key hierarchy not supported */
   EfiBluetoothSmpLocalSignCounter,
   EfiBluetoothSmpLocalDIV,
+  EfiBluetoothSmpPeerAddressList,
+  EfiBluetoothSmpMax,
 } EFI_BLUETOOTH_LE_SMP_DATA_TYPE;
 
 /**

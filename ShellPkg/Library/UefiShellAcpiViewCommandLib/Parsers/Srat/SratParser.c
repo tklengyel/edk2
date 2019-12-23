@@ -1,14 +1,8 @@
 /** @file
   SRAT table parser
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
     - ACPI 6.2 Specification - Errata A, September 2017
@@ -38,7 +32,13 @@ EFIAPI
 ValidateSratReserved (
   IN UINT8* Ptr,
   IN VOID*  Context
-  );
+  )
+{
+  if (*(UINT32*)Ptr != 1) {
+    IncrementErrorCount ();
+    Print (L"\nERROR: Reserved should be 1 for backward compatibility.\n");
+  }
+}
 
 /**
   This function traces the APIC Proximity Domain field.
@@ -50,9 +50,16 @@ STATIC
 VOID
 EFIAPI
 DumpSratApicProximity (
-  IN  CONST CHAR16*  Format,
-  IN  UINT8*         Ptr
-  );
+ IN CONST CHAR16* Format,
+ IN UINT8*        Ptr
+ )
+{
+  UINT32 ProximityDomain;
+
+  ProximityDomain = Ptr[0] | (Ptr[1] << 8) | (Ptr[2] << 16);
+
+  Print (Format, ProximityDomain);
+}
 
 /**
   An ACPI_PARSER array describing the SRAT Table.
@@ -145,47 +152,6 @@ STATIC CONST ACPI_PARSER SratX2ApciAffinityParser[] = {
   {L"Reserved", 4, 20, L"0x%x", NULL, NULL, NULL, NULL}
 };
 
-/** This function validates the Reserved field in the SRAT table header.
-
-  @param [in] Ptr     Pointer to the start of the field data.
-  @param [in] Context Pointer to context specific information e.g. this
-                      could be a pointer to the ACPI table header.
-**/
-STATIC
-VOID
-EFIAPI
-ValidateSratReserved (
-  IN UINT8* Ptr,
-  IN VOID*  Context
-  )
-{
-  if (*(UINT32*)Ptr != 1) {
-    IncrementErrorCount ();
-    Print (L"\nERROR: Reserved should be 1 for backward compatibility.\n");
-  }
-}
-
-/**
-  This function traces the APIC Proximity Domain field.
-
-  @param [in] Format  Format string for tracing the data.
-  @param [in] Ptr     Pointer to the start of the buffer.
-**/
-STATIC
-VOID
-EFIAPI
-DumpSratApicProximity (
- IN CONST CHAR16* Format,
- IN UINT8*        Ptr
- )
-{
-  UINT32 ProximityDomain;
-
-  ProximityDomain = Ptr[0] | (Ptr[1] << 8) | (Ptr[2] << 16);
-
-  Print (Format, ProximityDomain);
-}
-
 /**
   This function parses the ACPI SRAT table.
   When trace is enabled this function parses the SRAT table and
@@ -240,6 +206,7 @@ ParseAcpiSrat (
              AcpiTableLength,
              PARSER_PARAMS (SratParser)
              );
+
   ResourcePtr = Ptr + Offset;
 
   while (Offset < AcpiTableLength) {
@@ -248,9 +215,21 @@ ParseAcpiSrat (
       0,
       NULL,
       ResourcePtr,
-      2,  // The length is 1 byte at offset 1
+      AcpiTableLength - Offset,
       PARSER_PARAMS (SratResourceAllocationParser)
       );
+
+    // Make sure the SRAT structure lies inside the table
+    if ((Offset + *SratRALength) > AcpiTableLength) {
+      IncrementErrorCount ();
+      Print (
+        L"ERROR: Invalid SRAT structure length. SratRALength = %d. " \
+          L"RemainingTableBufferLength = %d. SRAT parsing aborted.\n",
+        *SratRALength,
+        AcpiTableLength - Offset
+        );
+      return;
+    }
 
     switch (*SratRAType) {
       case EFI_ACPI_6_2_GICC_AFFINITY:
@@ -284,7 +263,7 @@ ParseAcpiSrat (
           ResourcePtr,
           *SratRALength,
           PARSER_PARAMS (SratGicITSAffinityParser)
-        );
+          );
         break;
 
       case EFI_ACPI_6_2_MEMORY_AFFINITY:

@@ -5,13 +5,7 @@
   handles cases where I/O APIC is disabled.
 
   Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -100,7 +94,7 @@ IoApicEnableInterrupt (
   Configures an I/O APIC interrupt.
 
   Configure an I/O APIC Redirection Table Entry to deliver an interrupt in physical
-  mode to the Local APIC of the currntly executing CPU.  The default state of the
+  mode to the Local APIC of the currently executing CPU.  The default state of the
   entry is for the interrupt to be disabled (masked).  IoApicEnableInterrupts() must
   be used to enable(unmask) the I/O APIC Interrupt.
 

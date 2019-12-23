@@ -2,13 +2,7 @@
   Public API for Opal Core library.
 
 Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 #include <Uefi.h>
@@ -17,7 +11,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/TcgStorageOpalLib.h>
 #include "TcgStorageOpalLibInternal.h"
 
-#define OPAL_MSID_LENGHT        128
+#define OPAL_MSID_LENGTH        128
 
 /**
   Creates a session with OPAL_UID_ADMIN_SP as OPAL_ADMIN_SP_PSID_AUTHORITY, then reverts device using Admin SP Revert method.
@@ -1101,7 +1095,7 @@ GetRevertTimeOut (
   OPAL_DISK_SUPPORT_ATTRIBUTE  SupportedAttributes;
   UINT16                       BaseComId;
   UINT32                       MsidLength;
-  UINT8                        Msid[OPAL_MSID_LENGHT];
+  UINT8                        Msid[OPAL_MSID_LENGTH];
   UINT32                       RemovalMechanishLists[ResearvedMechanism];
   UINT8                        ActiveDataRemovalMechanism;
 
@@ -1110,7 +1104,7 @@ GetRevertTimeOut (
     return 0;
   }
 
-  TcgResult = OpalUtilGetMsid (Session, Msid, OPAL_MSID_LENGHT, &MsidLength);
+  TcgResult = OpalUtilGetMsid (Session, Msid, OPAL_MSID_LENGTH, &MsidLength);
   if (TcgResult != TcgResultSuccess) {
     return 0;
   }

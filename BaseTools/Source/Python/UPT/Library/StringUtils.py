@@ -4,13 +4,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 '''
 StringUtils
@@ -20,7 +14,6 @@ StringUtils
 #
 import re
 import os.path
-from string import strip
 import Logger.Log as Logger
 import Library.DataType as DataType
 from Logger.ToolError import FORMAT_INVALID
@@ -34,7 +27,7 @@ gMACRO_PATTERN = re.compile("\$\(([_A-Z][_A-Z0-9]*)\)", re.UNICODE)
 
 ## GetSplitValueList
 #
-# Get a value list from a string with multiple values splited with SplitTag
+# Get a value list from a string with multiple values split with SplitTag
 # The default SplitTag is DataType.TAB_VALUE_SPLIT
 # 'AAA|BBB|CCC' -> ['AAA', 'BBB', 'CCC']
 #
@@ -44,7 +37,7 @@ gMACRO_PATTERN = re.compile("\$\(([_A-Z][_A-Z0-9]*)\)", re.UNICODE)
 #
 #
 def GetSplitValueList(String, SplitTag=DataType.TAB_VALUE_SPLIT, MaxSplit= -1):
-    return map(lambda l: l.strip(), String.split(SplitTag, MaxSplit))
+    return list(map(lambda l: l.strip(), String.split(SplitTag, MaxSplit)))
 
 ## MergeArches
 #
@@ -68,7 +61,7 @@ def MergeArches(Dict, Key, Arch):
 # Return False if invalid format
 #
 # @param String:   String with DEFINE statement
-# @param Arch:     Supportted Arch
+# @param Arch:     Supported Arch
 # @param Defines:  DEFINE statement to be parsed
 #
 def GenDefines(String, Arch, Defines):
@@ -237,7 +230,7 @@ def ReplaceMacro(String, MacroDefinitions=None, SelfReplacement=False, Line=None
 ## NormPath
 #
 # Create a normal path
-# And replace DFEINE in the path
+# And replace DEFINE in the path
 #
 # @param Path:     The input value for Path to be converted
 # @param Defines:  A set for DEFINE statement
@@ -435,7 +428,7 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 #
                 LineList[1] = CleanString(LineList[1], CommentCharacter)
                 if ValueSplitFlag:
-                    Value = map(strip, LineList[1].split(ValueSplitCharacter))
+                    Value = list(map(lambda x: x.strip(), LineList[1].split(ValueSplitCharacter)))
                 else:
                     Value = CleanString(LineList[1], CommentCharacter).splitlines()
 
@@ -614,9 +607,9 @@ def WorkspaceFile(WorkspaceDir, Filename):
 
 ## Split string
 #
-# Revmove '"' which startswith and endswith string
+# Remove '"' which startswith and endswith string
 #
-# @param String:  The string need to be splited
+# @param String:  The string need to be split
 #
 def SplitString(String):
     if String.startswith('\"'):
@@ -632,7 +625,7 @@ def SplitString(String):
 # @param StringList:  A list for strings to be converted
 #
 def ConvertToSqlString(StringList):
-    return map(lambda s: s.replace("'", "''"), StringList)
+    return list(map(lambda s: s.replace("'", "''"), StringList))
 
 ## Convert To Sql String
 #
@@ -680,9 +673,7 @@ def GetHelpTextList(HelpTextClassList):
 # @param String: the source string
 #
 def StringArrayLength(String):
-    if isinstance(String, unicode):
-        return (len(String) + 1) * 2 + 1
-    elif String.startswith('L"'):
+    if String.startswith('L"'):
         return (len(String) - 3 + 1) * 2
     elif String.startswith('"'):
         return (len(String) - 2 + 1)
@@ -737,7 +728,7 @@ def IsHexDigit(Str):
                 return False
     return False
 
-## Check if the string is HexDgit and its interger value within limit of UINT32
+## Check if the string is HexDgit and its integer value within limit of UINT32
 #
 # Return true if all characters in the string are digits and there is at
 # least one character
@@ -872,7 +863,7 @@ def ConvertNOTEQToNE(Expr):
 ## SplitPcdEntry
 #
 # Split an PCD entry string to Token.CName and PCD value and FFE.
-# NOTE: PCD Value and FFE can contain "|" in it's expression. And in INF specification, have below rule.
+# NOTE: PCD Value and FFE can contain "|" in its expression. And in INF specification, have below rule.
 # When using the characters "|" or "||" in an expression, the expression must be encapsulated in
 # open "(" and close ")" parenthesis.
 #
@@ -940,23 +931,24 @@ def SplitPcdEntry(String):
 def IsMatchArch(Arch1, Arch2):
     if 'COMMON' in Arch1 or 'COMMON' in Arch2:
         return True
-    if isinstance(Arch1, basestring) and isinstance(Arch2, basestring):
-        if Arch1 == Arch2:
-            return True
+    try:
+        if isinstance(Arch1, list) and isinstance(Arch2, list):
+            for Item1 in Arch1:
+                for Item2 in Arch2:
+                    if Item1 == Item2:
+                        return True
 
-    if isinstance(Arch1, basestring) and isinstance(Arch2, list):
-        return Arch1 in Arch2
+        elif isinstance(Arch1, list):
+            return Arch2 in Arch1
 
-    if isinstance(Arch2, basestring) and isinstance(Arch1, list):
-        return Arch2 in Arch1
+        elif isinstance(Arch2, list):
+            return Arch1 in Arch2
 
-    if isinstance(Arch1, list) and isinstance(Arch2, list):
-        for Item1 in Arch1:
-            for Item2 in Arch2:
-                if Item1 == Item2:
-                    return True
-
-    return False
+        else:
+            if Arch1 == Arch2:
+                return True
+    except:
+        return False
 
 # Search all files in FilePath to find the FileName with the largest index
 # Return the FileName with index +1 under the FilePath

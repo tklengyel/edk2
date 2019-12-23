@@ -1,14 +1,8 @@
 /** @file
   EFI PEI Core PPI services
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -669,7 +663,7 @@ ProcessDispatchNotifyList (
     //
     // Check if the PEIM that was just dispatched resulted in any
     // Notifies getting installed.  If so, go process any dispatch
-    // level Notifies that match the previouly installed PPIs.
+    // level Notifies that match the previously installed PPIs.
     // Use "while" instead of "if" since ProcessNotify can modify
     // DispatchNotifyList.CurrentCount (with NotifyPpi) so we have
     // to iterate until the same.

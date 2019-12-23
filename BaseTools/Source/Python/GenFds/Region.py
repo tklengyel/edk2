@@ -3,13 +3,7 @@
 #
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -62,8 +56,8 @@ class Region(object):
                 PadByte = pack('B', 0xFF)
             else:
                 PadByte = pack('B', 0)
-            PadData = ''.join(PadByte for i in xrange(0, Size))
-            Buffer.write(PadData)
+            for i in range(0, Size):
+                Buffer.write(PadByte)
 
     ## AddToBuffer()
     #
@@ -79,8 +73,10 @@ class Region(object):
     #   @retval string      Generated FV file path
     #
 
-    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, ImageBinDict,  MacroDict={}, Flag=False):
+    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, ImageBinDict,  MacroDict=None, Flag=False):
         Size = self.Size
+        if MacroDict is None:
+            MacroDict = {}
         if not Flag:
             GenFdsGlobalVariable.InfLogger('\nGenerate Region at Offset 0x%X' % self.Offset)
             GenFdsGlobalVariable.InfLogger("   Region Size = 0x%X" % Size)
@@ -131,7 +127,7 @@ class Region(object):
                         if self.FvAddress % FvAlignValue != 0:
                             EdkLogger.error("GenFds", GENFDS_ERROR,
                                             "FV (%s) is NOT %s Aligned!" % (FvObj.UiFvName, FvObj.FvAlignment))
-                        FvBuffer = BytesIO('')
+                        FvBuffer = BytesIO()
                         FvBaseAddress = '0x%X' % self.FvAddress
                         BlockSize = None
                         BlockNum = None
@@ -300,7 +296,7 @@ class Region(object):
             else:
                 # region ended within current blocks
                 if self.Offset + self.Size <= End:
-                    ExpectedList.append((BlockSize, (RemindingSize + BlockSize - 1) / BlockSize))
+                    ExpectedList.append((BlockSize, (RemindingSize + BlockSize - 1) // BlockSize))
                     break
                 # region not ended yet
                 else:
@@ -309,7 +305,7 @@ class Region(object):
                         UsedBlockNum = BlockNum
                     # region started in middle of current blocks
                     else:
-                        UsedBlockNum = (End - self.Offset) / BlockSize
+                        UsedBlockNum = (End - self.Offset) // BlockSize
                     Start = End
                     ExpectedList.append((BlockSize, UsedBlockNum))
                     RemindingSize -= BlockSize * UsedBlockNum

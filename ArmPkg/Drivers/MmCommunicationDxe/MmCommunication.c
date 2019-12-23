@@ -2,13 +2,7 @@
 
   Copyright (c) 2016-2018, ARM Limited. All rights reserved.
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -265,6 +259,43 @@ GetMmCompatibility ()
   return Status;
 }
 
+STATIC EFI_GUID* CONST mGuidedEventGuid[] = {
+  &gEfiEndOfDxeEventGroupGuid,
+  &gEfiEventExitBootServicesGuid,
+  &gEfiEventReadyToBootGuid,
+};
+
+STATIC EFI_EVENT mGuidedEvent[ARRAY_SIZE (mGuidedEventGuid)];
+
+/**
+  Event notification that is fired when GUIDed Event Group is signaled.
+
+  @param  Event                 The Event that is being processed, not used.
+  @param  Context               Event Context, not used.
+
+**/
+STATIC
+VOID
+EFIAPI
+MmGuidedEventNotify (
+  IN EFI_EVENT  Event,
+  IN VOID       *Context
+  )
+{
+  EFI_MM_COMMUNICATE_HEADER   Header;
+  UINTN                       Size;
+
+  //
+  // Use Guid to initialize EFI_SMM_COMMUNICATE_HEADER structure
+  //
+  CopyGuid (&Header.HeaderGuid, Context);
+  Header.MessageLength = 1;
+  Header.Data[0] = 0;
+
+  Size = sizeof (Header);
+  MmCommunicationCommunicate (&mMmCommunication, &Header, &Size);
+}
+
 /**
   The Entry Point for MM Communication
 
@@ -287,6 +318,7 @@ MmCommunicationInitialize (
   )
 {
   EFI_STATUS                 Status;
+  UINTN                      Index;
 
   // Check if we can make the MM call
   Status = GetMmCompatibility ();
@@ -351,8 +383,13 @@ MmCommunicationInitialize (
                   NULL,
                   &mSetVirtualAddressMapEvent
                   );
-  if (Status == EFI_SUCCESS) {
-    return Status;
+  ASSERT_EFI_ERROR (Status);
+
+  for (Index = 0; Index < ARRAY_SIZE (mGuidedEventGuid); Index++) {
+    Status = gBS->CreateEventEx (EVT_NOTIFY_SIGNAL, TPL_CALLBACK,
+                    MmGuidedEventNotify, mGuidedEventGuid[Index],
+                    mGuidedEventGuid[Index], &mGuidedEvent[Index]);
+    ASSERT_EFI_ERROR (Status);
   }
 
   gBS->UninstallProtocolInterface (

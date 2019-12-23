@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 '''
 InfPomAlignment
@@ -133,7 +127,7 @@ class InfPomAlignment(ModuleObject):
         #
         # Should only have one ArchString Item.
         #
-        ArchString = RecordSet.keys()[0]
+        ArchString = list(RecordSet.keys())[0]
         ArchList = GetSplitValueList(ArchString, ' ')
         ArchList = ConvertArchList(ArchList)
         HasCalledFlag = False
@@ -293,7 +287,7 @@ class InfPomAlignment(ModuleObject):
             self.SetUserExtensionList(self.GetUserExtensionList() + [UserExtension])
         #
         # Get all meta-file header information
-        # the record is list of items formated:
+        # the record is list of items formatted:
         # [LineValue, Arch, StartLine, ID, Third]
         #
         InfHeaderObj = self.Parser.InfHeader

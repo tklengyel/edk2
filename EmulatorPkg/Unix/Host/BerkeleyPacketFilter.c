@@ -4,16 +4,10 @@
 
  Tested on Mac OS X.
 
-Copyright (c) 2004 - 2009, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2019, Intel Corporation. All rights reserved.<BR>
 Portitions copyright (c) 2011, Apple Inc. All rights reserved.
 
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -222,6 +216,7 @@ EmuSnpStart (
   }
 
   Status = EFI_SUCCESS;
+  Private->ReadBuffer = NULL;
   if (Private->BpfFd == 0) {
     Status = OpenBpfFileDescriptor (Private, &Private->BpfFd);
     if (EFI_ERROR (Status)) {
@@ -248,7 +243,7 @@ EmuSnpStart (
     //
     // Associate our interface with this BPF file descriptor.
     //
-    AsciiStrCpy (BoundIf.ifr_name, Private->InterfaceName);
+    AsciiStrCpyS (BoundIf.ifr_name, sizeof (BoundIf.ifr_name), Private->InterfaceName);
     if (ioctl (Private->BpfFd, BIOCSETIF, &BoundIf) < 0) {
       goto DeviceErrorExit;
     }
@@ -772,10 +767,6 @@ EmuSnpGetStatus (
 
   Private = EMU_SNP_PRIVATE_DATA_FROM_THIS (This);
 
-  if (TxBuf != NULL) {
-    *((UINT8 **)TxBuf) =  (UINT8 *)1;
-  }
-
   if ( InterruptStatus != NULL ) {
     *InterruptStatus = EFI_SIMPLE_NETWORK_TRANSMIT_INTERRUPT;
   }
@@ -1022,7 +1013,11 @@ GetInterfaceMacAddr (
     goto Exit;
   }
 
-  UnicodeStrToAsciiStr (Private->Thunk->ConfigString, Private->InterfaceName);
+  UnicodeStrToAsciiStrS (
+    Private->Thunk->ConfigString,
+    Private->InterfaceName,
+    StrSize (Private->Thunk->ConfigString)
+    );
 
   Status = EFI_NOT_FOUND;
   If = IfAddrs;

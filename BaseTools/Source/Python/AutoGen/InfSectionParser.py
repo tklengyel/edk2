@@ -2,13 +2,7 @@
 # Parser a Inf file and Get specify section data.
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ## Import Modules
@@ -34,7 +28,8 @@ class InfSectionParser():
         SectionData = []
 
         try:
-            FileLinesList = open(self._FilePath, "r", 0).readlines()
+            with open(self._FilePath, "r") as File:
+                FileLinesList = File.readlines()
         except BaseException:
             EdkLogger.error("build", AUTOGEN_ERROR, 'File %s is opened failed.' % self._FilePath)
 
@@ -80,13 +75,13 @@ class InfSectionParser():
                             UserExtensionTianoCore.append({SubSection: SectionDataDict[key]})
         return UserExtensionTianoCore
 
-    # Get depex expresion
+    # Get depex expression
     #
     # @return: a list include some dictionary that key is section and value is a list contain all data.
     def GetDepexExpresionList(self):
-        DepexExpresionList = []
+        DepexExpressionList = []
         if not self._FileSectionDataList:
-            return DepexExpresionList
+            return DepexExpressionList
         for SectionDataDict in self._FileSectionDataList:
             for key in SectionDataDict:
                 if key.lower() == "[depex]" or key.lower().startswith("[depex."):
@@ -105,8 +100,8 @@ class InfSectionParser():
                             SubKey = (SectionList[1], SectionList[2])
                         else:
                             EdkLogger.error("build", AUTOGEN_ERROR, 'Section %s is invalid.' % key)
-                        DepexExpresionList.append({SubKey: SectionDataDict[key]})
-        return DepexExpresionList
+                        DepexExpressionList.append({SubKey: SectionDataDict[key]})
+        return DepexExpressionList
 
 
 

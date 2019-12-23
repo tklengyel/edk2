@@ -1,13 +1,7 @@
 /** @file
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 Module Name:
 
@@ -28,6 +22,7 @@ Abstract:
 
 #include <Protocol/EmuIoThunk.h>
 #include <Protocol/EmuGraphicsWindow.h>
+#include <Protocol/SimplePointer.h>
 #include <Protocol/SimpleTextIn.h>
 #include <Protocol/SimpleTextInEx.h>
 #include <Protocol/GraphicsOutput.h>
@@ -115,6 +110,10 @@ typedef struct {
   BOOLEAN                           ScrollLock;
   BOOLEAN                           CapsLock;
   BOOLEAN                           IsPartialKeySupport;
+  INT32                             PointerPreviousX;
+  INT32                             PointerPreviousY;
+  BOOLEAN                           PointerStateChanged;
+  EFI_SIMPLE_POINTER_STATE          PointerState;
 } GRAPHICS_PRIVATE_DATA;
 #define GRAPHICS_PRIVATE_DATA_SIGNATURE  SIGNATURE_32 ('g', 'f', 'x', 'd')
 #define GRAPHICS_PRIVATE_DATA_FROM_THIS(a)  \

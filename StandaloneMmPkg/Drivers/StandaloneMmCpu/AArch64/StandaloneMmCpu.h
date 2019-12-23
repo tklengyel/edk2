@@ -3,13 +3,7 @@
   CPU driver
 
   Copyright (c) 2017 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -40,7 +34,7 @@ extern MP_INFORMATION_HOB_DATA       *mMpInformationHobData;
 extern EFI_MM_CONFIGURATION_PROTOCOL mMmConfig;
 
 EFI_STATUS
-PiMmStandloneArmTfCpuDriverEntry (
+PiMmStandaloneArmTfCpuDriverEntry (
   IN UINTN EventId,
   IN UINTN CpuNumber,
   IN UINTN NsCommBufferAddr
@@ -53,12 +47,6 @@ PiMmCpuTpFwRootMmiHandler (
   IN     CONST VOID               *Context,        OPTIONAL
   IN OUT VOID                     *CommBuffer,     OPTIONAL
   IN OUT UINTN                    *CommBufferSize  OPTIONAL
-  );
-
-EFI_STATUS _PiMmStandloneArmTfCpuDriverEntry (
-  IN UINTN EventId,
-  IN UINTN CpuNumber,
-  IN UINTN NsCommBufferAddr
   );
 
 #endif

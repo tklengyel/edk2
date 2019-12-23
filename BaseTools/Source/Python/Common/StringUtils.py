@@ -2,13 +2,7 @@
 # This file is used to define common string related functions used in parsing process
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -32,7 +26,7 @@ gHumanReadableVerPatt = re.compile(r'([1-9][0-9]*|0)\.[0-9]{1,2}$')
 
 ## GetSplitValueList
 #
-# Get a value list from a string with multiple values splited with SplitTag
+# Get a value list from a string with multiple values split with SplitTag
 # The default SplitTag is DataType.TAB_VALUE_SPLIT
 # 'AAA|BBB|CCC' -> ['AAA', 'BBB', 'CCC']
 #
@@ -88,7 +82,7 @@ def GetSplitValueList(String, SplitTag=DataType.TAB_VALUE_SPLIT, MaxSplit= -1):
 
 ## GetSplitList
 #
-# Get a value list from a string with multiple values splited with SplitString
+# Get a value list from a string with multiple values split with SplitString
 # The default SplitTag is DataType.TAB_VALUE_SPLIT
 # 'AAA|BBB|CCC' -> ['AAA', 'BBB', 'CCC']
 #
@@ -99,7 +93,7 @@ def GetSplitValueList(String, SplitTag=DataType.TAB_VALUE_SPLIT, MaxSplit= -1):
 # @retval list() A list for splitted string
 #
 def GetSplitList(String, SplitStr=DataType.TAB_VALUE_SPLIT, MaxSplit= -1):
-    return map(lambda l: l.strip(), String.split(SplitStr, MaxSplit))
+    return list(map(lambda l: l.strip(), String.split(SplitStr, MaxSplit)))
 
 ## MergeArches
 #
@@ -123,7 +117,7 @@ def MergeArches(Dict, Key, Arch):
 # Return False if invalid format
 #
 # @param String:   String with DEFINE statement
-# @param Arch:     Supportted Arch
+# @param Arch:     Supported Arch
 # @param Defines:  DEFINE statement to be parsed
 #
 # @retval 0   DEFINE statement found, and valid
@@ -149,7 +143,7 @@ def GenDefines(String, Arch, Defines):
 #
 # @param String:        String with INCLUDE statement
 # @param IncludeFiles:  INCLUDE statement to be parsed
-# @param Arch:          Supportted Arch
+# @param Arch:          Supported Arch
 #
 # @retval True
 # @retval False
@@ -249,8 +243,10 @@ def SplitModuleType(Key):
 #
 # @retval NewList           A new string list whose macros are replaced
 #
-def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement=False):
+def ReplaceMacros(StringList, MacroDefinitions=None, SelfReplacement=False):
     NewList = []
+    if MacroDefinitions is None:
+        MacroDefinitions = {}
     for String in StringList:
         if isinstance(String, type('')):
             NewList.append(ReplaceMacro(String, MacroDefinitions, SelfReplacement))
@@ -270,8 +266,10 @@ def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement=False):
 #
 # @retval string            The string whose macros are replaced
 #
-def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement=False, RaiseError=False):
+def ReplaceMacro(String, MacroDefinitions=None, SelfReplacement=False, RaiseError=False):
     LastString = String
+    if MacroDefinitions is None:
+        MacroDefinitions = {}
     while String and MacroDefinitions:
         MacroUsed = GlobalData.gMacroRefPattern.findall(String)
         # no macro found in String, stop replacing
@@ -297,14 +295,14 @@ def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement=False, RaiseError=
 ## NormPath
 #
 # Create a normal path
-# And replace DFEINE in the path
+# And replace DEFINE in the path
 #
 # @param Path:     The input value for Path to be converted
 # @param Defines:  A set for DEFINE statement
 #
 # @retval Path Formatted path
 #
-def NormPath(Path, Defines={}):
+def NormPath(Path, Defines=None):
     IsRelativePath = False
     if Path:
         if Path[0] == '.':
@@ -545,7 +543,7 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 #
                 LineList[1] = CleanString(LineList[1], CommentCharacter)
                 if ValueSplitFlag:
-                    Value = map(string.strip, LineList[1].split(ValueSplitCharacter))
+                    Value = list(map(string.strip, LineList[1].split(ValueSplitCharacter)))
                 else:
                     Value = CleanString(LineList[1], CommentCharacter).splitlines()
 
@@ -730,9 +728,9 @@ def WorkspaceFile(WorkspaceDir, Filename):
 
 ## Split string
 #
-# Revmove '"' which startswith and endswith string
+# Remove '"' which startswith and endswith string
 #
-# @param String:  The string need to be splited
+# @param String:  The string need to be split
 #
 # @retval String: The string after removed '""'
 #
@@ -751,7 +749,7 @@ def SplitString(String):
 # @param StringList:  A list for strings to be converted
 #
 def ConvertToSqlString(StringList):
-    return map(lambda s: s.replace("'", "''"), StringList)
+    return list(map(lambda s: s.replace("'", "''"), StringList))
 
 ## Convert To Sql String
 #
@@ -816,11 +814,7 @@ def GetHelpTextList(HelpTextClassList):
     return List
 
 def StringToArray(String):
-    if isinstance(String, unicode):
-        if len(unicode) == 0:
-            return "{0x00,0x00}"
-        return "{%s,0x00,0x00}" % ",".join("0x%02x,0x00" % ord(C) for C in String)
-    elif String.startswith('L"'):
+    if String.startswith('L"'):
         if String == "L\"\"":
             return "{0x00,0x00}"
         else:
@@ -843,9 +837,7 @@ def StringToArray(String):
             return '{%s,0,0}' % ','.join(String.split())
 
 def StringArrayLength(String):
-    if isinstance(String, unicode):
-        return (len(String) + 1) * 2 + 1;
-    elif String.startswith('L"'):
+    if String.startswith('L"'):
         return (len(String) - 3 + 1) * 2
     elif String.startswith('"'):
         return (len(String) - 2 + 1)

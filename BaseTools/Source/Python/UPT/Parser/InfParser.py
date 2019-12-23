@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 '''
@@ -51,7 +45,7 @@ def OpenInfFile(Filename):
     FileLinesList = []
 
     try:
-        FInputfile = open(Filename, "rb", 0)
+        FInputfile = open(Filename, "r")
         try:
             FileLinesList = FInputfile.readlines()
         except BaseException:
@@ -86,7 +80,7 @@ class InfParser(InfSectionParser):
         #
         # Call parent class construct function
         #
-        super(InfParser, self).__init__()
+        InfSectionParser.__init__()
 
         self.WorkspaceDir    = WorkspaceDir
         self.SupArchList     = DT.ARCH_LIST

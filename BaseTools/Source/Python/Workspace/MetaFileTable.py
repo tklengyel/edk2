@@ -2,13 +2,7 @@
 # This file is used to create/update/query/erase a meta file table
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -393,7 +387,7 @@ class PlatformTable(MetaFileTable):
         if FromItem is not None:
             result = [item for item in result if item[9] == FromItem]
 
-        result = [ [r[2],r[3],r[4],r[5],r[6],r[7],r[0],r[9]] for r in result ]
+        result = [ [r[2],r[3],r[4],r[5],r[6],r[7],r[0],r[10]] for r in result ]
         return result
 
     def DisableComponent(self,comp_id):

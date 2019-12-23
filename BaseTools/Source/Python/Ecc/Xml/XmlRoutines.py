@@ -3,13 +3,7 @@
 # standard python so that no extra python packages are required to use it.
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -17,6 +11,7 @@
 #
 from __future__ import print_function
 import xml.dom.minidom
+import codecs
 from Common.LongFilePathSupport import OpenLongFilePath as open
 
 ## Create a element of XML
@@ -211,7 +206,7 @@ def XmlNodeName(Dom):
 #
 def XmlParseFile(FileName):
     try:
-        XmlFile = open(FileName)
+        XmlFile = codecs.open(FileName,encoding='utf_8_sig')
         Dom = xml.dom.minidom.parse(XmlFile)
         XmlFile.close()
         return Dom

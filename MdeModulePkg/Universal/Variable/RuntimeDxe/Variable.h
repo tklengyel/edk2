@@ -2,14 +2,8 @@
   The internal header file includes the common header files, defines
   internal structure and functions used by Variable modules.
 
-Copyright (c) 2006 - 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -46,6 +40,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #include "PrivilegePolymorphic.h"
 
+#define NV_STORAGE_VARIABLE_BASE (EFI_PHYSICAL_ADDRESS) \
+                                   (PcdGet64 (PcdFlashNvStorageVariableBase64) != 0 ? \
+                                    PcdGet64 (PcdFlashNvStorageVariableBase64) : \
+                                    PcdGet32 (PcdFlashNvStorageVariableBase))
+
 #define EFI_VARIABLE_ATTRIBUTES_MASK (EFI_VARIABLE_NON_VOLATILE | \
                                       EFI_VARIABLE_BOOTSERVICE_ACCESS | \
                                       EFI_VARIABLE_RUNTIME_ACCESS | \
@@ -66,6 +65,21 @@ typedef enum {
 } VARIABLE_STORE_TYPE;
 
 typedef struct {
+  UINT32                  PendingUpdateOffset;
+  UINT32                  PendingUpdateLength;
+  VARIABLE_STORE_HEADER   *Store;
+} VARIABLE_RUNTIME_CACHE;
+
+typedef struct {
+  BOOLEAN                 *ReadLock;
+  BOOLEAN                 *PendingUpdate;
+  BOOLEAN                 *HobFlushComplete;
+  VARIABLE_RUNTIME_CACHE  VariableRuntimeHobCache;
+  VARIABLE_RUNTIME_CACHE  VariableRuntimeNvCache;
+  VARIABLE_RUNTIME_CACHE  VariableRuntimeVolatileCache;
+} VARIABLE_RUNTIME_CACHE_CONTEXT;
+
+typedef struct {
   VARIABLE_HEADER *CurrPtr;
   //
   // If both ADDED and IN_DELETED_TRANSITION variable are present,
@@ -80,13 +94,15 @@ typedef struct {
 } VARIABLE_POINTER_TRACK;
 
 typedef struct {
-  EFI_PHYSICAL_ADDRESS  HobVariableBase;
-  EFI_PHYSICAL_ADDRESS  VolatileVariableBase;
-  EFI_PHYSICAL_ADDRESS  NonVolatileVariableBase;
-  EFI_LOCK              VariableServicesLock;
-  UINT32                ReentrantState;
-  BOOLEAN               AuthFormat;
-  BOOLEAN               AuthSupport;
+  EFI_PHYSICAL_ADDRESS            HobVariableBase;
+  EFI_PHYSICAL_ADDRESS            VolatileVariableBase;
+  EFI_PHYSICAL_ADDRESS            NonVolatileVariableBase;
+  VARIABLE_RUNTIME_CACHE_CONTEXT  VariableRuntimeCacheContext;
+  EFI_LOCK                        VariableServicesLock;
+  UINT32                          ReentrantState;
+  BOOLEAN                         AuthFormat;
+  BOOLEAN                         AuthSupport;
+  BOOLEAN                         EmuNvMode;
 } VARIABLE_GLOBAL;
 
 typedef struct {
@@ -177,89 +193,6 @@ FindVariable (
   OUT VARIABLE_POINTER_TRACK  *PtrTrack,
   IN  VARIABLE_GLOBAL         *Global,
   IN  BOOLEAN                 IgnoreRtCheck
-  );
-
-/**
-
-  Gets the pointer to the end of the variable storage area.
-
-  This function gets pointer to the end of the variable storage
-  area, according to the input variable store header.
-
-  @param VarStoreHeader  Pointer to the Variable Store Header.
-
-  @return Pointer to the end of the variable storage area.
-
-**/
-VARIABLE_HEADER *
-GetEndPointer (
-  IN VARIABLE_STORE_HEADER       *VarStoreHeader
-  );
-
-/**
-  This code gets the size of variable header.
-
-  @return Size of variable header in bytes in type UINTN.
-
-**/
-UINTN
-GetVariableHeaderSize (
-  VOID
-  );
-
-/**
-
-  This code gets the pointer to the variable name.
-
-  @param Variable        Pointer to the Variable Header.
-
-  @return Pointer to Variable Name which is Unicode encoding.
-
-**/
-CHAR16 *
-GetVariableNamePtr (
-  IN  VARIABLE_HEADER   *Variable
-  );
-
-/**
-  This code gets the pointer to the variable guid.
-
-  @param Variable   Pointer to the Variable Header.
-
-  @return A EFI_GUID* pointer to Vendor Guid.
-
-**/
-EFI_GUID *
-GetVendorGuidPtr (
-  IN VARIABLE_HEADER    *Variable
-  );
-
-/**
-
-  This code gets the pointer to the variable data.
-
-  @param Variable        Pointer to the Variable Header.
-
-  @return Pointer to Variable Data.
-
-**/
-UINT8 *
-GetVariableDataPtr (
-  IN  VARIABLE_HEADER   *Variable
-  );
-
-/**
-
-  This code gets the size of variable data.
-
-  @param Variable        Pointer to the Variable Header.
-
-  @return Size of variable in bytes.
-
-**/
-UINTN
-DataSizeOfVariable (
-  IN  VARIABLE_HEADER   *Variable
   );
 
 /**
@@ -451,17 +384,6 @@ ReclaimForOS(
   );
 
 /**
-  Get non-volatile maximum variable size.
-
-  @return Non-volatile maximum variable size.
-
-**/
-UINTN
-GetNonVolatileMaxVariableSize (
-  VOID
-  );
-
-/**
   Get maximum variable size, covering both non-volatile and volatile variables.
 
   @return Maximum variable size.
@@ -473,7 +395,7 @@ GetMaxVariableSize (
   );
 
 /**
-  Initializes variable write service after FVB was ready.
+  Initializes variable write service.
 
   @retval EFI_SUCCESS          Function successfully executed.
   @retval Others               Fail to initialize the variable service.
@@ -544,31 +466,6 @@ VariableServiceGetVariable (
   OUT     UINT32            *Attributes OPTIONAL,
   IN OUT  UINTN             *DataSize,
   OUT     VOID              *Data OPTIONAL
-  );
-
-/**
-  This code Finds the Next available variable.
-
-  Caution: This function may receive untrusted input.
-  This function may be invoked in SMM mode. This function will do basic validation, before parse the data.
-
-  @param[in] VariableName   Pointer to variable name.
-  @param[in] VendorGuid     Variable Vendor Guid.
-  @param[out] VariablePtr   Pointer to variable header address.
-
-  @retval EFI_SUCCESS           The function completed successfully.
-  @retval EFI_NOT_FOUND         The next variable was not found.
-  @retval EFI_INVALID_PARAMETER If VariableName is not an empty string, while VendorGuid is NULL.
-  @retval EFI_INVALID_PARAMETER The input values of VariableName and VendorGuid are not a name and
-                                GUID of an existing variable.
-
-**/
-EFI_STATUS
-EFIAPI
-VariableServiceGetNextVariableInternal (
-  IN  CHAR16                *VariableName,
-  IN  EFI_GUID              *VendorGuid,
-  OUT VARIABLE_HEADER       **VariablePtr
   );
 
 /**
@@ -792,9 +689,14 @@ InitializeVariableQuota (
   VOID
   );
 
-extern VARIABLE_MODULE_GLOBAL  *mVariableModuleGlobal;
+extern VARIABLE_MODULE_GLOBAL       *mVariableModuleGlobal;
+extern EFI_FIRMWARE_VOLUME_HEADER   *mNvFvHeaderCache;
+extern VARIABLE_STORE_HEADER        *mNvVariableCache;
+extern VARIABLE_INFO_ENTRY          *gVariableInfo;
+extern BOOLEAN                      mEndOfDxe;
+extern VAR_CHECK_REQUEST_SOURCE     mRequestSource;
 
-extern AUTH_VAR_LIB_CONTEXT_OUT mAuthContextOut;
+extern AUTH_VAR_LIB_CONTEXT_OUT     mAuthContextOut;
 
 /**
   Finds variable in storage blocks of volatile and non-volatile storage areas.

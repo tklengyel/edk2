@@ -4,13 +4,7 @@
 #
 # Copyright (c) 2016-2018, ARM Ltd. All rights reserved.<BR>
 #
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #
 
@@ -38,10 +32,4 @@
 
   gEfiStandaloneMmNonSecureBufferGuid      = { 0xf00497e3, 0xbfa2, 0x41a1, { 0x9d, 0x29, 0x54, 0xc2, 0xe9, 0x37, 0x21, 0xc5 }}
   gEfiArmTfCpuDriverEpDescriptorGuid       = { 0x6ecbd5a1, 0xc0f8, 0x4702, { 0x83, 0x01, 0x4f, 0xc2, 0xc5, 0x47, 0x0a, 0x51 }}
-
-[PcdsFeatureFlag]
-  gStandaloneMmPkgTokenSpaceGuid.PcdStandaloneMmEnable|FALSE|BOOLEAN|0x00000001
-
-[Protocols]
-  gEfiMmConfigurationProtocolGuid          = { 0xc109319, 0xc149, 0x450e,  { 0xa3, 0xe3, 0xb9, 0xba, 0xdd, 0x9d, 0xc3, 0xa4 }}
 

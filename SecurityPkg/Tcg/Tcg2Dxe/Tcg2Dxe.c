@@ -1,15 +1,9 @@
 /** @file
   This module implements Tcg2 Protocol.
 
-Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -133,7 +127,7 @@ EFI_HANDLE mImageHandle;
   @param[in]  PCRIndex       TPM PCR index
   @param[in]  ImageAddress   Start address of image buffer.
   @param[in]  ImageSize      Image size
-  @param[out] DigestList     Digeest list of this image.
+  @param[out] DigestList     Digest list of this image.
 
   @retval EFI_SUCCESS            Successfully measure image.
   @retval EFI_OUT_OF_RESOURCES   No enough resource to measure image.
@@ -1473,17 +1467,37 @@ SetupEventLog (
   for (Index = 0; Index < sizeof(mTcg2EventInfo)/sizeof(mTcg2EventInfo[0]); Index++) {
     if ((mTcgDxeData.BsCap.SupportedEventLogs & mTcg2EventInfo[Index].LogFormat) != 0) {
       mTcgDxeData.EventLogAreaStruct[Index].EventLogFormat = mTcg2EventInfo[Index].LogFormat;
-      Status = gBS->AllocatePages (
-                      AllocateAnyPages,
-                      EfiBootServicesData,
-                      EFI_SIZE_TO_PAGES (PcdGet32 (PcdTcgLogAreaMinLen)),
-                      &Lasa
-                      );
+      if (PcdGet8(PcdTpm2AcpiTableRev) >= 4) {
+        Status = gBS->AllocatePages (
+                        AllocateAnyPages,
+                        EfiACPIMemoryNVS,
+                        EFI_SIZE_TO_PAGES (PcdGet32 (PcdTcgLogAreaMinLen)),
+                        &Lasa
+                        );
+      } else {
+        Status = gBS->AllocatePages (
+                        AllocateAnyPages,
+                        EfiBootServicesData,
+                        EFI_SIZE_TO_PAGES (PcdGet32 (PcdTcgLogAreaMinLen)),
+                        &Lasa
+                        );
+      }
       if (EFI_ERROR (Status)) {
         return Status;
       }
       mTcgDxeData.EventLogAreaStruct[Index].Lasa = Lasa;
       mTcgDxeData.EventLogAreaStruct[Index].Laml = PcdGet32 (PcdTcgLogAreaMinLen);
+
+      if ((PcdGet8(PcdTpm2AcpiTableRev) >= 4) ||
+          (mTcg2EventInfo[Index].LogFormat == EFI_TCG2_EVENT_LOG_FORMAT_TCG_2)) {
+        //
+        // Report TCG2 event log address and length, so that they can be reported in TPM2 ACPI table.
+        // Ignore the return status, because those fields are optional.
+        //
+        PcdSet32S(PcdTpm2AcpiTableLaml, (UINT32)mTcgDxeData.EventLogAreaStruct[Index].Laml);
+        PcdSet64S(PcdTpm2AcpiTableLasa, mTcgDxeData.EventLogAreaStruct[Index].Lasa);
+      }
+
       //
       // To initialize them as 0xFF is recommended
       // because the OS can know the last entry for that.
@@ -2314,10 +2328,10 @@ OnReadyToBoot (
     //
     Status = TcgMeasureAction (
                4,
-               EFI_RETURNING_FROM_EFI_APPLICATOIN
+               EFI_RETURNING_FROM_EFI_APPLICATION
                );
     if (EFI_ERROR (Status)) {
-      DEBUG ((EFI_D_ERROR, "%a not Measured. Error!\n", EFI_RETURNING_FROM_EFI_APPLICATOIN));
+      DEBUG ((EFI_D_ERROR, "%a not Measured. Error!\n", EFI_RETURNING_FROM_EFI_APPLICATION));
     }
 
     //
@@ -2425,10 +2439,7 @@ OnExitBootServicesFailed (
                                 EfiResetShutdown the data buffer starts with a Null-terminated
                                 string, optionally followed by additional binary data.
                                 The string is a description that the caller may use to further
-                                indicate the reason for the system reset. ResetData is only
-                                valid if ResetStatus is something other than EFI_SUCCESS
-                                unless the ResetType is EfiResetPlatformSpecific
-                                where a minimum amount of ResetData is always required.
+                                indicate the reason for the system reset.
                                 For a ResetType of EfiResetPlatformSpecific the data buffer
                                 also starts with a Null-terminated string that is followed
                                 by an EFI_GUID that describes the specific type of reset to perform.

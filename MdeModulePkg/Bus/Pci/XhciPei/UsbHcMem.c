@@ -4,14 +4,7 @@ which is used to enable recovery function from USB Drivers.
 
 Copyright (c) 2014 - 2016, Intel Corporation. All rights reserved.<BR>
 
-This program and the accompanying materials
-are licensed and made available under the terms and conditions
-of the BSD License which accompanies this distribution.  The
-full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -569,11 +562,7 @@ UsbHcAllocateAlignedPages (
 {
   EFI_STATUS            Status;
   VOID                  *Memory;
-  UINTN                 AlignedMemory;
-  UINTN                 AlignmentMask;
   EFI_PHYSICAL_ADDRESS  DeviceMemory;
-  UINTN                 AlignedDeviceMemory;
-  UINTN                 RealPages;
 
   //
   // Alignment must be a power of two or zero.
@@ -589,18 +578,9 @@ UsbHcAllocateAlignedPages (
   }
 
   if (Alignment > EFI_PAGE_SIZE) {
-    //
-    // Calculate the total number of pages since alignment is larger than page size.
-    //
-    AlignmentMask  = Alignment - 1;
-    RealPages      = Pages + EFI_SIZE_TO_PAGES (Alignment);
-    //
-    // Make sure that Pages plus EFI_SIZE_TO_PAGES (Alignment) does not overflow.
-    //
-    ASSERT (RealPages > Pages);
-
-    Status = IoMmuAllocateBuffer (
+    Status = IoMmuAllocateAlignedBuffer (
                Pages,
+               Alignment,
                &Memory,
                &DeviceMemory,
                Mapping
@@ -608,8 +588,6 @@ UsbHcAllocateAlignedPages (
     if (EFI_ERROR (Status)) {
       return EFI_OUT_OF_RESOURCES;
     }
-    AlignedMemory = ((UINTN) Memory + AlignmentMask) & ~AlignmentMask;
-    AlignedDeviceMemory = ((UINTN) DeviceMemory + AlignmentMask) & ~AlignmentMask;
   } else {
     //
     // Do not over-allocate pages in this case.
@@ -623,12 +601,10 @@ UsbHcAllocateAlignedPages (
     if (EFI_ERROR (Status)) {
       return EFI_OUT_OF_RESOURCES;
     }
-    AlignedMemory = (UINTN) Memory;
-    AlignedDeviceMemory = (UINTN) DeviceMemory;
   }
 
-  *HostAddress = (VOID *) AlignedMemory;
-  *DeviceAddress = (EFI_PHYSICAL_ADDRESS) AlignedDeviceMemory;
+  *HostAddress = Memory;
+  *DeviceAddress = DeviceMemory;
 
   return EFI_SUCCESS;
 }

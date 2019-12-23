@@ -3,13 +3,7 @@
 
 Copyright (c) 2013 - 2018, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2015 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -87,7 +81,7 @@ TisPcWaitRegisterBits (
   in the time of default TIS_TIMEOUT_D.
 
   @param[in]  TisReg                Pointer to TIS register.
-  @param[out] BurstCount            Pointer to a buffer to store the got BurstConut.
+  @param[out] BurstCount            Pointer to a buffer to store the got BurstCount.
 
   @retval     EFI_SUCCESS           Get BurstCount.
   @retval     EFI_INVALID_PARAMETER TisReg is NULL or BurstCount is NULL.
@@ -309,7 +303,7 @@ Tpm2TisTpmCommand (
                TIS_TIMEOUT_B
                );
     //
-    // Do not clear CANCEL bit here bicoz Writes of 0 to this bit are ignored
+    // Do not clear CANCEL bit here because Writes of 0 to this bit are ignored
     //
     if (EFI_ERROR (Status)) {
       //

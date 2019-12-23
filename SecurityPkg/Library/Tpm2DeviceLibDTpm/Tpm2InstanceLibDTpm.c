@@ -4,13 +4,7 @@
   based on platform setting.
 
 Copyright (c) 2013 - 2018, Intel Corporation. All rights reserved. <BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -99,7 +93,7 @@ TPM2_DEVICE_INTERFACE  mDTpm2InternalTpm2Device = {
 /**
   The function register DTPM2.0 instance and caches current active TPM interface type.
 
-  @retval EFI_SUCCESS   DTPM2.0 instance is registered, or system dose not surpport registr DTPM2.0 instance
+  @retval EFI_SUCCESS   DTPM2.0 instance is registered, or system does not support register DTPM2.0 instance
 **/
 EFI_STATUS
 EFIAPI

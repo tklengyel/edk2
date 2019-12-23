@@ -2,14 +2,8 @@
   Public Header file of HII library used by Opal UEFI Driver.
   Defines required callbacks of Opal HII library.
 
-Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -162,7 +156,7 @@ OpalHiiSetBrowserData (
 
 /**
 
-  Populate the hii_g_Configuraton with the browser Data.
+  Populate the hii_g_Configuration with the browser Data.
 
 **/
 VOID
@@ -253,7 +247,7 @@ GetDiskNameStringId(
 
   @param OpalDisk                The Opal device.
 
-  @retval EFI_SUCESS             Initialize the device success.
+  @retval EFI_SUCCESS             Initialize the device success.
   @retval EFI_DEVICE_ERROR       Get info from device failed.
   @retval EFI_INVALID_PARAMETER  Not get Msid info before get ownership info.
 
@@ -282,17 +276,6 @@ HiiGetDriverImageHandleCB(
 **/
 EFI_STATUS
 OpalHiiAddPackages(
-  VOID
-  );
-
-/**
-  Returns the driver name.
-
-  @retval Returns the driver name.
-
-**/
-CHAR16*
-HiiGetDriverNameCB(
   VOID
   );
 
@@ -365,13 +348,28 @@ HiiUninstall(
 
   @param Dev                  The Opal device.
 
-  @retval EFI_SUCESS          Initialize the device success.
+  @retval EFI_SUCCESS          Initialize the device success.
   @retval EFI_DEVICE_ERROR    Get info from device failed.
 
 **/
 EFI_STATUS
 OpalDiskInitialize (
   IN OPAL_DRIVER_DEVICE          *Dev
+  );
+
+/**
+  Update the device ownership
+
+  @param OpalDisk                The Opal device.
+
+  @retval EFI_SUCCESS             Get ownership success.
+  @retval EFI_ACCESS_DENIED      Has send BlockSID command, can't change ownership.
+  @retval EFI_INVALID_PARAMETER  Not get Msid info before get ownership info.
+
+**/
+EFI_STATUS
+OpalDiskUpdateOwnerShip (
+  OPAL_DISK        *OpalDisk
   );
 
 #endif // _HII_H_

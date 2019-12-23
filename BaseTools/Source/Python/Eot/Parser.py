@@ -3,13 +3,7 @@
 # Inf/Dsc/Makefile process
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -62,7 +56,7 @@ def DeCompress(Method, Input):
 #  @param  MergeMultipleLines: Switch for if merge multiple lines
 #  @param  LineNo: Default line no
 #
-#  @return Lines: The file contents after remvoing comments
+#  @return Lines: The file contents after removing comments
 #
 def PreProcess(Filename, MergeMultipleLines = True, LineNo = -1):
     Lines = []
@@ -770,7 +764,7 @@ def GetParameterName(Parameter):
 #  @param Table: Table to be searched
 #  @param Key: The keyword
 #
-#  @return Value: The value of the the keyword
+#  @return Value: The value of the keyword
 #
 def FindKeyValue(Db, Table, Key):
     SqlCommand = """select Value from %s where Name = '%s' and (Model = %s or Model = %s)""" % (Table, Key, MODEL_IDENTIFIER_VARIABLE, MODEL_IDENTIFIER_ASSIGNMENT_EXPRESSION)

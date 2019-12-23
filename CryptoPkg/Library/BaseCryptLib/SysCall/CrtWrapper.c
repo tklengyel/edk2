@@ -3,13 +3,7 @@
   Cryptographic Library.
 
 Copyright (c) 2009 - 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -84,14 +78,14 @@ QuickSortWorker (
     }
   }
   //
-  // Swap pivot to it's final position (NextSwapLocaiton)
+  // Swap pivot to its final position (NextSwapLocation)
   //
   CopyMem (Buffer, Pivot, ElementSize);
   CopyMem (Pivot, (UINT8 *)BufferToSort + (NextSwapLocation * ElementSize), ElementSize);
   CopyMem ((UINT8 *)BufferToSort + (NextSwapLocation * ElementSize), Buffer, ElementSize);
 
   //
-  // Now recurse on 2 paritial lists.  Neither of these will have the 'pivot' element.
+  // Now recurse on 2 partial lists.  Neither of these will have the 'pivot' element.
   // IE list is sorted left half, pivot element, sorted right half...
   //
   QuickSortWorker (
@@ -120,6 +114,11 @@ QuickSortWorker (
 //
 // -- String Manipulation Routines --
 //
+
+char *strchr(const char *str, int ch)
+{
+  return ScanMem8 (str, AsciiStrSize (str), (UINT8)ch);
+}
 
 /* Scan a string for the last occurrence of a character */
 char *strrchr (const char *str, int c)

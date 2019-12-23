@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
 # (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 from Common.StringUtils import *
 from Common.DataType import *
@@ -121,7 +115,7 @@ class DecBuildData(PackageBuildClassObject):
 
     ## Retrieve all information in [Defines] section
     #
-    #   (Retriving all [Defines] information in one-shot is just to save time.)
+    #   (Retrieving all [Defines] information in one-shot is just to save time.)
     #
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch]
@@ -167,7 +161,7 @@ class DecBuildData(PackageBuildClassObject):
         if self._Protocols is None:
             #
             # tdict is a special kind of dict, used for selecting correct
-            # protocol defition for given ARCH
+            # protocol definition for given ARCH
             #
             ProtocolDict = tdict(True)
             PrivateProtocolDict = tdict(True)
@@ -210,7 +204,7 @@ class DecBuildData(PackageBuildClassObject):
         if self._Ppis is None:
             #
             # tdict is a special kind of dict, used for selecting correct
-            # PPI defition for given ARCH
+            # PPI definition for given ARCH
             #
             PpiDict = tdict(True)
             PrivatePpiDict = tdict(True)
@@ -253,7 +247,7 @@ class DecBuildData(PackageBuildClassObject):
         if self._Guids is None:
             #
             # tdict is a special kind of dict, used for selecting correct
-            # GUID defition for given ARCH
+            # GUID definition for given ARCH
             #
             GuidDict = tdict(True)
             PrivateGuidDict = tdict(True)
@@ -401,7 +395,7 @@ class DecBuildData(PackageBuildClassObject):
                     struct_pcd.TokenSpaceGuidCName, struct_pcd.TokenCName = pcdname.split(".")
                     struct_pcd.PcdDefineLineNo = LineNo
                     struct_pcd.PkgPath = self.MetaFile.File
-                    struct_pcd.SetDecDefaultValue(item.DefaultValue)
+                    struct_pcd.SetDecDefaultValue(item.DefaultValue,self.MetaFile.File,LineNo)
                 else:
                     DemesionAttr, Fields = self.ParsePcdName(item.TokenCName)
                     struct_pcd.AddDefaultValue(Fields, item.DefaultValue, self.MetaFile.File, LineNo,DemesionAttr)

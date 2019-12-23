@@ -2,13 +2,7 @@
 # This file is used to be the main entrance of ECC tool
 #
 # Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -178,7 +172,7 @@ class Ecc(object):
         Op = open(EccGlobalData.gConfig.MetaDataFileCheckPathOfGenerateFileList, 'w+')
         #SkipDirs = Read from config file
         SkipDirs = EccGlobalData.gConfig.SkipDirList
-        SkipDirString = string.join(SkipDirs, '|')
+        SkipDirString = '|'.join(SkipDirs)
 #         p = re.compile(r'.*[\\/](?:%s)[\\/]?.*' % SkipDirString)
         p = re.compile(r'.*[\\/](?:%s^\S)[\\/]?.*' % SkipDirString)
         for scanFolder in ScanFolders:
@@ -209,7 +203,7 @@ class Ecc(object):
                         Op.write("%s\r" % Filename)
                         #Dsc(Filename, True, True, EccGlobalData.gWorkspace, EccGlobalData.gDb)
                         self.MetaFile = DscParser(PathClass(Filename, Root), MODEL_FILE_DSC, MetaFileStorage(EccGlobalData.gDb.TblDsc.Cur, Filename, MODEL_FILE_DSC, True))
-                        # alwasy do post-process, in case of macros change
+                        # always do post-process, in case of macros change
                         self.MetaFile.DoPostProcess()
                         self.MetaFile.Start()
                         self.MetaFile._PostProcess()
@@ -307,7 +301,7 @@ class Ecc(object):
         if Options.Workspace:
             os.environ["WORKSPACE"] = Options.Workspace
 
-        # Check workspace envirnoment
+        # Check workspace environment
         if "WORKSPACE" not in os.environ:
             EdkLogger.error("ECC", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                             ExtraData="WORKSPACE")

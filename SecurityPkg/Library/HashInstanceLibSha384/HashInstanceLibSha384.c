@@ -3,13 +3,7 @@
   It can be registered to BaseCrypto router, to serve as hash engine.
 
 Copyright (c) 2018, Intel Corporation. All rights reserved. <BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -134,7 +128,7 @@ HASH_INTERFACE  mSha384InternalHashInstance = {
 /**
   The function register SHA384 instance.
 
-  @retval EFI_SUCCESS   SHA384 instance is registered, or system dose not surpport registr SHA384 instance
+  @retval EFI_SUCCESS   SHA384 instance is registered, or system does not support register SHA384 instance
 **/
 EFI_STATUS
 EFIAPI

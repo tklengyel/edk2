@@ -5,13 +5,7 @@
   Copyright 2016 Dell Inc.
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
   (C) Copyright 2013 Hewlett-Packard Development Company, L.P.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1650,6 +1644,9 @@ FileInterfaceMemWrite(
     //
     if ((UINTN)(MemFile->Position + (*BufferSize)) > (UINTN)(MemFile->BufferSize)) {
       MemFile->Buffer = ReallocatePool((UINTN)(MemFile->BufferSize), (UINTN)(MemFile->BufferSize) + (*BufferSize) + MEM_WRITE_REALLOC_OVERHEAD, MemFile->Buffer);
+      if (MemFile->Buffer == NULL){
+        return EFI_OUT_OF_RESOURCES;
+      }
       MemFile->BufferSize += (*BufferSize) + MEM_WRITE_REALLOC_OVERHEAD;
     }
     CopyMem(((UINT8*)MemFile->Buffer) + MemFile->Position, Buffer, *BufferSize);
@@ -1667,6 +1664,10 @@ FileInterfaceMemWrite(
     AsciiSPrint(AsciiBuffer, *BufferSize, "%S", Buffer);
     if ((UINTN)(MemFile->Position + AsciiStrSize(AsciiBuffer)) > (UINTN)(MemFile->BufferSize)) {
       MemFile->Buffer = ReallocatePool((UINTN)(MemFile->BufferSize), (UINTN)(MemFile->BufferSize) + AsciiStrSize(AsciiBuffer) + MEM_WRITE_REALLOC_OVERHEAD, MemFile->Buffer);
+      if (MemFile->Buffer == NULL){
+        FreePool(AsciiBuffer);
+        return EFI_OUT_OF_RESOURCES;
+      }
       MemFile->BufferSize += AsciiStrSize(AsciiBuffer) + MEM_WRITE_REALLOC_OVERHEAD;
     }
     CopyMem(((UINT8*)MemFile->Buffer) + MemFile->Position, AsciiBuffer, AsciiStrSize(AsciiBuffer));

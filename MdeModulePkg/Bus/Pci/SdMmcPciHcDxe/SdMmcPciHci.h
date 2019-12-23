@@ -2,15 +2,9 @@
 
   Provides some data structure definitions used by the SD/MMC host controller driver.
 
-Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2018-2019, NVIDIA CORPORATION. All rights reserved.
 Copyright (c) 2015, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -78,16 +72,27 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #define SD_MMC_HC_CTRL_MMC_HS200      0x0003
 #define SD_MMC_HC_CTRL_MMC_HS400      0x0005
 
+#define SD_MMC_HC_CTRL_DRIVER_STRENGTH_MASK  0x0030
+
 //
 // The transfer modes supported by SD Host Controller
-// Simplified Spec 3.0 Table 1-2
 //
 typedef enum {
   SdMmcNoData,
   SdMmcPioMode,
   SdMmcSdmaMode,
-  SdMmcAdmaMode
+  SdMmcAdma32bMode,
+  SdMmcAdma64bV3Mode,
+  SdMmcAdma64bV4Mode
 } SD_MMC_HC_TRANSFER_MODE;
+
+//
+// The ADMA transfer lengths supported by SD Host Controller
+//
+typedef enum {
+  SdMmcAdmaLen16b,
+  SdMmcAdmaLen26b
+} SD_MMC_HC_ADMA_LENGTH_MODE;
 
 //
 // The maximum data length of each descriptor line
@@ -122,8 +127,20 @@ typedef struct {
   UINT32 LowerLength:16;
   UINT32 LowerAddress;
   UINT32 UpperAddress;
+} SD_MMC_HC_ADMA_64_V3_DESC_LINE;
+
+typedef struct {
+  UINT32 Valid:1;
+  UINT32 End:1;
+  UINT32 Int:1;
+  UINT32 Reserved:1;
+  UINT32 Act:2;
+  UINT32 UpperLength:10;
+  UINT32 LowerLength:16;
+  UINT32 LowerAddress;
+  UINT32 UpperAddress;
   UINT32 Reserved1;
-} SD_MMC_HC_ADMA_64_DESC_LINE;
+} SD_MMC_HC_ADMA_64_V4_DESC_LINE;
 
 #define SD_MMC_SDMA_BOUNDARY          512 * 1024
 #define SD_MMC_SDMA_ROUND_UP(x, n)    (((x) + n) & ~(n - 1))
@@ -600,6 +617,23 @@ SdMmcHcUhsSignaling (
   IN EFI_PCI_IO_PROTOCOL    *PciIo,
   IN UINT8                  Slot,
   IN SD_MMC_BUS_MODE        Timing
+  );
+
+/**
+  Set driver strength in host controller.
+
+  @param[in] PciIo           The PCI IO protocol instance.
+  @param[in] SlotIndex       The slot index of the card.
+  @param[in] DriverStrength  DriverStrength to set in the controller.
+
+  @retval EFI_SUCCESS  Driver strength programmed successfully.
+  @retval Others       Failed to set driver strength.
+**/
+EFI_STATUS
+SdMmcSetDriverStrength (
+  IN EFI_PCI_IO_PROTOCOL      *PciIo,
+  IN UINT8                    SlotIndex,
+  IN SD_DRIVER_STRENGTH_TYPE  DriverStrength
   );
 
 #endif

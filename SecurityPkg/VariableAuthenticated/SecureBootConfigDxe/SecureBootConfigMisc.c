@@ -2,13 +2,7 @@
   Helper functions for SecureBoot configuration module.
 
 Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -16,12 +10,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 /**
   Read file content into BufferPtr, the size of the allocate buffer
-  is *FileSize plus AddtionAllocateSize.
+  is *FileSize plus AdditionAllocateSize.
 
   @param[in]       FileHandle            The file to be read.
   @param[in, out]  BufferPtr             Pointers to the pointer of allocated buffer.
   @param[out]      FileSize              Size of input file
-  @param[in]       AddtionAllocateSize   Addtion size the buffer need to be allocated.
+  @param[in]       AdditionAllocateSize   Addition size the buffer need to be allocated.
                                          In case the buffer need to contain others besides the file content.
 
   @retval   EFI_SUCCESS                  The file was read into the buffer.
@@ -35,7 +29,7 @@ ReadFileContent (
   IN      EFI_FILE_HANDLE           FileHandle,
   IN OUT  VOID                      **BufferPtr,
      OUT  UINTN                     *FileSize,
-  IN      UINTN                     AddtionAllocateSize
+  IN      UINTN                     AdditionAllocateSize
   )
 
 {
@@ -68,7 +62,7 @@ ReadFileContent (
     goto ON_EXIT;
   }
 
-  BufferSize = (UINTN) SourceFileSize + AddtionAllocateSize;
+  BufferSize = (UINTN) SourceFileSize + AdditionAllocateSize;
   Buffer =  AllocateZeroPool(BufferSize);
   if (Buffer == NULL) {
     return EFI_OUT_OF_RESOURCES;

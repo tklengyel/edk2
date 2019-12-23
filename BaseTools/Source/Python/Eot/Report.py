@@ -2,13 +2,7 @@
 # This file is used to create report for Eot tool
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -332,7 +326,7 @@ class Report(object):
                 Content = """            </table></td>
           </tr>"""
                 self.WriteLn(Content)
-            #End of Consumed Ppi/Portocol
+            #End of Consumed Ppi/Protocol
 
             # Find Produced Ppi/Protocol
             SqlCommand = """select ModuleName, ItemType, GuidName, GuidValue, GuidMacro from Report

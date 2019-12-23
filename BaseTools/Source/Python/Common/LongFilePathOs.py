@@ -2,20 +2,13 @@
 # Override built in module os to provide support for long file path
 #
 # Copyright (c) 2014 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 from __future__ import absolute_import
 import os
 from . import LongFilePathOsPath
 from Common.LongFilePathSupport import LongFilePath
-from Common.LongFilePathSupport import UniToStr
 import time
 
 path = LongFilePathOsPath
@@ -64,8 +57,12 @@ def listdir(path):
     List = []
     uList = os.listdir(u"%s" % LongFilePath(path))
     for Item in uList:
-        List.append(UniToStr(Item))
+        List.append(Item)
     return List
+
+if hasattr(os, 'replace'):
+    def replace(src, dst):
+        return os.replace(LongFilePath(src), LongFilePath(dst))
 
 environ = os.environ
 getcwd = os.getcwd

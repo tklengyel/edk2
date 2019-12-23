@@ -2,13 +2,7 @@
 # Create makefile for MS nmake and GNU make
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ## Import Modules
@@ -191,6 +185,12 @@ class BuildFile(object):
         self._FileType = FileType
         FileContent = self._TEMPLATE_.Replace(self._TemplateDict)
         FileName = self._FILE_NAME_[FileType]
+        if not os.path.exists(os.path.join(self._AutoGenObject.MakeFileDir, "deps.txt")):
+            with open(os.path.join(self._AutoGenObject.MakeFileDir, "deps.txt"),"w+") as fd:
+                fd.write("")
+        if not os.path.exists(os.path.join(self._AutoGenObject.MakeFileDir, "dependency")):
+            with open(os.path.join(self._AutoGenObject.MakeFileDir, "dependency"),"w+") as fd:
+                fd.write("")
         return SaveFileOnChange(os.path.join(self._AutoGenObject.MakeFileDir, FileName), FileContent, False)
 
     ## Return a list of directory creation command string
@@ -211,10 +211,12 @@ class BuildFile(object):
     def GetRemoveDirectoryCommand(self, DirList):
         return [self._RD_TEMPLATE_[self._FileType] % {'dir':Dir} for Dir in DirList]
 
-    def PlaceMacro(self, Path, MacroDefinitions={}):
+    def PlaceMacro(self, Path, MacroDefinitions=None):
         if Path.startswith("$("):
             return Path
         else:
+            if MacroDefinitions is None:
+                MacroDefinitions = {}
             PathLength = len(Path)
             for MacroName in MacroDefinitions:
                 MacroValue = MacroDefinitions[MacroName]
@@ -308,9 +310,6 @@ MAKE_FILE = ${makefile_path}
 ${BEGIN}${file_macro}
 ${END}
 
-COMMON_DEPS = ${BEGIN}${common_dependency_file} \\
-              ${END}
-
 #
 # Overridable Target Macro Definitions
 #
@@ -386,6 +385,8 @@ gen_fds:
 \t@"$(MAKE)" $(MAKE_FLAGS) -f $(BUILD_DIR)${separator}${makefile_name} fds
 \t@cd $(MODULE_BUILD_DIR)
 
+${INCLUDETAG}
+
 #
 # Individual Object Build Targets
 #
@@ -435,7 +436,7 @@ cleanlib:
         self.CommonFileDependency = []
         self.FileListMacros = {}
         self.ListFileMacros = {}
-
+        self.ObjTargetDict = OrderedDict()
         self.FileCache = {}
         self.LibraryBuildCommandList = []
         self.LibraryFileList = []
@@ -453,6 +454,7 @@ cleanlib:
         self.GenFfsList                 = ModuleAutoGen.GenFfsList
         self.MacroList = ['FFS_OUTPUT_DIR', 'MODULE_GUID', 'OUTPUT_DIR']
         self.FfsOutputFileList = []
+        self.DependencyHeaderFileSet = set()
 
     # Compose a dict object containing information used to do replacement in template
     @property
@@ -485,7 +487,7 @@ cleanlib:
             # EdkII modules always use "_ModuleEntryPoint" as entry point
             ImageEntryPoint = "_ModuleEntryPoint"
 
-        for k, v in MyAgo.Module.Defines.iteritems():
+        for k, v in MyAgo.Module.Defines.items():
             if k not in MyAgo.Macros:
                 MyAgo.Macros[k] = v
 
@@ -497,7 +499,7 @@ cleanlib:
             MyAgo.Macros['IMAGE_ENTRY_POINT'] = ImageEntryPoint
 
         PCI_COMPRESS_Flag = False
-        for k, v in MyAgo.Module.Defines.iteritems():
+        for k, v in MyAgo.Module.Defines.items():
             if 'PCI_COMPRESS' == k and 'TRUE' == v:
                 PCI_COMPRESS_Flag = True
 
@@ -540,7 +542,7 @@ cleanlib:
                 UnexpandMacro = []
                 NewStr = []
                 for Str in StrList:
-                    if '$' in Str:
+                    if '$' in Str or '-MMD' in Str or '-MF' in Str:
                         UnexpandMacro.append(Str)
                     else:
                         NewStr.append(Str)
@@ -548,8 +550,8 @@ cleanlib:
                 NewRespStr = ' '.join(NewStr)
                 SaveFileOnChange(RespFile, NewRespStr, False)
                 ToolsDef.append("%s = %s" % (Resp, UnexpandMacroStr + ' @' + RespFile))
-                RespFileListContent += '@' + RespFile + os.linesep
-                RespFileListContent += NewRespStr + os.linesep
+                RespFileListContent += '@' + RespFile + TAB_LINE_BREAK
+                RespFileListContent += NewRespStr + TAB_LINE_BREAK
             SaveFileOnChange(RespFileList, RespFileListContent, False)
         else:
             if os.path.exists(RespFileList):
@@ -590,10 +592,9 @@ cleanlib:
                                                 )
         FileMacroList.append(FileMacro)
         # Add support when compiling .nasm source files
-        for File in self.FileCache.keys():
-            if not str(File).endswith('.nasm'):
-                continue
-            IncludePathList = []
+        IncludePathList = []
+        asmsource = [item for item in MyAgo.SourceFileList if item.File.upper().endswith((".NASM",".ASM",".NASMB","S"))]
+        if asmsource:
             for P in  MyAgo.IncludePathList:
                 IncludePath = self._INC_FLAG_['NASM'] + self.PlaceMacro(P, self.Macros)
                 if IncludePath.endswith(os.sep):
@@ -606,7 +607,6 @@ cleanlib:
                     IncludePath = os.path.join(IncludePath, '')
                 IncludePathList.append(IncludePath)
             FileMacroList.append(self._FILE_MACRO_TEMPLATE.Replace({"macro_name": "NASM_INC", "source_file": IncludePathList}))
-            break
 
         # Generate macros used to represent files containing list of input files
         for ListFileMacro in self.ListFileMacros:
@@ -617,6 +617,11 @@ cleanlib:
                 "\n".join(self.ListFileMacros[ListFileMacro]),
                 False
                 )
+
+        # Generate objlist used to create .obj file
+        for Type in self.ObjTargetDict:
+            NewLine = ' '.join(list(self.ObjTargetDict[Type]))
+            FileMacroList.append("OBJLIST_%s = %s" % (list(self.ObjTargetDict.keys()).index(Type), NewLine))
 
         BcTargetList = []
 
@@ -661,7 +666,7 @@ cleanlib:
             "module_relative_directory" : MyAgo.SourceDir,
             "module_dir"                : mws.join (self.Macros["WORKSPACE"], MyAgo.SourceDir),
             "package_relative_directory": package_rel_dir,
-            "module_extra_defines"      : ["%s = %s" % (k, v) for k, v in MyAgo.Module.Defines.iteritems()],
+            "module_extra_defines"      : ["%s = %s" % (k, v) for k, v in MyAgo.Module.Defines.items()],
 
             "architecture"              : MyAgo.Arch,
             "toolchain_tag"             : MyAgo.ToolChain,
@@ -675,8 +680,8 @@ cleanlib:
             "separator"                 : Separator,
             "module_tool_definitions"   : ToolsDef,
 
-            "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
-            "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
+            "shell_command_code"        : list(self._SHELL_CMD_[self._FileType].keys()),
+            "shell_command"             : list(self._SHELL_CMD_[self._FileType].values()),
 
             "module_entry_point"        : ModuleEntryPoint,
             "image_entry_point"         : ImageEntryPoint,
@@ -691,6 +696,7 @@ cleanlib:
             "file_macro"                : FileMacroList,
             "file_build_target"         : self.BuildTargetList,
             "backward_compatible_target": BcTargetList,
+            "INCLUDETAG"                   : self._INCLUDE_CMD_[self._FileType] + " " + os.path.join("$(MODULE_BUILD_DIR)","dependency")
         }
 
         return MakefileTemplateDict
@@ -716,7 +722,7 @@ cleanlib:
             for index, Str in enumerate(FfsCmdList):
                 if '-o' == Str:
                     OutputFile = FfsCmdList[index + 1]
-                if '-i' == Str:
+                if '-i' == Str or "-oi" == Str:
                     if DepsFileList == []:
                         DepsFileList = [FfsCmdList[index + 1]]
                     else:
@@ -898,44 +904,87 @@ cleanlib:
                 if Item in SourceFileList:
                     SourceFileList.remove(Item)
 
-        FileDependencyDict = self.GetFileDependency(
-                                    SourceFileList,
-                                    ForceIncludedFile,
-                                    self._AutoGenObject.IncludePathList + self._AutoGenObject.BuildOptionIncPathList
-                                    )
-        DepSet = None
+        FileDependencyDict = {item:ForceIncludedFile for item in SourceFileList}
+
+        for Dependency in FileDependencyDict.values():
+            self.DependencyHeaderFileSet.update(set(Dependency))
+
+        # Get a set of unique package includes from MetaFile
+        parentMetaFileIncludes = set()
+        for aInclude in self._AutoGenObject.PackageIncludePathList:
+            aIncludeName = str(aInclude)
+            parentMetaFileIncludes.add(aIncludeName.lower())
+
+        # Check if header files are listed in metafile
+        # Get a set of unique module header source files from MetaFile
+        headerFilesInMetaFileSet = set()
+        for aFile in self._AutoGenObject.SourceFileList:
+            aFileName = str(aFile)
+            if not aFileName.endswith('.h'):
+                continue
+            headerFilesInMetaFileSet.add(aFileName.lower())
+
+        # Get a set of unique module autogen files
+        localAutoGenFileSet = set()
+        for aFile in self._AutoGenObject.AutoGenFileList:
+            localAutoGenFileSet.add(str(aFile).lower())
+
+        # Get a set of unique module dependency header files
+        # Exclude autogen files and files not in the source directory
+        # and files that are under the package include list
+        headerFileDependencySet = set()
+        localSourceDir = str(self._AutoGenObject.SourceDir).lower()
+        for Dependency in FileDependencyDict.values():
+            for aFile in Dependency:
+                aFileName = str(aFile).lower()
+                # Exclude non-header files
+                if not aFileName.endswith('.h'):
+                    continue
+                # Exclude autogen files
+                if aFileName in localAutoGenFileSet:
+                    continue
+                # Exclude include out of local scope
+                if localSourceDir not in aFileName:
+                    continue
+                # Exclude files covered by package includes
+                pathNeeded = True
+                for aIncludePath in parentMetaFileIncludes:
+                    if aIncludePath in aFileName:
+                        pathNeeded = False
+                        break
+                if not pathNeeded:
+                    continue
+                # Keep the file to be checked
+                headerFileDependencySet.add(aFileName)
+
+        # Check if a module dependency header file is missing from the module's MetaFile
+        for aFile in headerFileDependencySet:
+            if aFile in headerFilesInMetaFileSet:
+                continue
+            if GlobalData.gUseHashCache:
+                GlobalData.gModuleBuildTracking[self._AutoGenObject] = 'FAIL_METAFILE'
+            EdkLogger.warn("build","Module MetaFile [Sources] is missing local header!",
+                        ExtraData = "Local Header: " + aFile + " not found in " + self._AutoGenObject.MetaFile.Path
+                        )
+
         for File,Dependency in FileDependencyDict.items():
             if not Dependency:
-                FileDependencyDict[File] = ['$(FORCE_REBUILD)']
                 continue
 
             self._AutoGenObject.AutoGenDepSet |= set(Dependency)
 
-            # skip non-C files
-            if File.Ext not in [".c", ".C"] or File.Name == "AutoGen.c":
-                continue
-            elif DepSet is None:
-                DepSet = set(Dependency)
-            else:
-                DepSet &= set(Dependency)
-        # in case nothing in SourceFileList
-        if DepSet is None:
-            DepSet = set()
-        #
-        # Extract common files list in the dependency files
-        #
-        for File in DepSet:
-            self.CommonFileDependency.append(self.PlaceMacro(File.Path, self.Macros))
-
-        for File in FileDependencyDict:
-            # skip non-C files
-            if File.Ext not in [".c", ".C"] or File.Name == "AutoGen.c":
-                continue
-            NewDepSet = set(FileDependencyDict[File])
-            NewDepSet -= DepSet
-            FileDependencyDict[File] = ["$(COMMON_DEPS)"] + list(NewDepSet)
+        CmdSumDict = {}
+        CmdTargetDict = {}
+        CmdCppDict = {}
+        DependencyDict = FileDependencyDict.copy()
 
         # Convert target description object to target string in makefile
+        if self._AutoGenObject.BuildRuleFamily == TAB_COMPILER_MSFT and TAB_C_CODE_FILE in self._AutoGenObject.Targets:
+            for T in self._AutoGenObject.Targets[TAB_C_CODE_FILE]:
+                NewFile = self.PlaceMacro(str(T), self.Macros)
+                if not self.ObjTargetDict.get(T.Target.SubDir):
+                    self.ObjTargetDict[T.Target.SubDir] = set()
+                self.ObjTargetDict[T.Target.SubDir].add(NewFile)
         for Type in self._AutoGenObject.Targets:
             for T in self._AutoGenObject.Targets[Type]:
                 # Generate related macros if needed
@@ -947,9 +996,12 @@ cleanlib:
                     self.ListFileMacros[T.IncListFileMacro] = []
 
                 Deps = []
+                CCodeDeps = []
                 # Add force-dependencies
                 for Dep in T.Dependencies:
                     Deps.append(self.PlaceMacro(str(Dep), self.Macros))
+                    if Dep != '$(MAKE_FILE)':
+                        CCodeDeps.append(self.PlaceMacro(str(Dep), self.Macros))
                 # Add inclusion-dependencies
                 if len(T.Inputs) == 1 and T.Inputs[0] in FileDependencyDict:
                     for F in FileDependencyDict[T.Inputs[0]]:
@@ -959,27 +1011,80 @@ cleanlib:
                     NewFile = self.PlaceMacro(str(F), self.Macros)
                     # In order to use file list macro as dependency
                     if T.GenListFile:
-                        # gnu tools need forward slash path separater, even on Windows
+                        # gnu tools need forward slash path separator, even on Windows
                         self.ListFileMacros[T.ListFileMacro].append(str(F).replace ('\\', '/'))
                         self.FileListMacros[T.FileListMacro].append(NewFile)
                     elif T.GenFileListMacro:
                         self.FileListMacros[T.FileListMacro].append(NewFile)
                     else:
                         Deps.append(NewFile)
-
+                for key in self.FileListMacros:
+                    self.FileListMacros[key].sort()
                 # Use file list macro as dependency
                 if T.GenFileListMacro:
                     Deps.append("$(%s)" % T.FileListMacro)
                     if Type in [TAB_OBJECT_FILE, TAB_STATIC_LIBRARY]:
                         Deps.append("$(%s)" % T.ListFileMacro)
 
-                TargetDict = {
-                    "target"    :   self.PlaceMacro(T.Target.Path, self.Macros),
-                    "cmd"       :   "\n\t".join(T.Commands),
-                    "deps"      :   Deps
-                }
-                self.BuildTargetList.append(self._BUILD_TARGET_TEMPLATE.Replace(TargetDict))
+                if self._AutoGenObject.BuildRuleFamily == TAB_COMPILER_MSFT and Type == TAB_C_CODE_FILE:
+                    T, CmdTarget, CmdTargetDict, CmdCppDict = self.ParserCCodeFile(T, Type, CmdSumDict, CmdTargetDict, CmdCppDict, DependencyDict)
+                    TargetDict = {"target": self.PlaceMacro(T.Target.Path, self.Macros), "cmd": "\n\t".join(T.Commands),"deps": CCodeDeps}
+                    CmdLine = self._BUILD_TARGET_TEMPLATE.Replace(TargetDict).rstrip().replace('\t$(OBJLIST', '$(OBJLIST')
+                    if T.Commands:
+                        CmdLine = '%s%s' %(CmdLine, TAB_LINE_BREAK)
+                    if CCodeDeps or CmdLine:
+                        self.BuildTargetList.append(CmdLine)
+                else:
+                    TargetDict = {"target": self.PlaceMacro(T.Target.Path, self.Macros), "cmd": "\n\t".join(T.Commands),"deps": Deps}
+                    self.BuildTargetList.append(self._BUILD_TARGET_TEMPLATE.Replace(TargetDict))
 
+    def ParserCCodeFile(self, T, Type, CmdSumDict, CmdTargetDict, CmdCppDict, DependencyDict):
+        if not CmdSumDict:
+            for item in self._AutoGenObject.Targets[Type]:
+                CmdSumDict[item.Target.SubDir] = item.Target.BaseName
+                for CppPath in item.Inputs:
+                    Path = self.PlaceMacro(CppPath.Path, self.Macros)
+                    if CmdCppDict.get(item.Target.SubDir):
+                        CmdCppDict[item.Target.SubDir].append(Path)
+                    else:
+                        CmdCppDict[item.Target.SubDir] = ['$(MAKE_FILE)', Path]
+                    if CppPath.Path in DependencyDict:
+                        for Temp in DependencyDict[CppPath.Path]:
+                            try:
+                                Path = self.PlaceMacro(Temp.Path, self.Macros)
+                            except:
+                                continue
+                            if Path not in (self.CommonFileDependency + CmdCppDict[item.Target.SubDir]):
+                                CmdCppDict[item.Target.SubDir].append(Path)
+        if T.Commands:
+            CommandList = T.Commands[:]
+            for Item in CommandList[:]:
+                SingleCommandList = Item.split()
+                if len(SingleCommandList) > 0 and self.CheckCCCmd(SingleCommandList):
+                    for Temp in SingleCommandList:
+                        if Temp.startswith('/Fo'):
+                            CmdSign = '%s%s' % (Temp.rsplit(TAB_SLASH, 1)[0], TAB_SLASH)
+                            break
+                    else: continue
+                    if CmdSign not in list(CmdTargetDict.keys()):
+                        CmdTargetDict[CmdSign] = Item.replace(Temp, CmdSign)
+                    else:
+                        CmdTargetDict[CmdSign] = "%s %s" % (CmdTargetDict[CmdSign], SingleCommandList[-1])
+                    Index = CommandList.index(Item)
+                    CommandList.pop(Index)
+                    if SingleCommandList[-1].endswith("%s%s.c" % (TAB_SLASH, CmdSumDict[CmdSign[3:].rsplit(TAB_SLASH, 1)[0]])):
+                        Cpplist = CmdCppDict[T.Target.SubDir]
+                        Cpplist.insert(0, '$(OBJLIST_%d): ' % list(self.ObjTargetDict.keys()).index(T.Target.SubDir))
+                        T.Commands[Index] = '%s\n\t%s' % (' \\\n\t'.join(Cpplist), CmdTargetDict[CmdSign])
+                    else:
+                        T.Commands.pop(Index)
+        return T, CmdSumDict, CmdTargetDict, CmdCppDict
+
+    def CheckCCCmd(self, CommandList):
+        for cmd in CommandList:
+            if '$(CC)' in cmd:
+                return True
+        return False
     ## For creating makefile targets for dependent libraries
     def ProcessDependentLibrary(self):
         for LibraryAutoGen in self._AutoGenObject.LibraryAutoGenList:
@@ -997,110 +1102,9 @@ cleanlib:
     def GetFileDependency(self, FileList, ForceInculeList, SearchPathList):
         Dependency = {}
         for F in FileList:
-            Dependency[F] = self.GetDependencyList(F, ForceInculeList, SearchPathList)
+            Dependency[F] = GetDependencyList(self._AutoGenObject, self.FileCache, F, ForceInculeList, SearchPathList)
         return Dependency
 
-    ## Find dependencies for one source file
-    #
-    #  By searching recursively "#include" directive in file, find out all the
-    #  files needed by given source file. The dependecies will be only searched
-    #  in given search path list.
-    #
-    #   @param      File            The source file
-    #   @param      ForceInculeList The list of files which will be included forcely
-    #   @param      SearchPathList  The list of search path
-    #
-    #   @retval     list            The list of files the given source file depends on
-    #
-    def GetDependencyList(self, File, ForceList, SearchPathList):
-        EdkLogger.debug(EdkLogger.DEBUG_1, "Try to get dependency files for %s" % File)
-        FileStack = [File] + ForceList
-        DependencySet = set()
-
-        if self._AutoGenObject.Arch not in gDependencyDatabase:
-            gDependencyDatabase[self._AutoGenObject.Arch] = {}
-        DepDb = gDependencyDatabase[self._AutoGenObject.Arch]
-
-        while len(FileStack) > 0:
-            F = FileStack.pop()
-
-            FullPathDependList = []
-            if F in self.FileCache:
-                for CacheFile in self.FileCache[F]:
-                    FullPathDependList.append(CacheFile)
-                    if CacheFile not in DependencySet:
-                        FileStack.append(CacheFile)
-                DependencySet.update(FullPathDependList)
-                continue
-
-            CurrentFileDependencyList = []
-            if F in DepDb:
-                CurrentFileDependencyList = DepDb[F]
-            else:
-                try:
-                    Fd = open(F.Path, 'r')
-                except BaseException as X:
-                    EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=F.Path + "\n\t" + str(X))
-
-                FileContent = Fd.read()
-                Fd.close()
-                if len(FileContent) == 0:
-                    continue
-
-                if FileContent[0] == 0xff or FileContent[0] == 0xfe:
-                    FileContent = unicode(FileContent, "utf-16")
-                IncludedFileList = gIncludePattern.findall(FileContent)
-
-                for Inc in IncludedFileList:
-                    Inc = Inc.strip()
-                    # if there's macro used to reference header file, expand it
-                    HeaderList = gMacroPattern.findall(Inc)
-                    if len(HeaderList) == 1 and len(HeaderList[0]) == 2:
-                        HeaderType = HeaderList[0][0]
-                        HeaderKey = HeaderList[0][1]
-                        if HeaderType in gIncludeMacroConversion:
-                            Inc = gIncludeMacroConversion[HeaderType] % {"HeaderKey" : HeaderKey}
-                        else:
-                            # not known macro used in #include, always build the file by
-                            # returning a empty dependency
-                            self.FileCache[File] = []
-                            return []
-                    Inc = os.path.normpath(Inc)
-                    CurrentFileDependencyList.append(Inc)
-                DepDb[F] = CurrentFileDependencyList
-
-            CurrentFilePath = F.Dir
-            PathList = [CurrentFilePath] + SearchPathList
-            for Inc in CurrentFileDependencyList:
-                for SearchPath in PathList:
-                    FilePath = os.path.join(SearchPath, Inc)
-                    if FilePath in gIsFileMap:
-                        if not gIsFileMap[FilePath]:
-                            continue
-                    # If isfile is called too many times, the performance is slow down.
-                    elif not os.path.isfile(FilePath):
-                        gIsFileMap[FilePath] = False
-                        continue
-                    else:
-                        gIsFileMap[FilePath] = True
-                    FilePath = PathClass(FilePath)
-                    FullPathDependList.append(FilePath)
-                    if FilePath not in DependencySet:
-                        FileStack.append(FilePath)
-                    break
-                else:
-                    EdkLogger.debug(EdkLogger.DEBUG_9, "%s included by %s was not found "\
-                                    "in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
-
-            self.FileCache[F] = FullPathDependList
-            DependencySet.update(FullPathDependList)
-
-        DependencySet.update(ForceList)
-        if File in DependencySet:
-            DependencySet.remove(File)
-        DependencyList = list(DependencySet)  # remove duplicate ones
-
-        return DependencyList
 
 ## CustomMakefile class
 #
@@ -1208,6 +1212,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
         BuildFile.__init__(self, ModuleAutoGen)
         self.PlatformInfo = self._AutoGenObject.PlatformInfo
         self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
+        self.DependencyHeaderFileSet = set()
 
     # Compose a dict object containing information used to do replacement in template
     @property
@@ -1275,8 +1280,8 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "separator"                 : Separator,
             "module_tool_definitions"   : ToolsDef,
 
-            "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
-            "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
+            "shell_command_code"        : list(self._SHELL_CMD_[self._FileType].keys()),
+            "shell_command"             : list(self._SHELL_CMD_[self._FileType].values()),
 
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList),
             "custom_makefile_content"   : CustomMakefile
@@ -1398,6 +1403,7 @@ cleanlib:
         self.ModuleBuildDirectoryList = []
         self.LibraryBuildDirectoryList = []
         self.LibraryMakeCommandList = []
+        self.DependencyHeaderFileSet = set()
 
     # Compose a dict object containing information used to do replacement in template
     @property
@@ -1449,8 +1455,8 @@ cleanlib:
 
             "toolchain_tag"             : MyAgo.ToolChain,
             "build_target"              : MyAgo.BuildTarget,
-            "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
-            "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
+            "shell_command_code"        : list(self._SHELL_CMD_[self._FileType].keys()),
+            "shell_command"             : list(self._SHELL_CMD_[self._FileType].values()),
             "build_architecture_list"   : MyAgo.Arch,
             "architecture"              : MyAgo.Arch,
             "separator"                 : Separator,
@@ -1503,6 +1509,7 @@ class TopLevelMakefile(BuildFile):
     def __init__(self, Workspace):
         BuildFile.__init__(self, Workspace)
         self.IntermediateDirectoryList = []
+        self.DependencyHeaderFileSet = set()
 
     # Compose a dict object containing information used to do replacement in template
     @property
@@ -1548,8 +1555,8 @@ class TopLevelMakefile(BuildFile):
 
         if GlobalData.gCaseInsensitive:
             ExtraOption += " -c"
-        if GlobalData.gEnableGenfdsMultiThread:
-            ExtraOption += " --genfds-multi-thread"
+        if not GlobalData.gEnableGenfdsMultiThread:
+            ExtraOption += " --no-genfds-multi-thread"
         if GlobalData.gIgnoreSource:
             ExtraOption += " --ignore-sources"
 
@@ -1581,8 +1588,8 @@ class TopLevelMakefile(BuildFile):
 
             "toolchain_tag"             : MyAgo.ToolChain,
             "build_target"              : MyAgo.BuildTarget,
-            "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
-            "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
+            "shell_command_code"        : list(self._SHELL_CMD_[self._FileType].keys()),
+            "shell_command"             : list(self._SHELL_CMD_[self._FileType].values()),
             'arch'                      : list(MyAgo.ArchList),
             "build_architecture_list"   : ','.join(MyAgo.ArchList),
             "separator"                 : Separator,
@@ -1622,7 +1629,112 @@ class TopLevelMakefile(BuildFile):
                 DirList.append(os.path.join(self._AutoGenObject.BuildDir, LibraryAutoGen.BuildDir))
         return DirList
 
+## Find dependencies for one source file
+#
+#  By searching recursively "#include" directive in file, find out all the
+#  files needed by given source file. The dependencies will be only searched
+#  in given search path list.
+#
+#   @param      File            The source file
+#   @param      ForceInculeList The list of files which will be included forcely
+#   @param      SearchPathList  The list of search path
+#
+#   @retval     list            The list of files the given source file depends on
+#
+def GetDependencyList(AutoGenObject, FileCache, File, ForceList, SearchPathList):
+    EdkLogger.debug(EdkLogger.DEBUG_1, "Try to get dependency files for %s" % File)
+    FileStack = [File] + ForceList
+    DependencySet = set()
+
+    if AutoGenObject.Arch not in gDependencyDatabase:
+        gDependencyDatabase[AutoGenObject.Arch] = {}
+    DepDb = gDependencyDatabase[AutoGenObject.Arch]
+
+    while len(FileStack) > 0:
+        F = FileStack.pop()
+
+        FullPathDependList = []
+        if F in FileCache:
+            for CacheFile in FileCache[F]:
+                FullPathDependList.append(CacheFile)
+                if CacheFile not in DependencySet:
+                    FileStack.append(CacheFile)
+            DependencySet.update(FullPathDependList)
+            continue
+
+        CurrentFileDependencyList = []
+        if F in DepDb:
+            CurrentFileDependencyList = DepDb[F]
+        else:
+            try:
+                Fd = open(F.Path, 'rb')
+                FileContent = Fd.read()
+                Fd.close()
+            except BaseException as X:
+                EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=F.Path + "\n\t" + str(X))
+            if len(FileContent) == 0:
+                continue
+            try:
+                if FileContent[0] == 0xff or FileContent[0] == 0xfe:
+                    FileContent = FileContent.decode('utf-16')
+                else:
+                    FileContent = FileContent.decode()
+            except:
+                # The file is not txt file. for example .mcb file
+                continue
+            IncludedFileList = gIncludePattern.findall(FileContent)
+
+            for Inc in IncludedFileList:
+                Inc = Inc.strip()
+                # if there's macro used to reference header file, expand it
+                HeaderList = gMacroPattern.findall(Inc)
+                if len(HeaderList) == 1 and len(HeaderList[0]) == 2:
+                    HeaderType = HeaderList[0][0]
+                    HeaderKey = HeaderList[0][1]
+                    if HeaderType in gIncludeMacroConversion:
+                        Inc = gIncludeMacroConversion[HeaderType] % {"HeaderKey" : HeaderKey}
+                    else:
+                        # not known macro used in #include, always build the file by
+                        # returning a empty dependency
+                        FileCache[File] = []
+                        return []
+                Inc = os.path.normpath(Inc)
+                CurrentFileDependencyList.append(Inc)
+            DepDb[F] = CurrentFileDependencyList
+
+        CurrentFilePath = F.Dir
+        PathList = [CurrentFilePath] + SearchPathList
+        for Inc in CurrentFileDependencyList:
+            for SearchPath in PathList:
+                FilePath = os.path.join(SearchPath, Inc)
+                if FilePath in gIsFileMap:
+                    if not gIsFileMap[FilePath]:
+                        continue
+                # If isfile is called too many times, the performance is slow down.
+                elif not os.path.isfile(FilePath):
+                    gIsFileMap[FilePath] = False
+                    continue
+                else:
+                    gIsFileMap[FilePath] = True
+                FilePath = PathClass(FilePath)
+                FullPathDependList.append(FilePath)
+                if FilePath not in DependencySet:
+                    FileStack.append(FilePath)
+                break
+            else:
+                EdkLogger.debug(EdkLogger.DEBUG_9, "%s included by %s was not found "\
+                                "in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
+
+        FileCache[F] = FullPathDependList
+        DependencySet.update(FullPathDependList)
+
+    DependencySet.update(ForceList)
+    if File in DependencySet:
+        DependencySet.remove(File)
+    DependencyList = list(DependencySet)  # remove duplicate ones
+
+    return DependencyList
+
 # This acts like the main() function for the script, unless it is 'import'ed into another script.
 if __name__ == '__main__':
     pass
-

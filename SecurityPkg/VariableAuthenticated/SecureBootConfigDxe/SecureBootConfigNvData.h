@@ -2,13 +2,7 @@
   Header file for NV data structure definition.
 
 Copyright (c) 2011 - 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -128,7 +122,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 //
 typedef struct {
   BOOLEAN AttemptSecureBoot;   // Attempt to enable/disable Secure Boot
-  BOOLEAN HideSecureBoot;      // Hiden Attempt Secure Boot
+  BOOLEAN HideSecureBoot;      // Hidden Attempt Secure Boot
   CHAR16  SignatureGuid[SECURE_BOOT_GUID_STORAGE_SIZE];
   BOOLEAN PhysicalPresent;     // If a Physical Present User
   UINT8   SecureBootMode;      // Secure Boot Mode: Standard Or Custom
@@ -138,7 +132,7 @@ typedef struct {
   UINT8   CertificateFormat;   // The type of the certificate
   EFI_HII_DATE RevocationDate; // The revocation date of the certificate
   EFI_HII_TIME RevocationTime; // The revocation time of the certificate
-  UINT8   FileEnrollType;      // File type of sigunature enroll
+  UINT8   FileEnrollType;      // File type of signature enroll
   UINT32  ListCount;           // The count of signature list.
   UINT32  CheckedDataCount;    // The count of checked signature data.
 } SECUREBOOT_CONFIGURATION;

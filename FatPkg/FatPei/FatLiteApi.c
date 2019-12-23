@@ -1,15 +1,9 @@
 /** @file
   FAT recovery PEIM entry point, Ppi Functions and FAT Api functions.
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
 
-This program and the accompanying materials are licensed and made available
-under the terms and conditions of the BSD License which accompanies this
-distribution. The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -18,7 +12,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 PEI_FAT_PRIVATE_DATA  *mPrivateData = NULL;
 
 /**
-  BlockIo installation nofication function. Find out all the current BlockIO
+  BlockIo installation notification function. Find out all the current BlockIO
   PPIs in the system and add them into private data. Assume there is
 
   @param  PeiServices             General purpose services available to every
@@ -262,7 +256,7 @@ FatPeimEntry (
 
   Status = PeiServicesAllocatePages (
             EfiBootServicesCode,
-            (sizeof (PEI_FAT_PRIVATE_DATA) - 1) / PEI_FAT_MEMMORY_PAGE_SIZE + 1,
+            (sizeof (PEI_FAT_PRIVATE_DATA) - 1) / PEI_FAT_MEMORY_PAGE_SIZE + 1,
             &Address
             );
   if (EFI_ERROR (Status)) {
@@ -437,10 +431,6 @@ GetRecoveryCapsuleInfo (
     return Status;
   }
 
-  if (FeaturePcdGet (PcdFrameworkCompatibilitySupport)) {
-    CapsuleInstance = CapsuleInstance + 1;
-  }
-
   if ((CapsuleInstance == 0) || (CapsuleInstance > NumberRecoveryCapsules)) {
     return EFI_NOT_FOUND;
   }
@@ -565,10 +555,6 @@ LoadRecoveryCapsule (
     return Status;
   }
 
-  if (FeaturePcdGet (PcdFrameworkCompatibilitySupport)) {
-    CapsuleInstance = CapsuleInstance + 1;
-  }
-
   if ((CapsuleInstance == 0) || (CapsuleInstance > NumberRecoveryCapsules)) {
     return EFI_NOT_FOUND;
   }
@@ -614,7 +600,7 @@ LoadRecoveryCapsule (
   @param  FileName                The recovery file name to find.
   @param  Handle                  The output file handle.
 
-  @retval EFI_DEVICE_ERROR        Some error occured when operating the FAT
+  @retval EFI_DEVICE_ERROR        Some error occurred when operating the FAT
                                   volume.
   @retval EFI_NOT_FOUND           The recovery file was not found.
   @retval EFI_SUCCESS             The recovery file was successfully found on the

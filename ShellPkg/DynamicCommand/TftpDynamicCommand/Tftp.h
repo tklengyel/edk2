@@ -4,13 +4,7 @@
   Copyright (c) 2010 - 2017, Intel Corporation. All rights reserved. <BR>
   Copyright (c) 2015, ARM Ltd. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -36,7 +30,7 @@
 #include <Library/PrintLib.h>
 #include <Library/UefiHiiServicesLib.h>
 
-extern EFI_HANDLE mTftpHiiHandle;
+extern EFI_HII_HANDLE mTftpHiiHandle;
 
 typedef struct {
   UINTN  FileSize;
@@ -68,7 +62,7 @@ RunTftp (
 
   @return HII handle.
 **/
-EFI_HANDLE
+EFI_HII_HANDLE
 InitializeHiiPackage (
   EFI_HANDLE                  ImageHandle
   );

@@ -5,19 +5,13 @@
   Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved. <BR>
   (C) Copyright 2015 Hewlett Packard Enterprise Development LP<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include "Tftp.h"
 
 #define IP4_CONFIG2_INTERFACE_INFO_NAME_LENGTH 32
-EFI_HANDLE   mTftpHiiHandle;
+EFI_HII_HANDLE   mTftpHiiHandle;
 
 /*
    Constant strings and definitions related to the message indicating the amount of
@@ -548,6 +542,8 @@ RunTftp (
       goto NextHandle;
     }
 
+    ShellStatus = SHELL_SUCCESS;
+
     NextHandle:
 
     CloseProtocolAndDestroyServiceChild (
@@ -573,6 +569,10 @@ RunTftp (
   }
   if (Handles != NULL) {
     FreePool (Handles);
+  }
+
+  if ((ShellStatus != SHELL_SUCCESS) && (EFI_ERROR(Status))) {
+    ShellStatus = Status & ~MAX_BIT;
   }
 
   return ShellStatus;
@@ -1087,14 +1087,14 @@ CheckPacket (
 
   @return HII handle.
 **/
-EFI_HANDLE
+EFI_HII_HANDLE
 InitializeHiiPackage (
   EFI_HANDLE                  ImageHandle
   )
 {
   EFI_STATUS                  Status;
   EFI_HII_PACKAGE_LIST_HEADER *PackageList;
-  EFI_HANDLE                  HiiHandle;
+  EFI_HII_HANDLE              HiiHandle;
 
   //
   // Retrieve HII package list from ImageHandle

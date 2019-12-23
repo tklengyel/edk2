@@ -2,13 +2,7 @@
   FrameBufferBltLib - Library to perform blt operations on a frame buffer.
 
   Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -510,7 +504,7 @@ FrameBufferBltLibBufferToVideo (
     Destination = Configure->FrameBuffer + Offset;
 
     if (Configure->PixelFormat == PixelBlueGreenRedReserved8BitPerColor) {
-      Source = (UINT8 *) BltBuffer + (SrcY * Delta);
+      Source = (UINT8 *) BltBuffer + (SrcY * Delta) + SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
     } else {
       for (IndexX = 0; IndexX < Width; IndexX++) {
         Blt =

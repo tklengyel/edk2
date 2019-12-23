@@ -18,14 +18,8 @@
   They will do basic validation for authentication data structure, then call crypto library
   to verify the signature.
 
-Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2009 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -431,7 +425,7 @@ CheckSignatureListFormat(
   RsaContext = NULL;
 
   //
-  // Walk throuth the input signature list and check the data format.
+  // Walk through the input signature list and check the data format.
   // If any signature is incorrectly formed, the whole check will fail.
   //
   while ((SigDataSize > 0) && (SigDataSize >= SigList->SignatureListSize)) {
@@ -1075,7 +1069,7 @@ AuthServiceInternalCompareTimeStamp (
   @param[out] Sha256Digest       Sha256 digest calculated.
 
   @return EFI_ABORTED          Digest process failed.
-  @return EFI_SUCCESS          SHA256 Digest is succesfully calculated.
+  @return EFI_SUCCESS          SHA256 Digest is successfully calculated.
 
 **/
 EFI_STATUS
@@ -1741,10 +1735,13 @@ CleanCertsFromDb (
                                        );
 
       if (EFI_ERROR(Status) || (AuthVariableInfo.Attributes & EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS) == 0) {
+        //
+        // While cleaning certdb, always delete the variable in certdb regardless of it attributes.
+        //
         Status      = DeleteCertsFromDb(
                         VariableName,
                         &AuthVarGuid,
-                        AuthVariableInfo.Attributes
+                        AuthVariableInfo.Attributes | EFI_VARIABLE_NON_VOLATILE
                         );
         CertCleaned = TRUE;
         DEBUG((EFI_D_INFO, "Recovery!! Cert for Auth Variable %s Guid %g is removed for consistency\n", VariableName, &AuthVarGuid));

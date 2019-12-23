@@ -1,14 +1,8 @@
 /** @file
   Common header file for MP Initialize Library.
 
-  Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -17,10 +11,10 @@
 
 #include <PiPei.h>
 
-#include <Register/Cpuid.h>
-#include <Register/Msr.h>
-#include <Register/LocalApic.h>
-#include <Register/Microcode.h>
+#include <Register/Intel/Cpuid.h>
+#include <Register/Intel/Msr.h>
+#include <Register/Intel/LocalApic.h>
+#include <Register/Intel/Microcode.h>
 
 #include <Library/MpInitLib.h>
 #include <Library/BaseLib.h>
@@ -191,6 +185,10 @@ typedef struct {
   UINT16                ModeTransitionSegment;
   UINT32                ModeHighMemory;
   UINT16                ModeHighSegment;
+  //
+  // Enable5LevelPaging indicates whether 5-level paging is enabled in long mode.
+  //
+  BOOLEAN               Enable5LevelPaging;
 } MP_CPU_EXCHANGE_INFO;
 
 #pragma pack()
@@ -229,7 +227,6 @@ struct _CPU_MP_DATA {
   UINTN                          **FailedCpuList;
 
   AP_INIT_STATE                  InitFlag;
-  BOOLEAN                        X2ApicEnable;
   BOOLEAN                        SwitchBspFlag;
   UINTN                          NewBspNumber;
   CPU_EXCHANGE_ROLE_INFO         BSPInfo;
@@ -411,6 +408,7 @@ InitMpGlobalData (
                                       number.  If FALSE, then all the enabled APs
                                       execute the function specified by Procedure
                                       simultaneously.
+  @param[in]  ExcludeBsp              Whether let BSP also trig this task.
   @param[in]  WaitEvent               The event created by the caller with CreateEvent()
                                       service.
   @param[in]  TimeoutInMicroseconds   Indicates the time limit in microseconds for
@@ -432,9 +430,10 @@ InitMpGlobalData (
 
 **/
 EFI_STATUS
-StartupAllAPsWorker (
+StartupAllCPUsWorker (
   IN  EFI_AP_PROCEDURE          Procedure,
   IN  BOOLEAN                   SingleThread,
+  IN  BOOLEAN                   ExcludeBsp,
   IN  EFI_EVENT                 WaitEvent               OPTIONAL,
   IN  UINTN                     TimeoutInMicroseconds,
   IN  VOID                      *ProcedureArgument      OPTIONAL,

@@ -6,13 +6,7 @@
 
   Copyright (C) 2014-2016, Red Hat, Inc.
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include <Guid/FileInfo.h>
@@ -997,7 +991,14 @@ TryRunningQemuKernel (
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((EFI_D_ERROR, "%a: LoadImage(): %r\n", __FUNCTION__, Status));
-    goto FreeKernelDevicePath;
+    if (Status != EFI_SECURITY_VIOLATION) {
+      goto FreeKernelDevicePath;
+    }
+    //
+    // From the resource allocation perspective, EFI_SECURITY_VIOLATION means
+    // "success", so we must roll back the image loading.
+    //
+    goto UnloadKernelImage;
   }
 
   //

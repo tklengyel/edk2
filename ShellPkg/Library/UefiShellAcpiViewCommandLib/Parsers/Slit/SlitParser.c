@@ -2,13 +2,7 @@
   SLIT table parser
 
   Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
     - ACPI 6.2 Specification - Errata A, September 2017
@@ -36,7 +30,7 @@ STATIC CONST ACPI_PARSER SlitParser[] = {
 /**
   Macro to get the value of a System Locality
 **/
-#define SLIT_ELEMENT(Ptr, i, j) *(Ptr + (i * LocalityCount) + j)
+#define SLIT_ELEMENT(Ptr, i, j) *(Ptr + (MultU64x64 (i, LocalityCount)) + j)
 
 /**
   This function parses the ACPI SLIT table.

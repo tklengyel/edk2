@@ -1,22 +1,17 @@
 /** @file
   Platform BDS customizations.
 
-  Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2004 - 2019, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
 #include "BdsPlatform.h"
-#include <Guid/XenInfo.h>
 #include <Guid/RootBridgesConnectedEventGroup.h>
 #include <Protocol/FirmwareVolume2.h>
+#include <Library/PlatformBmPrintScLib.h>
 #include <Library/Tcg2PhysicalPresenceLib.h>
+#include <Library/XenPlatformLib.h>
 
 
 //
@@ -403,7 +398,8 @@ PlatformBootManagerBeforeConsole (
   //
   EfiBootManagerDispatchDeferredImages ();
 
-  PlatformInitializeConsole (gPlatformConsole);
+  PlatformInitializeConsole (
+    XenDetected() ? gXenPlatformConsole : gPlatformConsole);
   PcdStatus = PcdSet16S (PcdPlatformBootTimeOut,
                 GetFrontPageTimeoutFromQemu ());
   ASSERT_RETURN_ERROR (PcdStatus);
@@ -1213,6 +1209,12 @@ PciAcpiInitialization (
       PciWrite8 (PCI_LIB_ADDRESS (0, 0x1f, 0, 0x6b), 0x0b); // H
       break;
     default:
+      if (XenDetected ()) {
+        //
+        // There is no PCI bus in this case.
+        //
+        return;
+      }
       DEBUG ((EFI_D_ERROR, "%a: Unknown Host Bridge Device ID: 0x%04x\n",
         __FUNCTION__, mHostBridgeDevId));
       ASSERT (FALSE);
@@ -1228,38 +1230,6 @@ PciAcpiInitialization (
   // Set ACPI SCI_EN bit in PMCNTRL
   //
   IoOr16 ((PciRead32 (Pmba) & ~BIT0) + 4, BIT0);
-}
-
-/**
-  This function detects if OVMF is running on Xen.
-
-**/
-STATIC
-BOOLEAN
-XenDetected (
-  VOID
-  )
-{
-  EFI_HOB_GUID_TYPE         *GuidHob;
-  STATIC INTN               FoundHob = -1;
-
-  if (FoundHob == 0) {
-    return FALSE;
-  } else if (FoundHob == 1) {
-    return TRUE;
-  }
-
-  //
-  // See if a XenInfo HOB is available
-  //
-  GuidHob = GetFirstGuidHob (&gEfiXenInfoGuid);
-  if (GuidHob == NULL) {
-    FoundHob = 0;
-    return FALSE;
-  }
-
-  FoundHob = 1;
-  return TRUE;
 }
 
 EFI_STATUS
@@ -1537,11 +1507,13 @@ PlatformBootManagerAfterConsole (
   // Register UEFI Shell
   //
   PlatformRegisterFvBootOption (
-    PcdGetPtr (PcdShellFile), L"EFI Internal Shell", LOAD_OPTION_ACTIVE
+    &gUefiShellFileGuid, L"EFI Internal Shell", LOAD_OPTION_ACTIVE
     );
 
   RemoveStaleFvFileOptions ();
   SetBootOrderFromQemu ();
+
+  PlatformBmPrintScRegisterHandler ();
 }
 
 /**
@@ -1659,9 +1631,18 @@ PlatformBootManagerWaitCallback (
 {
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION Black;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL_UNION White;
-  UINT16                              Timeout;
+  UINT16                              TimeoutInitial;
 
-  Timeout = PcdGet16 (PcdPlatformBootTimeOut);
+  TimeoutInitial = PcdGet16 (PcdPlatformBootTimeOut);
+
+  //
+  // If PcdPlatformBootTimeOut is set to zero, then we consider
+  // that no progress update should be enacted (since we'd only
+  // ever display a one-shot progress of either 0% or 100%).
+  //
+  if (TimeoutInitial == 0) {
+    return;
+  }
 
   Black.Raw = 0x00000000;
   White.Raw = 0x00FFFFFF;
@@ -1671,7 +1652,7 @@ PlatformBootManagerWaitCallback (
     Black.Pixel,
     L"Start boot option",
     White.Pixel,
-    (Timeout - TimeoutRemain) * 100 / Timeout,
+    (TimeoutInitial - TimeoutRemain) * 100 / TimeoutInitial,
     0
     );
 }

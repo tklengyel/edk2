@@ -4,13 +4,7 @@ This file contains the internal functions required to generate a Firmware Volume
 Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
 Portions Copyright (c) 2011 - 2013, ARM Ltd. All rights reserved.<BR>
 Portions Copyright (c) 2016 HP Development Company, L.P.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -110,7 +104,7 @@ CHAR8      *mFvbAlignmentName[] = {
 // This data array will be located at the base of the Firmware Volume Header (FVH)
 // in the boot block.  It must not exceed 14 bytes of code.  The last 2 bytes
 // will be used to keep the FVH checksum consistent.
-// This code will be run in response to a starutp IPI for HT-enabled systems.
+// This code will be run in response to a startup IPI for HT-enabled systems.
 //
 #define SIZEOF_STARTUP_DATA_ARRAY 0x10
 
@@ -465,7 +459,7 @@ Returns:
   case 0:
     //
     // 1 byte alignment
-    //if bit 1 have set, 128K byte alignmnet
+    //if bit 1 have set, 128K byte alignment
     //
     if (FfsFile->Attributes & FFS_ATTRIB_DATA_ALIGNMENT2) {
       *Alignment = 17;
@@ -724,7 +718,7 @@ Returns:
     memcpy ((UINT8 *)PadFile + CurFfsHeaderSize, ExtHeader, ExtHeader->ExtHeaderSize);
     ((EFI_FIRMWARE_VOLUME_HEADER *) FvImage->FileImage)->ExtHeaderOffset = (UINT16) ((UINTN) ((UINT8 *)PadFile + CurFfsHeaderSize) - (UINTN) FvImage->FileImage);
     //
-    // Make next file start at QWord Boundry
+    // Make next file start at QWord Boundary
     //
     while (((UINTN) FvImage->CurrentFilePointer & (EFI_FFS_FILE_HEADER_ALIGNMENT - 1)) != 0) {
       FvImage->CurrentFilePointer++;
@@ -797,6 +791,7 @@ Returns:
   FILE                                *PeMapFile;
   CHAR8                               Line [MAX_LINE_LEN];
   CHAR8                               KeyWord [MAX_LINE_LEN];
+  CHAR8                               KeyWord2 [MAX_LINE_LEN];
   CHAR8                               FunctionName [MAX_LINE_LEN];
   EFI_PHYSICAL_ADDRESS                FunctionAddress;
   UINT32                              FunctionType;
@@ -811,6 +806,7 @@ Returns:
   UINT32                              TextVirtualAddress;
   UINT32                              DataVirtualAddress;
   EFI_PHYSICAL_ADDRESS                LinkTimeBaseAddress;
+  BOOLEAN                             IsUseClang;
 
   //
   // Init local variable
@@ -938,6 +934,7 @@ Returns:
   // Output Functions information into Fv Map file
   //
   LinkTimeBaseAddress = 0;
+  IsUseClang = FALSE;
   while (fgets (Line, MAX_LINE_LEN, PeMapFile) != NULL) {
     //
     // Skip blank line
@@ -952,6 +949,12 @@ Returns:
     if (FunctionType == 0) {
       sscanf (Line, "%s", KeyWord);
       if (stricmp (KeyWord, "Address") == 0) {
+        sscanf (Line, "%s %s", KeyWord, KeyWord2);
+        if (stricmp (KeyWord2, "Size") == 0) {
+          IsUseClang = TRUE;
+          FunctionType = 1;
+          continue;
+        }
         //
         // function list
         //
@@ -973,11 +976,20 @@ Returns:
     // Printf Function Information
     //
     if (FunctionType == 1) {
-      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
-      FunctionAddress = (UINT64) TempLongAddress;
-      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress - LinkTimeBaseAddress));
-        fprintf (FvMapFile, "%s\n", FunctionName);
+      if (IsUseClang) {
+        sscanf (Line, "%llx %s %s %s", &TempLongAddress, KeyWord, KeyWord2, FunctionTypeName);
+        FunctionAddress = (UINT64) TempLongAddress;
+        if (FunctionTypeName [0] == '_' ) {
+          fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress - LinkTimeBaseAddress));
+          fprintf (FvMapFile, "%s\n", FunctionTypeName);
+        }
+      } else {
+        sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
+        FunctionAddress = (UINT64) TempLongAddress;
+        if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
+          fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress - LinkTimeBaseAddress));
+          fprintf (FvMapFile, "%s\n", FunctionName);
+        }
       }
     } else if (FunctionType == 2) {
       sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
@@ -1218,7 +1230,7 @@ Returns:
   FileBuffer = malloc (FileSize);
   if (FileBuffer == NULL) {
     fclose (NewFile);
-    Error (NULL, 0, 4001, "Resouce", "memory cannot be allocated!");
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -1387,7 +1399,7 @@ Returns:
     return EFI_ABORTED;
   }
   //
-  // Make next file start at QWord Boundry
+  // Make next file start at QWord Boundary
   //
   while (((UINTN) FvImage->CurrentFilePointer & (EFI_FFS_FILE_HEADER_ALIGNMENT - 1)) != 0) {
     FvImage->CurrentFilePointer++;
@@ -2196,14 +2208,14 @@ Returns:
         return EFI_ABORTED;
       }
 
-      // Add opcode for an uncondional branch with no link. i.e.: " B SecEntryPoint"
+      // Add opcode for an unconditional branch with no link. i.e.: " B SecEntryPoint"
       ResetVector[0] |= ARMT_UNCONDITIONAL_JUMP_INSTRUCTION;
 
       // SWI handler movs   pc,lr. Just in case a debugger uses SWI
       ResetVector[2] = 0xE1B0F07E;
 
       // Place holder to support a common interrupt handler from ROM.
-      // Currently not suppprted. For this to be used the reset vector would not be in this FV
+      // Currently not supported. For this to be used the reset vector would not be in this FV
       // and the exception vectors would be hard coded in the ROM and just through this address
       // to find a common handler in the a module in the FV.
       ResetVector[3] = 0;
@@ -2235,7 +2247,7 @@ Returns:
     ARMT above has an entry in ResetVector[2] for SWI. The way we are using the ResetVector
     array at the moment, for AArch64, does not allow us space for this as the header only
     allows for a fixed amount of bytes at the start. If we are sure that UEFI will live
-    within the first 4GB of addressable RAM we could potensioally adopt the same ResetVector
+    within the first 4GB of addressable RAM we could potentially adopt the same ResetVector
     layout as above. But for the moment we replace the four 32bit vectors with two 64bit
     vectors in the same area of the Image heasder. This allows UEFI to start from a 64bit
     base.
@@ -2253,7 +2265,7 @@ Returns:
         Error(NULL, 0, 3000, "Invalid", "SEC Entry point must be within 128MB of the start of the FV");
         return EFI_ABORTED;
       }
-      // Add opcode for an uncondional branch with no link. i.e.: " B SecEntryPoint"
+      // Add opcode for an unconditional branch with no link. i.e.: " B SecEntryPoint"
       ResetVector[0] |= ARM64_UNCONDITIONAL_JUMP_INSTRUCTION;
     }
 
@@ -3068,7 +3080,7 @@ Returns:
   }
 
   //
-  // Accumlate every FFS file size.
+  // Accumulate every FFS file size.
   //
   for (Index = 0; FvInfoPtr->FvFiles[Index][0] != 0; Index++) {
     //
@@ -3143,7 +3155,7 @@ Returns:
     }
 
     //
-    // Make next ffs file start at QWord Boundry
+    // Make next ffs file start at QWord Boundary
     //
     if (FvInfoPtr->IsPiFvImage) {
       CurrentOffset = (CurrentOffset + EFI_FFS_FILE_HEADER_ALIGNMENT - 1) & ~(EFI_FFS_FILE_HEADER_ALIGNMENT - 1);
@@ -3234,7 +3246,7 @@ Routine Description:
   their base address to the parent image.
 
 Arguments:
-  FvInfo            A pointer to FV_INFO struture.
+  FvInfo            A pointer to FV_INFO structure.
   FfsFile           A pointer to Ffs file image that may contain FvImage.
   XipOffset         The offset address to the parent FvImage base.
 
@@ -3277,7 +3289,7 @@ Returns:
         return EFI_ABORTED;
       }
 
-      // machine type is ARM, set a flag so ARM reset vector procesing occurs
+      // machine type is ARM, set a flag so ARM reset vector processing occurs
       if ((MachineType == EFI_IMAGE_MACHINE_ARMT) || (MachineType == EFI_IMAGE_MACHINE_AARCH64)) {
         VerboseMsg("Located ARM/AArch64 SEC/PEI core in child FV");
         mArm = TRUE;
@@ -3311,7 +3323,7 @@ Routine Description:
 
 Arguments:
 
-  FvInfo            A pointer to FV_INFO struture.
+  FvInfo            A pointer to FV_INFO structure.
   FileName          Ffs File PathName
   FfsFile           A pointer to Ffs file image.
   XipOffset         The offset address to use for rebasing the XIP file image.

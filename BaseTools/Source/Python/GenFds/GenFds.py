@@ -3,13 +3,7 @@
 #
 #  Copyright (c) 2007 - 2019, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -26,7 +20,7 @@ from linecache import getlines
 from io import BytesIO
 
 import Common.LongFilePathOs as os
-from Common.TargetTxtClassObject import TargetTxtClassObject
+from Common.TargetTxtClassObject import TargetTxt
 from Common.DataType import *
 import Common.GlobalData as GlobalData
 from Common import EdkLogger
@@ -99,7 +93,7 @@ def resetFdsGlobalVariable():
     GenFdsGlobalVariable.SecCmdList = []
     GenFdsGlobalVariable.CopyList   = []
     GenFdsGlobalVariable.ModuleFile = ''
-    GenFdsGlobalVariable.EnableGenfdsMultiThread = False
+    GenFdsGlobalVariable.EnableGenfdsMultiThread = True
 
     GenFdsGlobalVariable.LargeFileInFvFlags = []
     GenFdsGlobalVariable.EFI_FIRMWARE_FILE_SYSTEM3_GUID = '5473C07A-3DCB-4dca-BD6F-1E9689E7349A'
@@ -146,6 +140,8 @@ def GenFdsApi(FdsCommandDict, WorkSpaceDataBase=None):
                 GenFdsGlobalVariable.VerboseLogger("Using Workspace:" + Workspace)
             if FdsCommandDict.get("GenfdsMultiThread"):
                 GenFdsGlobalVariable.EnableGenfdsMultiThread = True
+            else:
+                GenFdsGlobalVariable.EnableGenfdsMultiThread = False
         os.chdir(GenFdsGlobalVariable.WorkSpaceDir)
 
         # set multiple workspace
@@ -189,7 +185,6 @@ def GenFdsApi(FdsCommandDict, WorkSpaceDataBase=None):
         else:
             EdkLogger.error("GenFds", OPTION_MISSING, "Missing active platform")
 
-        GlobalData.BuildOptionPcd = FdsCommandDict.get("OptionPcd") if FdsCommandDict.get("OptionPcd") else {}
         GenFdsGlobalVariable.ActivePlatform = PathClass(NormPath(ActivePlatform))
 
         if FdsCommandDict.get("conf_directory"):
@@ -214,8 +209,6 @@ def GenFdsApi(FdsCommandDict, WorkSpaceDataBase=None):
             GlobalData.gConfDirectory = GenFdsGlobalVariable.ConfDir
         BuildConfigurationFile = os.path.normpath(os.path.join(ConfDirectoryPath, "target.txt"))
         if os.path.isfile(BuildConfigurationFile) == True:
-            TargetTxt = TargetTxtClassObject()
-            TargetTxt.LoadTargetTxtFile(BuildConfigurationFile)
             # if no build target given in command line, get it from target.txt
             if not GenFdsGlobalVariable.TargetName:
                 BuildTargetList = TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_TARGET]
@@ -363,6 +356,8 @@ def GenFdsApi(FdsCommandDict, WorkSpaceDataBase=None):
                             continue
                         for RegionData in RegionObj.RegionDataList:
                             if FvObj.UiFvName.upper() == RegionData.upper():
+                                if not FvObj.BaseAddress:
+                                    FvObj.BaseAddress = '0x%x' % (int(FdObj.BaseAddress, 0) + RegionObj.Offset)
                                 if FvObj.FvRegionInFD:
                                     if FvObj.FvRegionInFD != RegionObj.Size:
                                         EdkLogger.error("GenFds", FORMAT_INVALID, "The FV %s's region is specified in multiple FD with different value." %FvObj.UiFvName)
@@ -393,7 +388,7 @@ def GenFdsApi(FdsCommandDict, WorkSpaceDataBase=None):
                     "\nPython",
                     CODE_ERROR,
                     "Tools code failure",
-                    ExtraData="Please send email to edk2-devel@lists.01.org for help, attaching following call stack trace!\n",
+                    ExtraData="Please send email to %s for help, attaching following call stack trace!\n" % MSG_EDKII_MAIL_ADDR,
                     RaiseError=False
                     )
         EdkLogger.quiet(traceback.format_exc())
@@ -409,7 +404,7 @@ def OptionsToCommandDict(Options):
     FdsCommandDict["quiet"] = Options.quiet
     FdsCommandDict["debug"] = Options.debug
     FdsCommandDict["Workspace"] = Options.Workspace
-    FdsCommandDict["GenfdsMultiThread"] = Options.GenfdsMultiThread
+    FdsCommandDict["GenfdsMultiThread"] = not Options.NoGenfdsMultiThread
     FdsCommandDict["fdf_file"] = [PathClass(Options.filename)] if Options.filename else []
     FdsCommandDict["build_target"] = Options.BuildTarget
     FdsCommandDict["toolchain_tag"] = Options.ToolChain
@@ -466,7 +461,8 @@ def myOptionParser():
     Parser.add_option("--conf", action="store", type="string", dest="ConfDirectory", help="Specify the customized Conf directory.")
     Parser.add_option("--ignore-sources", action="store_true", dest="IgnoreSources", default=False, help="Focus to a binary build and ignore all source files")
     Parser.add_option("--pcd", action="append", dest="OptionPcd", help="Set PCD value by command line. Format: \"PcdName=Value\" ")
-    Parser.add_option("--genfds-multi-thread", action="store_true", dest="GenfdsMultiThread", default=False, help="Enable GenFds multi thread to generate ffs file.")
+    Parser.add_option("--genfds-multi-thread", action="store_true", dest="GenfdsMultiThread", default=True, help="Enable GenFds multi thread to generate ffs file.")
+    Parser.add_option("--no-genfds-multi-thread", action="store_true", dest="NoGenfdsMultiThread", default=False, help="Disable GenFds multi thread to generate ffs file.")
 
     Options, _ = Parser.parse_args()
     return Options
@@ -521,7 +517,7 @@ class GenFds(object):
                 return
         elif GenFds.OnlyGenerateThisFv is None:
             for FvObj in GenFdsGlobalVariable.FdfParser.Profile.FvDict.values():
-                Buffer = BytesIO('')
+                Buffer = BytesIO()
                 FvObj.AddToBuffer(Buffer)
                 Buffer.close()
 
@@ -627,9 +623,9 @@ class GenFds(object):
         GenFdsGlobalVariable.InfLogger('\nFV Space Information')
         for FvSpaceInfo in FvSpaceInfoList:
             Name = FvSpaceInfo[0]
-            TotalSizeValue = long(FvSpaceInfo[1], 0)
-            UsedSizeValue = long(FvSpaceInfo[2], 0)
-            FreeSizeValue = long(FvSpaceInfo[3], 0)
+            TotalSizeValue = int(FvSpaceInfo[1], 0)
+            UsedSizeValue = int(FvSpaceInfo[2], 0)
+            FreeSizeValue = int(FvSpaceInfo[3], 0)
             if UsedSizeValue == TotalSizeValue:
                 Percentage = '100'
             else:
@@ -656,7 +652,7 @@ class GenFds(object):
         if PcdValue == '':
             return
 
-        Int64PcdValue = long(PcdValue, 0)
+        Int64PcdValue = int(PcdValue, 0)
         if Int64PcdValue == 0 or Int64PcdValue < -1:
             return
 
@@ -672,11 +668,12 @@ class GenFds(object):
     @staticmethod
     def GenerateGuidXRefFile(BuildDb, ArchList, FdfParserObj):
         GuidXRefFileName = os.path.join(GenFdsGlobalVariable.FvDir, "Guid.xref")
-        GuidXRefFile = BytesIO('')
+        GuidXRefFile = []
         PkgGuidDict = {}
         GuidDict = {}
         ModuleList = []
         FileGuidList = []
+        VariableGuidSet = set()
         for Arch in ArchList:
             PlatformDataBase = BuildDb.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch, GenFdsGlobalVariable.TargetName, GenFdsGlobalVariable.ToolChainTag]
             PkgList = GenFdsGlobalVariable.WorkSpace.GetPackageList(GenFdsGlobalVariable.ActivePlatform, Arch, GenFdsGlobalVariable.TargetName, GenFdsGlobalVariable.ToolChainTag)
@@ -687,6 +684,8 @@ class GenFds(object):
                 if Pcd.Type in [TAB_PCDS_DYNAMIC_HII, TAB_PCDS_DYNAMIC_EX_HII]:
                     for SkuId in Pcd.SkuInfoList:
                         Sku = Pcd.SkuInfoList[SkuId]
+                        if Sku.VariableGuid in VariableGuidSet:continue
+                        VariableGuidSet.add(Sku.VariableGuid)
                         if Sku.VariableGuid and Sku.VariableGuid in PkgGuidDict.keys():
                             GuidDict[Sku.VariableGuid] = PkgGuidDict[Sku.VariableGuid]
             for ModuleFile in PlatformDataBase.Modules:
@@ -696,9 +695,9 @@ class GenFds(object):
                 else:
                     ModuleList.append(Module)
                 if GlobalData.gGuidPattern.match(ModuleFile.BaseName):
-                    GuidXRefFile.write("%s %s\n" % (ModuleFile.BaseName, Module.BaseName))
+                    GuidXRefFile.append("%s %s\n" % (ModuleFile.BaseName, Module.BaseName))
                 else:
-                    GuidXRefFile.write("%s %s\n" % (Module.Guid, Module.BaseName))
+                    GuidXRefFile.append("%s %s\n" % (Module.Guid, Module.BaseName))
                 GuidDict.update(Module.Protocols)
                 GuidDict.update(Module.Guids)
                 GuidDict.update(Module.Ppis)
@@ -711,7 +710,7 @@ class GenFds(object):
                             continue
                         else:
                             ModuleList.append(FdfModule)
-                        GuidXRefFile.write("%s %s\n" % (FdfModule.Guid, FdfModule.BaseName))
+                        GuidXRefFile.append("%s %s\n" % (FdfModule.Guid, FdfModule.BaseName))
                         GuidDict.update(FdfModule.Protocols)
                         GuidDict.update(FdfModule.Guids)
                         GuidDict.update(FdfModule.Ppis)
@@ -747,7 +746,7 @@ class GenFds(object):
                                     F.read()
                                     length = F.tell()
                                     F.seek(4)
-                                    TmpStr = unpack('%dh' % ((length - 4) / 2), F.read())
+                                    TmpStr = unpack('%dh' % ((length - 4) // 2), F.read())
                                     Name = ''.join(chr(c) for c in TmpStr[:-1])
                         else:
                             FileList = []
@@ -772,19 +771,19 @@ class GenFds(object):
                             continue
 
                         Name = ' '.join(Name) if isinstance(Name, type([])) else Name
-                        GuidXRefFile.write("%s %s\n" %(FileStatementGuid, Name))
+                        GuidXRefFile.append("%s %s\n" %(FileStatementGuid, Name))
 
        # Append GUIDs, Protocols, and PPIs to the Xref file
-        GuidXRefFile.write("\n")
+        GuidXRefFile.append("\n")
         for key, item in GuidDict.items():
-            GuidXRefFile.write("%s %s\n" % (GuidStructureStringToGuidString(item).upper(), key))
+            GuidXRefFile.append("%s %s\n" % (GuidStructureStringToGuidString(item).upper(), key))
 
-        if GuidXRefFile.getvalue():
-            SaveFileOnChange(GuidXRefFileName, GuidXRefFile.getvalue(), False)
+        if GuidXRefFile:
+            GuidXRefFile = ''.join(GuidXRefFile)
+            SaveFileOnChange(GuidXRefFileName, GuidXRefFile, False)
             GenFdsGlobalVariable.InfLogger("\nGUID cross reference file can be found at %s" % GuidXRefFileName)
         elif os.path.exists(GuidXRefFileName):
             os.remove(GuidXRefFileName)
-        GuidXRefFile.close()
 
 
 if __name__ == '__main__':

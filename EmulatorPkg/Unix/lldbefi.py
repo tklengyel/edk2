@@ -3,12 +3,7 @@
 #
 #  Copyright 2014 Apple Inc. All righes reserved.
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution. The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php.
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 import lldb
@@ -351,6 +346,11 @@ def TypePrintFormating(debugger):
     debugger.HandleCommand("type summary add CHAR8 --python-function lldbefi.CHAR8_TypeSummary")
     debugger.HandleCommand('type summary add --regex "CHAR8 \[[0-9]+\]" --python-function lldbefi.CHAR8_TypeSummary')
 
+    debugger.HandleCommand(
+      'setting set frame-format "frame #${frame.index}: ${frame.pc}'
+      '{ ${module.file.basename}{:${function.name}()${function.pc-offset}}}'
+      '{ at ${line.file.fullpath}:${line.number}}\n"'
+      )
 
 gEmulatorBreakWorkaroundNeeded = True
 
@@ -386,15 +386,16 @@ def LoadEmulatorEfiSymbols(frame, bp_loc , internal_dict):
     Error = lldb.SBError()
     FileNamePtr = frame.FindVariable ("FileName").GetValueAsUnsigned()
     FileNameLen = frame.FindVariable ("FileNameLength").GetValueAsUnsigned()
+
     FileName = frame.thread.process.ReadCStringFromMemory (FileNamePtr, FileNameLen, Error)
     if not Error.Success():
         print "!ReadCStringFromMemory() did not find a %d byte C string at %x" % (FileNameLen, FileNamePtr)
         # make breakpoint command contiue
-        frame.GetThread().GetProcess().Continue()
+        return False
 
     debugger = frame.thread.process.target.debugger
     if frame.FindVariable ("AddSymbolFlag").GetValueAsUnsigned() == 1:
-        LoadAddress = frame.FindVariable ("LoadAddress").GetValueAsUnsigned()
+        LoadAddress = frame.FindVariable ("LoadAddress").GetValueAsUnsigned() - 0x240
 
         debugger.HandleCommand ("target modules add  %s" % FileName)
         print "target modules load --slid 0x%x %s" % (LoadAddress, FileName)
@@ -410,7 +411,7 @@ def LoadEmulatorEfiSymbols(frame, bp_loc , internal_dict):
                     print "!lldb.target.RemoveModule (%s) FAILED" % SBModule
 
     # make breakpoint command contiue
-    frame.thread.process.Continue()
+    return False
 
 def GuidToCStructStr (guid, Name=False):
   #

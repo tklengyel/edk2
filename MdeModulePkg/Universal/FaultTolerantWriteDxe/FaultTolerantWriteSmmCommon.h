@@ -3,13 +3,7 @@
   The common header file for SMM FTW module and SMM FTW DXE Module.
 
 Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved. <BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -78,7 +72,7 @@ typedef struct {
 } SMM_FTW_GET_LAST_WRITE_HEADER;
 
 /**
-  Shared entry point of the module
+  Shared entry point of the module.
 
   @retval EFI_SUCCESS           The initialization finished successfully.
   @retval EFI_OUT_OF_RESOURCES  Allocate memory error
@@ -109,7 +103,7 @@ FtwSmmIsBufferOutsideSmmValid (
   );
 
 /**
-  Notify the system that the SMM FTW driver is ready
+  Notify the system that the SMM FTW driver is ready.
 **/
 VOID
 FtwNotifySmmReady (

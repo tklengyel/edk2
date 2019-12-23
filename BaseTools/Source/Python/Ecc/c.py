@@ -1,14 +1,8 @@
 ## @file
 # This file is used to be the c coding style checking of ECC tool
 #
-# Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# Copyright (c) 2009 - 2019, Intel Corporation. All rights reserved.<BR>
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 from __future__ import print_function
@@ -35,7 +29,7 @@ IgnoredKeywordList = ['EFI_ERROR']
 
 def GetIgnoredDirListPattern():
     skipList = list(EccGlobalData.gConfig.SkipDirList) + ['.svn']
-    DirString = string.join(skipList, '|')
+    DirString = '|'.join(skipList)
     p = re.compile(r'.*[\\/](?:%s)[\\/]?.*' % DirString)
     return p
 
@@ -501,6 +495,8 @@ def CollectSourceCodeDataIntoDB(RootDir):
     tuple = os.walk(RootDir)
     IgnoredPattern = GetIgnoredDirListPattern()
     ParseErrorFileList = []
+    TokenReleaceList = EccGlobalData.gConfig.TokenReleaceList
+    TokenReleaceList.extend(['L",\\\""'])
 
     for dirpath, dirnames, filenames in tuple:
         if IgnoredPattern.match(dirpath.upper()):
@@ -525,6 +521,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 EdkLogger.info("Parsing " + FullName)
                 model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
                 collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
+                collector.TokenReleaceList = TokenReleaceList
                 try:
                     collector.ParseFile()
                 except UnicodeError:
@@ -733,7 +730,7 @@ def SplitPredicateByOp(Str, Op, IsFuncCalling=False):
 
             while not LBFound and (Str[Index].isalnum() or Str[Index] == '_'):
                 Index += 1
-            # maybe type-cast at the begining, skip it.
+            # maybe type-cast at the beginning, skip it.
             RemainingStr = Str[Index:].lstrip()
             if RemainingStr.startswith(')') and not LBFound:
                 Index += 1
@@ -834,7 +831,7 @@ def GetDataTypeFromModifier(ModifierStr):
     for M in MList:
         if M in EccGlobalData.gConfig.ModifierSet:
             continue
-        # remove array sufix
+        # remove array suffix
         if M.startswith('[') or M.endswith(']'):
             continue
         ReturnType += M + ' '
@@ -963,7 +960,7 @@ def StripComments(Str):
             ListFromStr[Index] = ' '
             Index += 1
         # check for // comment
-        elif ListFromStr[Index] == '/' and ListFromStr[Index + 1] == '/' and ListFromStr[Index + 2] != '\n':
+        elif ListFromStr[Index] == '/' and ListFromStr[Index + 1] == '/':
             InComment = True
             DoubleSlashComment = True
 
@@ -1019,7 +1016,7 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
                 Type = GetDataTypeFromModifier(Field[0:Index])
                 return Type.strip()
             else:
-            # For the condition that the field in struct is an array with [] sufixes...
+            # For the condition that the field in struct is an array with [] suffixes...
                 if not Field[Index + len(FieldName)].isalnum():
                     Type = GetDataTypeFromModifier(Field[0:Index])
                     return Type.strip()
@@ -1297,7 +1294,7 @@ def CheckFuncLayoutReturnType(FullFileName):
         Result0 = Result[0]
         if Result0.upper().startswith('STATIC'):
             Result0 = Result0[6:].strip()
-        Index = Result0.find(ReturnType)
+        Index = Result0.find(TypeStart)
         if Index != 0 or Result[3] != 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '[%s] Return Type should appear at the start of line' % FuncName, 'Function', Result[1])
 
@@ -1511,7 +1508,7 @@ def CheckFuncLayoutBody(FullFileName):
 
     FileTable = 'Identifier' + str(FileID)
     Db = GetDB()
-    SqlStatement = """ select BodyStartColumn, EndColumn, ID
+    SqlStatement = """ select BodyStartColumn, EndColumn, ID, Name
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
@@ -1520,9 +1517,15 @@ def CheckFuncLayoutBody(FullFileName):
         return ErrorMsgList
     for Result in ResultSet:
         if Result[0] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_BODY, 'open brace should be at the very beginning of a line.', 'Function', Result[2])
+            if not EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_BODY, Result[3]):
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_BODY,
+                              'The open brace should be at the very beginning of a line for the function [%s].' % Result[3],
+                              'Function', Result[2])
         if Result[1] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_BODY, 'close brace should be at the very beginning of a line.', 'Function', Result[2])
+            if not EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_BODY, Result[3]):
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_BODY,
+                              'The close brace should be at the very beginning of a line for the function [%s].' % Result[3],
+                              'Function', Result[2])
 
 def CheckFuncLayoutLocalVariable(FullFileName):
     ErrorMsgList = []
@@ -1623,7 +1626,7 @@ def CheckMemberVariableFormat(Name, Value, FileTable, TdId, ModelId):
         Field = Field.strip()
         if Field == '':
             continue
-        # For the condition that the field in struct is an array with [] sufixes...
+        # For the condition that the field in struct is an array with [] suffixes...
         if Field[-1] == ']':
             LBPos = Field.find('[')
             Field = Field[0:LBPos]
@@ -1856,7 +1859,7 @@ def CheckDeclNoUseCType(FullFileName):
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE)
     ResultSet = Db.TblFile.Exec(SqlStatement)
-    CTypeTuple = ('int', 'unsigned', 'char', 'void', 'static', 'long')
+    CTypeTuple = ('int', 'unsigned', 'char', 'void', 'long')
     for Result in ResultSet:
         for Type in CTypeTuple:
             if PatternInModifier(Result[0], Type):
@@ -2385,7 +2388,7 @@ def CheckFileHeaderDoxygenComments(FullFileName):
                     PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment content should start with two spaces at each line', FileTable, ID)
 
             CommentLine = CommentLine.strip()
-            if CommentLine.startswith('Copyright'):
+            if CommentLine.startswith('Copyright') or ('Copyright' in CommentLine and CommentLine.lower().startswith('(c)')):
                 NoCopyrightFlag = False
                 if CommentLine.find('All rights reserved') == -1:
                     for Copyright in EccGlobalData.gConfig.Copyright:

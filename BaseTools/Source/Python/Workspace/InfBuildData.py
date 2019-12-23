@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
 # (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 from __future__ import absolute_import
@@ -20,6 +14,44 @@ from types import *
 from .MetaFileParser import *
 from collections import OrderedDict
 from Workspace.BuildClassObject import ModuleBuildClassObject, LibraryClassObject, PcdClassObject
+
+## Get Protocol value from given packages
+#
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+#   @param      Inffile         The driver file
+#
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+#
+def _ProtocolValue(CName, PackageList, Inffile = None):
+    for P in PackageList:
+        ProtocolKeys = list(P.Protocols.keys())
+        if Inffile and P._PrivateProtocols:
+            if not Inffile.startswith(P.MetaFile.Dir):
+                ProtocolKeys = [x for x in P.Protocols if x not in P._PrivateProtocols]
+        if CName in ProtocolKeys:
+            return P.Protocols[CName]
+    return None
+
+## Get PPI value from given packages
+#
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+#   @param      Inffile         The driver file
+#
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+#
+def _PpiValue(CName, PackageList, Inffile = None):
+    for P in PackageList:
+        PpiKeys = list(P.Ppis.keys())
+        if Inffile and P._PrivatePpis:
+            if not Inffile.startswith(P.MetaFile.Dir):
+                PpiKeys = [x for x in P.Ppis if x not in P._PrivatePpis]
+        if CName in PpiKeys:
+            return P.Ppis[CName]
+    return None
 
 ## Module build information from INF file
 #
@@ -62,9 +94,7 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_VERSION_STRING              : "_Version",
         TAB_INF_DEFINES_VERSION                     : "_Version",
         TAB_INF_DEFINES_PCD_IS_DRIVER               : "_PcdIsDriver",
-        TAB_INF_DEFINES_SHADOW                      : "_Shadow",
-
-        TAB_COMPONENTS_SOURCE_OVERRIDE_PATH         : "_SourceOverridePath",
+        TAB_INF_DEFINES_SHADOW                      : "_Shadow"
     }
 
     # regular expression for converting XXX_FLAGS in [nmake] section to new type
@@ -97,10 +127,6 @@ class InfBuildData(ModuleBuildClassObject):
         self._Target = Target
         self._Toolchain = Toolchain
         self._Platform = TAB_COMMON
-        if FilePath.Key in GlobalData.gOverrideDir:
-            self._SourceOverridePath = GlobalData.gOverrideDir[FilePath.Key]
-        else:
-            self._SourceOverridePath = None
         self._TailComments = None
         self._BaseName = None
         self._DxsFile = None
@@ -128,6 +154,12 @@ class InfBuildData(ModuleBuildClassObject):
         self._PcdComments = None
         self._BuildOptions = None
         self._DependencyFileList = None
+        self.LibInstances = []
+        self.ReferenceModules = set()
+
+    def SetReferenceModule(self,Module):
+        self.ReferenceModules.add(Module)
+        return self
 
     ## XXX[key] = value
     def __setitem__(self, key, value):
@@ -167,7 +199,7 @@ class InfBuildData(ModuleBuildClassObject):
 
     ## Retrieve all information in [Defines] section
     #
-    #   (Retriving all [Defines] information in one-shot is just to save time.)
+    #   (Retrieving all [Defines] information in one-shot is just to save time.)
     #
     @cached_class_function
     def _GetHeaderInfo(self):
@@ -566,7 +598,7 @@ class InfBuildData(ModuleBuildClassObject):
         RecordList = self._RawData[MODEL_EFI_PROTOCOL, self._Arch, self._Platform]
         for Record in RecordList:
             CName = Record[0]
-            Value = ProtocolValue(CName, self.Packages, self.MetaFile.Path)
+            Value = _ProtocolValue(CName, self.Packages, self.MetaFile.Path)
             if Value is None:
                 PackageList = "\n\t".join(str(P) for P in self.Packages)
                 EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
@@ -590,7 +622,7 @@ class InfBuildData(ModuleBuildClassObject):
         RecordList = self._RawData[MODEL_EFI_PPI, self._Arch, self._Platform]
         for Record in RecordList:
             CName = Record[0]
-            Value = PpiValue(CName, self.Packages, self.MetaFile.Path)
+            Value = _PpiValue(CName, self.Packages, self.MetaFile.Path)
             if Value is None:
                 PackageList = "\n\t".join(str(P) for P in self.Packages)
                 EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
@@ -623,15 +655,26 @@ class InfBuildData(ModuleBuildClassObject):
             RetVal[CName] = Value
             CommentRecords = self._RawData[MODEL_META_DATA_COMMENT, self._Arch, self._Platform, Record[5]]
             self._GuidComments[CName] = [a[0] for a in CommentRecords]
+
+        for Type in [MODEL_PCD_FIXED_AT_BUILD,MODEL_PCD_PATCHABLE_IN_MODULE,MODEL_PCD_FEATURE_FLAG,MODEL_PCD_DYNAMIC,MODEL_PCD_DYNAMIC_EX]:
+            RecordList = self._RawData[Type, self._Arch, self._Platform]
+            for TokenSpaceGuid, _, _, _, _, _, LineNo in RecordList:
+                # get the guid value
+                if TokenSpaceGuid not in RetVal:
+                    Value = GuidValue(TokenSpaceGuid, self.Packages, self.MetaFile.Path)
+                    if Value is None:
+                        PackageList = "\n\t".join(str(P) for P in self.Packages)
+                        EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
+                                        "Value of Guid [%s] is not found under [Guids] section in" % TokenSpaceGuid,
+                                        ExtraData=PackageList, File=self.MetaFile, Line=LineNo)
+                    RetVal[TokenSpaceGuid] = Value
+                    self._GuidsUsedByPcd[TokenSpaceGuid] = Value
         return RetVal
 
     ## Retrieve include paths necessary for this module (for Edk.x style of modules)
     @cached_property
     def Includes(self):
         RetVal = []
-        if self._SourceOverridePath:
-            RetVal.append(self._SourceOverridePath)
-
         Macros = self._Macros
         Macros['PROCESSOR'] = GlobalData.gEdkGlobal.get('PROCESSOR', self._Arch)
         RecordList = self._RawData[MODEL_EFI_INCLUDE, self._Arch, self._Platform]
@@ -682,6 +725,25 @@ class InfBuildData(ModuleBuildClassObject):
         return RetVal
 
     @cached_property
+    def ModulePcdList(self):
+        RetVal = self.Pcds
+        return RetVal
+    @cached_property
+    def LibraryPcdList(self):
+        if bool(self.LibraryClass):
+            return []
+        RetVal = {}
+        Pcds = set()
+        for Library in self.LibInstances:
+            PcdsInLibrary = OrderedDict()
+            for Key in Library.Pcds:
+                if Key in self.Pcds or Key in Pcds:
+                    continue
+                Pcds.add(Key)
+                PcdsInLibrary[Key] = copy.copy(Library.Pcds[Key])
+            RetVal[Library] = PcdsInLibrary
+        return RetVal
+    @cached_property
     def PcdsName(self):
         PcdsName = set()
         for Type in (MODEL_PCD_FIXED_AT_BUILD,MODEL_PCD_PATCHABLE_IN_MODULE,MODEL_PCD_FEATURE_FLAG,MODEL_PCD_DYNAMIC,MODEL_PCD_DYNAMIC_EX):
@@ -725,7 +787,7 @@ class InfBuildData(ModuleBuildClassObject):
                 EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "No [Depex] section or no valid expression in [Depex] section for [%s] module" \
                                 % self.ModuleType, File=self.MetaFile)
 
-        if len(RecordList) != 0 and self.ModuleType == SUP_MODULE_USER_DEFINED:
+        if len(RecordList) != 0 and (self.ModuleType == SUP_MODULE_USER_DEFINED or self.ModuleType == SUP_MODULE_HOST_APPLICATION):
             for Record in RecordList:
                 if Record[4] not in [SUP_MODULE_PEIM, SUP_MODULE_DXE_DRIVER, SUP_MODULE_DXE_SMM_DRIVER]:
                     EdkLogger.error('build', FORMAT_INVALID,
@@ -762,9 +824,9 @@ class InfBuildData(ModuleBuildClassObject):
                         Value = Token
                     else:
                         # get the GUID value now
-                        Value = ProtocolValue(Token, self.Packages, self.MetaFile.Path)
+                        Value = _ProtocolValue(Token, self.Packages, self.MetaFile.Path)
                         if Value is None:
-                            Value = PpiValue(Token, self.Packages, self.MetaFile.Path)
+                            Value = _PpiValue(Token, self.Packages, self.MetaFile.Path)
                             if Value is None:
                                 Value = GuidValue(Token, self.Packages, self.MetaFile.Path)
 
@@ -778,7 +840,7 @@ class InfBuildData(ModuleBuildClassObject):
             RetVal[Arch, ModuleType] = TemporaryDictionary[Arch, ModuleType]
         return RetVal
 
-    ## Retrieve depedency expression
+    ## Retrieve dependency expression
     @cached_property
     def DepexExpression(self):
         RetVal = tdict(False, 2)
@@ -796,10 +858,20 @@ class InfBuildData(ModuleBuildClassObject):
         for Arch, ModuleType in TemporaryDictionary:
             RetVal[Arch, ModuleType] = TemporaryDictionary[Arch, ModuleType]
         return RetVal
+    def LocalPkg(self):
+        module_path = self.MetaFile.File
+        subdir = os.path.split(module_path)[0]
+        TopDir = ""
+        while subdir:
+            subdir,TopDir = os.path.split(subdir)
 
+        for file_name in os.listdir(os.path.join(self.MetaFile.Root,TopDir)):
+            if file_name.upper().endswith("DEC"):
+                pkg = os.path.join(TopDir,file_name)
+        return pkg
     @cached_class_function
     def GetGuidsUsedByPcd(self):
-        self.Pcds
+        self.Guid
         return self._GuidsUsedByPcd
 
     ## Retrieve PCD for given type
@@ -811,16 +883,6 @@ class InfBuildData(ModuleBuildClassObject):
         for TokenSpaceGuid, PcdCName, Setting, Arch, Platform, Id, LineNo in RecordList:
             PcdDict[Arch, Platform, PcdCName, TokenSpaceGuid] = (Setting, LineNo)
             PcdList.append((PcdCName, TokenSpaceGuid))
-            # get the guid value
-            if TokenSpaceGuid not in self.Guids:
-                Value = GuidValue(TokenSpaceGuid, self.Packages, self.MetaFile.Path)
-                if Value is None:
-                    PackageList = "\n\t".join(str(P) for P in self.Packages)
-                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
-                                    "Value of Guid [%s] is not found under [Guids] section in" % TokenSpaceGuid,
-                                    ExtraData=PackageList, File=self.MetaFile, Line=LineNo)
-                self.Guids[TokenSpaceGuid] = Value
-                self._GuidsUsedByPcd[TokenSpaceGuid] = Value
             CommentRecords = self._RawData[MODEL_META_DATA_COMMENT, self._Arch, self._Platform, Id]
             Comments = []
             for CmtRec in CommentRecords:
@@ -997,3 +1059,6 @@ class InfBuildData(ModuleBuildClassObject):
         if (self.Binaries and not self.Sources) or GlobalData.gIgnoreSource:
             return True
         return False
+def ExtendCopyDictionaryLists(CopyToDict, CopyFromDict):
+    for Key in CopyFromDict:
+        CopyToDict[Key].extend(CopyFromDict[Key])

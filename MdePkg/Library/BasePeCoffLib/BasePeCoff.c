@@ -17,13 +17,7 @@
 
   Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
   Portions copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1002,7 +996,7 @@ PeCoffLoaderRelocateImage (
                                                                             RelocDir->VirtualAddress + RelocDir->Size - 1,
                                                                             TeStrippedOffset
                                                                             );
-    if (RelocBase == NULL || RelocBaseEnd == NULL || RelocBaseEnd < RelocBase) {
+    if (RelocBase == NULL || RelocBaseEnd == NULL || (UINTN) RelocBaseEnd < (UINTN) RelocBase) {
       ImageContext->ImageError = IMAGE_ERROR_FAILED_RELOCATION;
       return RETURN_LOAD_ERROR;
     }
@@ -1022,7 +1016,7 @@ PeCoffLoaderRelocateImage (
     // Run the relocation information and apply the fixups
     //
     FixupData = ImageContext->FixupData;
-    while (RelocBase < RelocBaseEnd) {
+    while ((UINTN) RelocBase < (UINTN) RelocBaseEnd) {
 
       Reloc     = (UINT16 *) ((CHAR8 *) RelocBase + sizeof (EFI_IMAGE_BASE_RELOCATION));
       //
@@ -1051,7 +1045,7 @@ PeCoffLoaderRelocateImage (
       //
       // Run this relocation record
       //
-      while (Reloc < RelocEnd) {
+      while ((UINTN) Reloc < (UINTN) RelocEnd) {
         Fixup = PeCoffLoaderImageAddress (ImageContext, RelocBase->VirtualAddress + (*Reloc & 0xFFF), TeStrippedOffset);
         if (Fixup == NULL) {
           ImageContext->ImageError = IMAGE_ERROR_FAILED_RELOCATION;
@@ -1740,13 +1734,23 @@ PeCoffLoaderRelocateImageForRuntime (
   // is present in the image. You have to check the NumberOfRvaAndSizes in
   // the optional header to verify a desired directory entry is there.
   //
+  RelocBase = NULL;
+  RelocBaseEnd = NULL;
   if (NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
     RelocDir      = DataDirectory + EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC;
-    RelocBase     = (EFI_IMAGE_BASE_RELOCATION *) PeCoffLoaderImageAddress (&ImageContext, RelocDir->VirtualAddress, 0);
-    RelocBaseEnd  = (EFI_IMAGE_BASE_RELOCATION *) PeCoffLoaderImageAddress (&ImageContext,
-                                                                            RelocDir->VirtualAddress + RelocDir->Size,
-                                                                            0
-                                                                            );
+    if ((RelocDir != NULL) && (RelocDir->Size > 0)) {
+      RelocBase     = (EFI_IMAGE_BASE_RELOCATION *) PeCoffLoaderImageAddress (&ImageContext, RelocDir->VirtualAddress, 0);
+      RelocBaseEnd  = (EFI_IMAGE_BASE_RELOCATION *) PeCoffLoaderImageAddress (&ImageContext,
+                                                                              RelocDir->VirtualAddress + RelocDir->Size - 1,
+                                                                              0
+                                                                              );
+    }
+    if (RelocBase == NULL || RelocBaseEnd == NULL || (UINTN) RelocBaseEnd < (UINTN) RelocBase) {
+      //
+      // relocation block is not valid, just return
+      //
+      return;
+    }
   } else {
     //
     // Cannot find relocations, cannot continue to relocate the image, ASSERT for this invalid image.
@@ -1770,7 +1774,7 @@ PeCoffLoaderRelocateImageForRuntime (
     //
     FixupData = RelocationData;
     RelocBaseOrig = RelocBase;
-    while (RelocBase < RelocBaseEnd) {
+    while ((UINTN) RelocBase < (UINTN) RelocBaseEnd) {
       //
       // Add check for RelocBase->SizeOfBlock field.
       //
@@ -1795,7 +1799,7 @@ PeCoffLoaderRelocateImageForRuntime (
       //
       // Run this relocation record
       //
-      while (Reloc < RelocEnd) {
+      while ((UINTN) Reloc < (UINTN) RelocEnd) {
 
         Fixup = PeCoffLoaderImageAddress (&ImageContext, RelocBase->VirtualAddress + (*Reloc & 0xFFF), 0);
         if (Fixup == NULL) {

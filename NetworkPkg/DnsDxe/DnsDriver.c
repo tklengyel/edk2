@@ -1,14 +1,8 @@
 /** @file
 The driver binding and service binding protocol for DnsDxe driver.
 
-Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -376,36 +370,32 @@ DnsUnload (
 
     while (!IsListEmpty (&mDriverData->Dns4CacheList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns4CacheList);
+      ASSERT (Entry != NULL);
       ItemCache4 = NET_LIST_USER_STRUCT (Entry, DNS4_CACHE, AllCacheLink);
-      if (ItemCache4->DnsCache.HostName != NULL) {
-        FreePool (ItemCache4->DnsCache.HostName);
-      }
-      if (ItemCache4->DnsCache.IpAddress != NULL) {
-        FreePool (ItemCache4->DnsCache.IpAddress);
-      }
+      FreePool (ItemCache4->DnsCache.HostName);
+      FreePool (ItemCache4->DnsCache.IpAddress);
       FreePool (ItemCache4);
     }
 
     while (!IsListEmpty (&mDriverData->Dns4ServerList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns4ServerList);
+      ASSERT (Entry != NULL);
       ItemServerIp4 = NET_LIST_USER_STRUCT (Entry, DNS4_SERVER_IP, AllServerLink);
       FreePool (ItemServerIp4);
     }
 
     while (!IsListEmpty (&mDriverData->Dns6CacheList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns6CacheList);
+      ASSERT (Entry != NULL);
       ItemCache6 = NET_LIST_USER_STRUCT (Entry, DNS6_CACHE, AllCacheLink);
-      if (ItemCache6->DnsCache.HostName != NULL) {
-        FreePool (ItemCache6->DnsCache.HostName);
-      }
-      if (ItemCache6->DnsCache.IpAddress != NULL) {
-        FreePool (ItemCache6->DnsCache.IpAddress);
-      }
+      FreePool (ItemCache6->DnsCache.HostName);
+      FreePool (ItemCache6->DnsCache.IpAddress);
       FreePool (ItemCache6);
     }
 
     while (!IsListEmpty (&mDriverData->Dns6ServerList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns6ServerList);
+      ASSERT (Entry != NULL);
       ItemServerIp6 = NET_LIST_USER_STRUCT (Entry, DNS6_SERVER_IP, AllServerLink);
       FreePool (ItemServerIp6);
     }
@@ -1155,7 +1145,7 @@ Dns4ServiceBindingCreateChild (
            DnsSb->ConnectUdp->UdpHandle,
            &gEfiUdp4ProtocolGuid,
            gDns4DriverBinding.DriverBindingHandle,
-           ChildHandle
+           *ChildHandle
            );
 
      gBS->UninstallMultipleProtocolInterfaces (
@@ -1398,7 +1388,7 @@ Dns6ServiceBindingCreateChild (
            DnsSb->ConnectUdp->UdpHandle,
            &gEfiUdp6ProtocolGuid,
            gDns6DriverBinding.DriverBindingHandle,
-           ChildHandle
+           *ChildHandle
            );
 
      gBS->UninstallMultipleProtocolInterfaces (

@@ -1,13 +1,7 @@
 /** @file
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include <Library/PrintLib.h>
@@ -31,7 +25,6 @@ STATIC BOOLEAN            mSelectedAcpiTableFound;
 STATIC EREPORT_OPTION     mReportType;
 STATIC UINT32             mTableCount;
 STATIC UINT32             mBinTableCount;
-STATIC BOOLEAN            mVerbose;
 STATIC BOOLEAN            mConsistencyCheck;
 STATIC BOOLEAN            mColourHighlighting;
 
@@ -39,13 +32,11 @@ STATIC BOOLEAN            mColourHighlighting;
   An array of acpiview command line parameters.
 **/
 STATIC CONST SHELL_PARAM_ITEM ParamList[] = {
-  {L"/?", TypeFlag},
-  {L"-c", TypeFlag},
+  {L"-q", TypeFlag},
   {L"-d", TypeFlag},
-  {L"-h", TypeValue},
+  {L"-h", TypeFlag},
   {L"-l", TypeFlag},
   {L"-s", TypeValue},
-  {L"-v", TypeFlag},
   {NULL, TypeMax}
 };
 
@@ -74,6 +65,33 @@ SetColourHighlighting (
   )
 {
   mColourHighlighting = Highlight;
+}
+
+/**
+  This function returns the consistency checking status.
+
+  @retval TRUE if consistency checking is enabled.
+**/
+BOOLEAN
+GetConsistencyChecking (
+  VOID
+  )
+{
+  return mConsistencyCheck;
+}
+
+/**
+  This function sets the consistency checking status.
+
+  @param  ConsistencyChecking   The consistency checking status.
+
+**/
+VOID
+SetConsistencyChecking (
+  BOOLEAN ConsistencyChecking
+  )
+{
+  mConsistencyCheck = ConsistencyChecking;
 }
 
 /**
@@ -193,6 +211,10 @@ ProcessTableReportOptions (
   BOOLEAN Log;
   BOOLEAN HighLight;
 
+  //
+  // set local variables to suppress incorrect compiler/analyzer warnings
+  //
+  OriginalAttribute = 0;
   SignaturePtr = (UINT8*)(UINTN)&Signature;
   Log = FALSE;
   HighLight = GetColourHighlighting ();
@@ -329,6 +351,12 @@ AcpiView (
   PARSE_ACPI_TABLE_PROC    RsdpParserProc;
   BOOLEAN                  Trace;
 
+  //
+  // set local variables to suppress incorrect compiler/analyzer warnings
+  //
+  EfiConfigurationTable = NULL;
+  OriginalAttribute = 0;
+
   // Search the table for an entry that matches the ACPI Table Guid
   FoundAcpiTable = FALSE;
   for (Index = 0; Index < SystemTable->NumberOfTableEntries; Index++) {
@@ -387,7 +415,8 @@ AcpiView (
          (ReportDumpBinFile == ReportOption)) &&
         (!mSelectedAcpiTableFound)) {
       Print (L"\nRequested ACPI Table not found.\n");
-    } else if (ReportDumpBinFile != ReportOption) {
+    } else if (GetConsistencyChecking () &&
+               (ReportDumpBinFile != ReportOption)) {
       OriginalAttribute = gST->ConOut->Mode->Attribute;
 
       Print (L"\nTable Statistics:\n");
@@ -440,8 +469,6 @@ ShellCommandRunAcpiView (
   SHELL_STATUS       ShellStatus;
   LIST_ENTRY*        Package;
   CHAR16*            ProblemParam;
-  CONST CHAR16*      Temp;
-  CHAR8              ColourOption[8];
   SHELL_FILE_HANDLE  TmpDumpFileHandle;
 
   // Set Defaults
@@ -451,7 +478,6 @@ ShellCommandRunAcpiView (
   mSelectedAcpiTable = 0;
   mSelectedAcpiTableName = NULL;
   mSelectedAcpiTableFound = FALSE;
-  mVerbose = TRUE;
   mConsistencyCheck = TRUE;
 
   ShellStatus = SHELL_SUCCESS;
@@ -522,18 +548,6 @@ ShellCommandRunAcpiView (
         L"acpiview"
         );
       ShellStatus = SHELL_INVALID_PARAMETER;
-    } else if (ShellCommandLineGetFlag (Package, L"-h") &&
-               ShellCommandLineGetValue (Package, L"-h") == NULL) {
-        ShellPrintHiiEx (
-          -1,
-          -1,
-          NULL,
-          STRING_TOKEN (STR_GEN_NO_VALUE),
-          gShellAcpiViewHiiHandle,
-          L"acpiview",
-          L"-h"
-          );
-        ShellStatus = SHELL_INVALID_PARAMETER;
     } else if (ShellCommandLineGetFlag (Package, L"-d") &&
                !ShellCommandLineGetFlag (Package, L"-s")) {
         ShellPrintHiiEx (
@@ -548,18 +562,11 @@ ShellCommandRunAcpiView (
           );
         ShellStatus = SHELL_INVALID_PARAMETER;
     } else {
-      // Check if the colour option is set
-      Temp = ShellCommandLineGetValue (Package, L"-h");
-      if (Temp != NULL) {
-        UnicodeStrToAsciiStrS (Temp, ColourOption, sizeof (ColourOption));
-        if ((AsciiStriCmp (ColourOption, "ON") == 0) ||
-            (AsciiStriCmp (ColourOption, "TRUE") == 0)) {
-          SetColourHighlighting (TRUE);
-        } else if ((AsciiStriCmp (ColourOption, "OFF") == 0) ||
-                   (AsciiStriCmp (ColourOption, "FALSE") == 0)) {
-          SetColourHighlighting (FALSE);
-        }
-      }
+      // Turn on colour highlighting if requested
+      SetColourHighlighting (ShellCommandLineGetFlag (Package, L"-h"));
+
+      // Surpress consistency checking if requested
+      SetConsistencyChecking (!ShellCommandLineGetFlag (Package, L"-q"));
 
       if (ShellCommandLineGetFlag (Package, L"-l")) {
         mReportType = ReportTableList;

@@ -1,14 +1,8 @@
 /** @file
 Header file for boot maintenance module.
 
-Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2004 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -98,7 +92,11 @@ typedef enum _TYPE_OF_TERMINAL {
   TerminalTypeVt100,
   TerminalTypeVt100Plus,
   TerminalTypeVtUtf8,
-  TerminalTypeTtyTerm
+  TerminalTypeTtyTerm,
+  TerminalTypeLinux,
+  TerminalTypeXtermR6,
+  TerminalTypeVt400,
+  TerminalTypeSCO
 } TYPE_OF_TERMINAL;
 
 //
@@ -1307,12 +1305,12 @@ extern BM_MENU_OPTION             ConsoleOutMenu;
 extern BM_MENU_OPTION             ConsoleErrMenu;
 extern BM_MENU_OPTION             DriverMenu;
 extern BM_MENU_OPTION             TerminalMenu;
-extern UINT16                     TerminalType[5];
+extern UINT16                     TerminalType[9];
 extern COM_ATTR                   BaudRateList[19];
 extern COM_ATTR                   DataBitsList[4];
 extern COM_ATTR                   ParityList[5];
 extern COM_ATTR                   StopBitsList[3];
-extern EFI_GUID                   TerminalTypeGuid[5];
+extern EFI_GUID                   TerminalTypeGuid[9];
 extern EFI_DEVICE_PATH_PROTOCOL   EndDevicePath[];
 extern UINT16                     mFlowControlType[2];
 extern UINT32                     mFlowControlValue[2];

@@ -17,13 +17,7 @@
 
 Copyright (c) 2013 - 2018, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2015 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -368,7 +362,7 @@ Tcg2MeasurePeImage (
   if (Status == EFI_VOLUME_FULL) {
     //
     // Volume full here means the image is hashed and its result is extended to PCR.
-    // But the event log cann't be saved since log area is full.
+    // But the event log can't be saved since log area is full.
     // Just return EFI_SUCCESS in order not to block the image load.
     //
     Status = EFI_SUCCESS;
@@ -547,7 +541,7 @@ DxeTpm2MeasureBootHandler (
     }
     //
     // The PE image from unmeasured Firmware volume need be measured
-    // The PE image from measured Firmware volume will be mearsured according to policy below.
+    // The PE image from measured Firmware volume will be measured according to policy below.
     //   If it is driver, do not measure
     //   If it is application, still measure.
     //

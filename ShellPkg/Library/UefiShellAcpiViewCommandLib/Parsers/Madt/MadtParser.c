@@ -1,23 +1,21 @@
 /** @file
   MADT table parser
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
-    - ACPI 6.2 Specification - Errata A, September 2017
+    - ACPI 6.3 Specification - January 2019
+    - Arm Generic Interrupt Controller Architecture Specification,
+      GIC architecture version 3 and version 4, issue E
+    - Arm Server Base System Architecture 5.0
 **/
 
 #include <IndustryStandard/Acpi.h>
 #include <Library/UefiLib.h>
 #include "AcpiParser.h"
 #include "AcpiTableParser.h"
+#include "MadtParser.h"
 
 // Local Variables
 STATIC CONST UINT8* MadtInterruptControllerType;
@@ -37,7 +35,64 @@ EFIAPI
 ValidateGICDSystemVectorBase (
   IN UINT8* Ptr,
   IN VOID*  Context
-  );
+)
+{
+  if (*(UINT32*)Ptr != 0) {
+    IncrementErrorCount ();
+    Print (
+      L"\nERROR: System Vector Base must be zero."
+    );
+  }
+}
+
+/**
+  This function validates the SPE Overflow Interrupt in the GICC.
+
+  @param [in] Ptr     Pointer to the start of the field data.
+  @param [in] Context Pointer to context specific information e.g. this
+                      could be a pointer to the ACPI table header.
+**/
+STATIC
+VOID
+EFIAPI
+ValidateSpeOverflowInterrupt (
+  IN UINT8* Ptr,
+  IN VOID*  Context
+  )
+{
+  UINT16 SpeOverflowInterrupt;
+
+  SpeOverflowInterrupt = *(UINT16*)Ptr;
+
+  // SPE not supported by this processor
+  if (SpeOverflowInterrupt == 0) {
+    return;
+  }
+
+  if ((SpeOverflowInterrupt < ARM_PPI_ID_MIN) ||
+      ((SpeOverflowInterrupt > ARM_PPI_ID_MAX) &&
+       (SpeOverflowInterrupt < ARM_PPI_ID_EXTENDED_MIN)) ||
+      (SpeOverflowInterrupt > ARM_PPI_ID_EXTENDED_MAX)) {
+    IncrementErrorCount ();
+    Print (
+      L"\nERROR: SPE Overflow Interrupt ID of %d is not in the allowed PPI ID "
+        L"ranges of %d-%d or %d-%d (for GICv3.1 or later).",
+      SpeOverflowInterrupt,
+      ARM_PPI_ID_MIN,
+      ARM_PPI_ID_MAX,
+      ARM_PPI_ID_EXTENDED_MIN,
+      ARM_PPI_ID_EXTENDED_MAX
+    );
+  } else if (SpeOverflowInterrupt != ARM_PPI_ID_PMBIRQ) {
+    IncrementWarningCount();
+    Print (
+      L"\nWARNING: SPE Overflow Interrupt ID of %d is not compliant with SBSA "
+        L"Level 3 PPI ID assignment: %d.",
+      SpeOverflowInterrupt,
+      ARM_PPI_ID_PMBIRQ
+    );
+  }
+}
 
 /**
   An ACPI_PARSER array describing the GICC Interrupt Controller Structure.
@@ -62,7 +117,9 @@ STATIC CONST ACPI_PARSER GicCParser[] = {
   {L"MPIDR", 8, 68, L"0x%lx", NULL, NULL, NULL, NULL},
   {L"Processor Power Efficiency Class", 1, 76, L"0x%x", NULL, NULL, NULL,
    NULL},
-  {L"Reserved", 3, 77, L"%x %x %x", Dump3Chars, NULL, NULL, NULL}
+  {L"Reserved", 1, 77, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"SPE overflow Interrupt", 2, 78, L"0x%x", NULL, NULL,
+    ValidateSpeOverflowInterrupt, NULL}
 };
 
 /**
@@ -144,29 +201,6 @@ STATIC CONST ACPI_PARSER MadtInterruptControllerHeaderParser[] = {
 };
 
 /**
-  This function validates the System Vector Base in the GICD.
-
-  @param [in] Ptr     Pointer to the start of the field data.
-  @param [in] Context Pointer to context specific information e.g. this
-                      could be a pointer to the ACPI table header.
-**/
-STATIC
-VOID
-EFIAPI
-ValidateGICDSystemVectorBase (
-  IN UINT8* Ptr,
-  IN VOID*  Context
-)
-{
-  if (*(UINT32*)Ptr != 0) {
-    IncrementErrorCount ();
-    Print (
-      L"\nERROR: System Vector Base must be zero."
-    );
-  }
-}
-
-/**
   This function parses the ACPI MADT table.
   When trace is enabled this function parses the MADT table and
   traces the ACPI table fields.
@@ -222,24 +256,38 @@ ParseAcpiMadt (
       0,
       NULL,
       InterruptContollerPtr,
-      2,  //  Length is 1 byte at offset 1
+      AcpiTableLength - Offset,
       PARSER_PARAMS (MadtInterruptControllerHeaderParser)
       );
 
-    if (((Offset + (*MadtInterruptControllerLength)) > AcpiTableLength) ||
-        (*MadtInterruptControllerLength < 4)) {
+    // Make sure forward progress is made.
+    if (*MadtInterruptControllerLength < 2) {
       IncrementErrorCount ();
       Print (
-         L"ERROR: Invalid Interrupt Controller Length,"
-          L" Type = %d, Length = %d\n",
-         *MadtInterruptControllerType,
-         *MadtInterruptControllerLength
-         );
-      break;
+        L"ERROR: Structure length is too small: " \
+          L"MadtInterruptControllerLength = %d. " \
+          L"MadtInterruptControllerType = %d. MADT parsing aborted.\n",
+        *MadtInterruptControllerLength,
+        *MadtInterruptControllerType
+        );
+      return;
+    }
+
+    // Make sure the MADT structure lies inside the table
+    if ((Offset + *MadtInterruptControllerLength) > AcpiTableLength) {
+      IncrementErrorCount ();
+      Print (
+        L"ERROR: Invalid MADT structure length. " \
+          L"MadtInterruptControllerLength = %d. " \
+          L"RemainingTableBufferLength = %d. MADT parsing aborted.\n",
+        *MadtInterruptControllerLength,
+        AcpiTableLength - Offset
+        );
+      return;
     }
 
     switch (*MadtInterruptControllerType) {
-      case EFI_ACPI_6_2_GIC: {
+      case EFI_ACPI_6_3_GIC: {
         ParseAcpi (
           TRUE,
           2,
@@ -251,7 +299,7 @@ ParseAcpiMadt (
         break;
       }
 
-      case EFI_ACPI_6_2_GICD: {
+      case EFI_ACPI_6_3_GICD: {
         if (++GICDCount > 1) {
           IncrementErrorCount ();
           Print (
@@ -271,7 +319,7 @@ ParseAcpiMadt (
         break;
       }
 
-      case EFI_ACPI_6_2_GIC_MSI_FRAME: {
+      case EFI_ACPI_6_3_GIC_MSI_FRAME: {
         ParseAcpi (
           TRUE,
           2,
@@ -283,7 +331,7 @@ ParseAcpiMadt (
         break;
       }
 
-      case EFI_ACPI_6_2_GICR: {
+      case EFI_ACPI_6_3_GICR: {
         ParseAcpi (
           TRUE,
           2,
@@ -295,7 +343,7 @@ ParseAcpiMadt (
         break;
       }
 
-      case EFI_ACPI_6_2_GIC_ITS: {
+      case EFI_ACPI_6_3_GIC_ITS: {
         ParseAcpi (
           TRUE,
           2,

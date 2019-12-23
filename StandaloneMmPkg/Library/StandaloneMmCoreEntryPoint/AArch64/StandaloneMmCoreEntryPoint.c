@@ -3,13 +3,7 @@
   phase on ARM platforms
 
 Copyright (c) 2017 - 2018, ARM Ltd. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php.
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -232,9 +226,6 @@ _ModuleEntryPoint (
   VOID                                    *TeData;
   UINTN                                   TeDataSize;
 
-  Status = SerialPortInitialize ();
-  ASSERT_EFI_ERROR (Status);
-
   // Get Secure Partition Manager Version Information
   Status = GetSpmVersion ();
   if (EFI_ERROR (Status)) {
@@ -295,7 +286,6 @@ _ModuleEntryPoint (
   //
   ProcessModuleEntryPointList (HobStart);
 
-  ASSERT_EFI_ERROR (CpuDriverEntryPoint);
   DEBUG ((DEBUG_INFO, "Shared Cpu Driver EP 0x%lx\n", (UINT64) CpuDriverEntryPoint));
 
 finish:
@@ -303,5 +293,4 @@ finish:
   InitMmFoundationSvcArgs.Arg0 = ARM_SVC_ID_SP_EVENT_COMPLETE_AARCH64;
   InitMmFoundationSvcArgs.Arg1 = Status;
   DelegatedEventLoop (&InitMmFoundationSvcArgs);
-  ASSERT_EFI_ERROR (0);
 }

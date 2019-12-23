@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
 #
 # Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
-# Copyright (c) 2010 - 2017, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2010 - 2019, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 set -e
@@ -46,7 +40,7 @@ ARCH_X64=no
 BUILDTARGET=DEBUG
 BUILD_OPTIONS=
 PLATFORMFILE=
-THREADNUMBER=1
+THREADNUMBER=0
 LAST_ARG=
 RUN_QEMU=no
 ENABLE_FLASH=no
@@ -215,21 +209,10 @@ if [[ "$RUN_QEMU" == "yes" ]]; then
                    grep -o -E 'version [0-9]+\.[0-9]+\.[0-9]+' | \
                      awk '{print $2}')
   case $qemu_version in
-    1.[6-9].*|1.[1-9][0-9].*|2.*.*)
+    1.[6-9].*|[2-9].*.*|[1-9][0-9]*.*.*)
       ENABLE_FLASH=yes
       ;;
   esac
-
-  ADD_QEMU_HDA=yes
-  for arg in "$@"
-  do
-    case $arg in
-      -hd[a-d]|-fd[ab]|-cdrom)
-        ADD_QEMU_HDA=no
-        break
-        ;;
-    esac
-  done
 fi
 
 #
@@ -269,12 +252,9 @@ if [[ "$RUN_QEMU" == "yes" ]]; then
   fi
   ln -sf $FV_DIR/OVMF.fd $QEMU_FIRMWARE_DIR/bios.bin
   if [[ "$ENABLE_FLASH" == "yes" ]]; then
-    QEMU_COMMAND="$QEMU_COMMAND -pflash $QEMU_FIRMWARE_DIR/bios.bin"
+    QEMU_COMMAND="$QEMU_COMMAND -drive if=pflash,format=raw,file=$QEMU_FIRMWARE_DIR/bios.bin"
   else
     QEMU_COMMAND="$QEMU_COMMAND -L $QEMU_FIRMWARE_DIR"
-  fi
-  if [[ "$ADD_QEMU_HDA" == "yes" ]]; then
-    QEMU_COMMAND="$QEMU_COMMAND -hda fat:$BUILD_ROOT_ARCH"
   fi
   echo Running: $QEMU_COMMAND "$@"
   $QEMU_COMMAND "$@"

@@ -4,13 +4,7 @@
 # Copyright (c) 2011 - 2016, ARM Limited. All rights reserved.
 # Copyright (c) 2016, Linaro Limited. All rights reserved.
 #
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #------------------------------------------------------------------------------
 
@@ -124,15 +118,15 @@ ASM_FUNC(ArmSetMAIR)
 //  IN VOID  *MVA                    // X1
 //  );
 ASM_FUNC(ArmUpdateTranslationTableEntry)
-   dc      civac, x0             // Clean and invalidate data line
-   dsb     sy
+   dsb     nshst
+   lsr     x1, x1, #12
    EL1_OR_EL2_OR_EL3(x0)
 1: tlbi    vaae1, x1             // TLB Invalidate VA , EL1
    b       4f
 2: tlbi    vae2, x1              // TLB Invalidate VA , EL2
    b       4f
 3: tlbi    vae3, x1              // TLB Invalidate VA , EL3
-4: dsb     sy
+4: dsb     nsh
    isb
    ret
 

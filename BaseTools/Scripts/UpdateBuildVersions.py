@@ -4,17 +4,11 @@
 # This script will modife the C/Include/Common/BuildVersion.h file and the two
 # Python scripts, Python/Common/BuildVersion.py and Python/UPT/BuildVersion.py.
 # If SVN is available, the tool will obtain the current checked out version of
-# the source tree for including the the --version commands.
+# the source tree for including the --version commands.
 
 #  Copyright (c) 2014 - 2015, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 """ This program will update the BuildVersion.py and BuildVersion.h files used to set a tool's version value """
 from __future__ import absolute_import
@@ -73,7 +67,7 @@ def ParseOptions():
 
 
 def ShellCommandResults(CmdLine, Opt):
-    """ Execute the comand, returning the output content """
+    """ Execute the command, returning the output content """
     file_list = NamedTemporaryFile(delete=False)
     filename = file_list.name
     Results = []

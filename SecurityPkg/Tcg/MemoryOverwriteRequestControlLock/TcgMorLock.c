@@ -1,17 +1,11 @@
 /** @file
   TCG MOR (Memory Overwrite Request) Lock Control Driver.
 
-  This driver initilize MemoryOverwriteRequestControlLock variable.
+  This driver initializes MemoryOverwriteRequestControlLock variable.
   This module will add Variable Hook and allow MemoryOverwriteRequestControlLock variable set only once.
 
 Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -173,7 +167,7 @@ SetVariableCheckHandlerMor (
   @param[in] ImageHandle  Image handle of this driver.
   @param[in] SystemTable  A Pointer to the EFI System Table.
 
-  @retval EFI_SUCEESS
+  @retval EFI_SUCCESS
   @return Others          Some error occurs.
 **/
 EFI_STATUS

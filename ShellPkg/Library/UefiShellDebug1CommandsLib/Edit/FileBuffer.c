@@ -2,13 +2,7 @@
   Implements filebuffer interface functions.
 
   Copyright (c) 2005 - 2018, Intel Corporation. All rights reserved. <BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1468,7 +1462,7 @@ FileBufferSave (
 
     if (Info != NULL && Info->Attribute & EFI_FILE_DIRECTORY) {
       StatusBarSetStatusString (L"Directory Can Not Be Saved");
-      ShellCloseFile(FileHandle);
+      ShellCloseFile (&FileHandle);
       FreePool(Info);
       return EFI_LOAD_ERROR;
     }
@@ -1608,7 +1602,7 @@ FileBufferSave (
   //
   // set status string
   //
-  Str = CatSPrint (NULL, L"%d Lines Wrote", NumLines);
+  Str = CatSPrint (NULL, L"%d Lines Written", NumLines);
   if (Str == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }

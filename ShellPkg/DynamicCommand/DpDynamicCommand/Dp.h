@@ -2,13 +2,7 @@
   Header file for 'dp' command functions.
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -42,7 +36,7 @@
 #include <Library/UefiHiiServicesLib.h>
 #include <Library/PerformanceLib.h>
 
-extern EFI_HANDLE mDpHiiHandle;
+extern EFI_HII_HANDLE mDpHiiHandle;
 
 #define DP_MAJOR_VERSION        2
 #define DP_MINOR_VERSION        5
@@ -139,7 +133,7 @@ RunDp (
 
   @return HII handle.
 **/
-EFI_HANDLE
+EFI_HII_HANDLE
 InitializeHiiPackage (
   EFI_HANDLE                  ImageHandle
   );

@@ -4,13 +4,7 @@
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 #  Copyright (c) 2015, Hewlett Packard Enterprise Development, L.P.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -159,7 +153,7 @@ class IncludeFileProfile:
         self.FileName = FileName
         self.FileLinesList = []
         try:
-            with open(FileName, "rb", 0) as fsock:
+            with open(FileName, "r") as fsock:
                 self.FileLinesList = fsock.readlines()
                 for index, line in enumerate(self.FileLinesList):
                     if not line.endswith(TAB_LINE_BREAK):
@@ -213,7 +207,7 @@ class FileProfile:
     def __init__(self, FileName):
         self.FileLinesList = []
         try:
-            with open(FileName, "rb", 0) as fsock:
+            with open(FileName, "r") as fsock:
                 self.FileLinesList = fsock.readlines()
 
         except:
@@ -716,13 +710,13 @@ class FdfParser:
                     EndPos = CurLine.find(')', StartPos+2)
                     while StartPos != -1 and EndPos != -1 and self._Token not in {TAB_IF_DEF, TAB_IF_N_DEF, TAB_IF, TAB_ELSE_IF}:
                         MacroName = CurLine[StartPos+2: EndPos]
-                        MacorValue = self._GetMacroValue(MacroName)
-                        if MacorValue is not None:
-                            CurLine = CurLine.replace('$(' + MacroName + ')', MacorValue, 1)
-                            if MacorValue.find('$(') != -1:
+                        MacroValue = self._GetMacroValue(MacroName)
+                        if MacroValue is not None:
+                            CurLine = CurLine.replace('$(' + MacroName + ')', MacroValue, 1)
+                            if MacroValue.find('$(') != -1:
                                 PreIndex = StartPos
                             else:
-                                PreIndex = StartPos + len(MacorValue)
+                                PreIndex = StartPos + len(MacroValue)
                         else:
                             PreIndex = EndPos + 1
                         StartPos = CurLine.find('$(', PreIndex)
@@ -1037,7 +1031,7 @@ class FdfParser:
 
     ## _GetNextToken() method
     #
-    #   Get next token unit before a seperator
+    #   Get next token unit before a separator
     #   If found, the string value is put into self._Token
     #
     #   @param  self        The object pointer
@@ -1054,12 +1048,12 @@ class FdfParser:
         StartLine = self.CurrentLineNumber
         while StartLine == self.CurrentLineNumber:
             TempChar = self._CurrentChar()
-            # Try to find the end char that is not a space and not in seperator tuple.
+            # Try to find the end char that is not a space and not in separator tuple.
             # That is, when we got a space or any char in the tuple, we got the end of token.
             if not str(TempChar).isspace() and TempChar not in SEPARATORS:
                 self._GetOneChar()
-            # if we happen to meet a seperator as the first char, we must proceed to get it.
-            # That is, we get a token that is a seperator char. nomally it is the boundary of other tokens.
+            # if we happen to meet a separator as the first char, we must proceed to get it.
+            # That is, we get a token that is a separator char. normally it is the boundary of other tokens.
             elif StartPos == self.CurrentOffsetWithinLine and TempChar in SEPARATORS:
                 self._GetOneChar()
                 break
@@ -1081,7 +1075,7 @@ class FdfParser:
 
     ## _GetNextGuid() method
     #
-    #   Get next token unit before a seperator
+    #   Get next token unit before a separator
     #   If found, the GUID string is put into self._Token
     #
     #   @param  self        The object pointer
@@ -1133,13 +1127,13 @@ class FdfParser:
         while CurrentLine == self.CurrentLineNumber:
 
             TempChar = self._CurrentChar()
-            # Try to find the end char that is not a space and not in seperator tuple.
+            # Try to find the end char that is not a space and not in separator tuple.
             # That is, when we got a space or any char in the tuple, we got the end of token.
             if not str(TempChar).isspace() and not TempChar in SEPARATORS:
                 if not self._UndoOneChar():
                     return
-            # if we happen to meet a seperator as the first char, we must proceed to get it.
-            # That is, we get a token that is a seperator char. nomally it is the boundary of other tokens.
+            # if we happen to meet a separator as the first char, we must proceed to get it.
+            # That is, we get a token that is a separator char. normally it is the boundary of other tokens.
             elif StartPos == self.CurrentOffsetWithinLine and TempChar in SEPARATORS:
                 return
             else:
@@ -1149,7 +1143,7 @@ class FdfParser:
 
     ## _GetNextHexNumber() method
     #
-    #   Get next HEX data before a seperator
+    #   Get next HEX data before a separator
     #   If found, the HEX data is put into self._Token
     #
     #   @param  self        The object pointer
@@ -1167,7 +1161,7 @@ class FdfParser:
 
     ## _GetNextDecimalNumber() method
     #
-    #   Get next decimal data before a seperator
+    #   Get next decimal data before a separator
     #   If found, the decimal data is put into self._Token
     #
     #   @param  self        The object pointer
@@ -1562,7 +1556,7 @@ class FdfParser:
                 self.SetPcdLocalation(pcdPair)
                 FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
                 self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
-            Obj.Size = long(Size, 0)
+            Obj.Size = int(Size, 0)
             return True
 
         if self._IsKeyword("ErasePolarity"):
@@ -1597,7 +1591,7 @@ class FdfParser:
             if not self._GetNextDecimalNumber() and not self._GetNextHexNumber():
                 raise Warning.Expected("address", self.FileName, self.CurrentLineNumber)
 
-            BsAddress = long(self._Token, 0)
+            BsAddress = int(self._Token, 0)
             Obj.BsBaseAddress = BsAddress
 
         if self._IsKeyword("RtBaseAddress"):
@@ -1607,7 +1601,7 @@ class FdfParser:
             if not self._GetNextDecimalNumber() and not self._GetNextHexNumber():
                 raise Warning.Expected("address", self.FileName, self.CurrentLineNumber)
 
-            RtAddress = long(self._Token, 0)
+            RtAddress = int(self._Token, 0)
             Obj.RtBaseAddress = RtAddress
 
     ## _GetBlockStatements() method
@@ -1655,7 +1649,7 @@ class FdfParser:
             self.SetPcdLocalation(PcdPair)
             FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
             self.Profile.PcdFileLineDict[PcdPair] = FileLineTuple
-        BlockSize = long(BlockSize, 0)
+        BlockSize = int(BlockSize, 0)
 
         BlockNumber = None
         if self._IsKeyword("NumBlocks"):
@@ -1665,7 +1659,7 @@ class FdfParser:
             if not self._GetNextDecimalNumber() and not self._GetNextHexNumber():
                 raise Warning.Expected("block numbers", self.FileName, self.CurrentLineNumber)
 
-            BlockNumber = long(self._Token, 0)
+            BlockNumber = int(self._Token, 0)
 
         Obj.BlockSizeList.append((BlockSize, BlockNumber, BlockSizePcd))
         return True
@@ -1774,7 +1768,7 @@ class FdfParser:
             Expr += CurCh
             self._GetOneChar()
         try:
-            return long(
+            return int(
                 ValueExpression(Expr,
                                 self._CollectMacroPcd()
                                 )(True), 0)
@@ -1822,7 +1816,7 @@ class FdfParser:
                            RegionOffsetPcdPattern.match(self._CurrentLine()[self.CurrentOffsetWithinLine:]))
             if IsRegionPcd:
                 RegionObj.PcdOffset = self._GetNextPcdSettings()
-                self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + long(theFd.BaseAddress, 0))
+                self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + int(theFd.BaseAddress, 0))
                 self.SetPcdLocalation(RegionObj.PcdOffset)
                 self._PcdDict['%s.%s' % (RegionObj.PcdOffset[1], RegionObj.PcdOffset[0])] = "0x%x" % RegionObj.Offset
                 FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
@@ -3134,9 +3128,9 @@ class FdfParser:
                     if FdfParser._Verify(Name, Value, 'UINT64'):
                         FmpData.MonotonicCount = Value
                         if FmpData.MonotonicCount.upper().startswith('0X'):
-                            FmpData.MonotonicCount = (long)(FmpData.MonotonicCount, 16)
+                            FmpData.MonotonicCount = int(FmpData.MonotonicCount, 16)
                         else:
-                            FmpData.MonotonicCount = (long)(FmpData.MonotonicCount)
+                            FmpData.MonotonicCount = int(FmpData.MonotonicCount)
             if not self._GetNextToken():
                 break
         else:
@@ -3549,7 +3543,7 @@ class FdfParser:
                 SUP_MODULE_DXE_CORE, SUP_MODULE_DXE_DRIVER,
                 SUP_MODULE_DXE_SAL_DRIVER, SUP_MODULE_DXE_SMM_DRIVER,
                 SUP_MODULE_DXE_RUNTIME_DRIVER, SUP_MODULE_UEFI_DRIVER,
-                SUP_MODULE_UEFI_APPLICATION, SUP_MODULE_USER_DEFINED,
+                SUP_MODULE_UEFI_APPLICATION, SUP_MODULE_USER_DEFINED, SUP_MODULE_HOST_APPLICATION,
                 TAB_DEFAULT, SUP_MODULE_BASE,
                 EDK_COMPONENT_TYPE_SECURITY_CORE,
                 EDK_COMPONENT_TYPE_COMBINED_PEIM_DRIVER,
@@ -3611,7 +3605,12 @@ class FdfParser:
 
         if not self._IsKeyword("$(NAMED_GUID)"):
             if not self._GetNextWord():
-                raise Warning.Expected("$(NAMED_GUID)", self.FileName, self.CurrentLineNumber)
+                NamedGuid = self._CurrentLine()[self.CurrentOffsetWithinLine:].split()[0].strip()
+                if GlobalData.gGuidPatternEnd.match(NamedGuid):
+                    self.CurrentOffsetWithinLine += len(NamedGuid)
+                    self._Token = NamedGuid
+                else:
+                    raise Warning.Expected("$(NAMED_GUID)", self.FileName, self.CurrentLineNumber)
             if self._Token == 'PCD':
                 if not self._IsToken("("):
                     raise Warning.Expected("'('", self.FileName, self.CurrentLineNumber)
@@ -3750,8 +3749,19 @@ class FdfParser:
     #
     def _GetEfiSection(self, Obj):
         OldPos = self.GetFileBufferPos()
+        EfiSectionObj = EfiSection()
         if not self._GetNextWord():
-            return False
+            CurrentLine = self._CurrentLine()[self.CurrentOffsetWithinLine:].split()[0].strip()
+            if self._Token == '{' and Obj.FvFileType == "RAW" and TAB_SPLIT in CurrentLine:
+                if self._IsToken(TAB_VALUE_SPLIT):
+                    EfiSectionObj.FileExtension = self._GetFileExtension()
+                elif self._GetNextToken():
+                    EfiSectionObj.FileName = self._Token
+                EfiSectionObj.SectionType = BINARY_FILE_TYPE_RAW
+                Obj.SectionList.append(EfiSectionObj)
+                return True
+            else:
+                return False
         SectionName = self._Token
 
         if SectionName not in {
@@ -3817,7 +3827,6 @@ class FdfParser:
             Obj.SectionList.append(FvImageSectionObj)
             return True
 
-        EfiSectionObj = EfiSection()
         EfiSectionObj.SectionType = SectionName
 
         if not self._GetNextToken():

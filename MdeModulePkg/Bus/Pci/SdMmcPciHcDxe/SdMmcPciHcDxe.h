@@ -2,15 +2,9 @@
 
   Provides some data structure definitions used by the SD/MMC host controller driver.
 
-Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2018-2019, NVIDIA CORPORATION. All rights reserved.
 Copyright (c) 2015, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -84,11 +78,12 @@ typedef enum {
 } EFI_SD_MMC_SLOT_TYPE;
 
 typedef struct {
-  BOOLEAN                           Enable;
-  EFI_SD_MMC_SLOT_TYPE              SlotType;
-  BOOLEAN                           MediaPresent;
-  BOOLEAN                           Initialized;
-  SD_MMC_CARD_TYPE                  CardType;
+  BOOLEAN                            Enable;
+  EFI_SD_MMC_SLOT_TYPE               SlotType;
+  BOOLEAN                            MediaPresent;
+  BOOLEAN                            Initialized;
+  SD_MMC_CARD_TYPE                   CardType;
+  EDKII_SD_MMC_OPERATING_PARAMETERS  OperatingParameters;
 } SD_MMC_HC_SLOT;
 
 typedef struct {
@@ -126,6 +121,13 @@ typedef struct {
   UINT32                              BaseClkFreq[SD_MMC_HC_MAX_SLOT];
 } SD_MMC_HC_PRIVATE_DATA;
 
+typedef struct {
+  SD_MMC_BUS_MODE               BusTiming;
+  UINT8                         BusWidth;
+  UINT32                        ClockFreq;
+  EDKII_SD_MMC_DRIVER_STRENGTH  DriverStrength;
+} SD_MMC_BUS_SETTINGS;
+
 #define SD_MMC_HC_TRB_SIG             SIGNATURE_32 ('T', 'R', 'B', 'T')
 
 //
@@ -145,13 +147,15 @@ typedef struct {
   EFI_PHYSICAL_ADDRESS                DataPhy;
   VOID                                *DataMap;
   SD_MMC_HC_TRANSFER_MODE             Mode;
+  SD_MMC_HC_ADMA_LENGTH_MODE          AdmaLengthMode;
 
   EFI_EVENT                           Event;
   BOOLEAN                             Started;
   UINT64                              Timeout;
 
   SD_MMC_HC_ADMA_32_DESC_LINE         *Adma32Desc;
-  SD_MMC_HC_ADMA_64_DESC_LINE         *Adma64Desc;
+  SD_MMC_HC_ADMA_64_V3_DESC_LINE      *Adma64V3Desc;
+  SD_MMC_HC_ADMA_64_V4_DESC_LINE      *Adma64V4Desc;
   EFI_PHYSICAL_ADDRESS                AdmaDescPhy;
   VOID                                *AdmaMap;
   UINT32                              AdmaPages;

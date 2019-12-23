@@ -2,13 +2,7 @@
 # GNU/Linux makefile for 'VfrCompile' module build.
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 MAKEROOT ?= ..
@@ -42,9 +36,9 @@ include $(MAKEROOT)/Makefiles/header.makefile
 APPLICATION = $(MAKEROOT)/bin/$(APPNAME)
 
 .PHONY:all
-all: $(MAKEROOT)/bin $(APPLICATION) 
+all: $(MAKEROOT)/bin $(APPLICATION)
 
-$(APPLICATION): $(OBJECTS) 
+$(APPLICATION): $(OBJECTS)
 	$(LINKER) -o $(APPLICATION) $(VFR_LFLAGS) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
 
 VfrCompiler.o: ../Include/Common/BuildVersion.h
@@ -74,7 +68,7 @@ AParser.o: Pccts/h/AParser.cpp
 
 VfrSyntax.o: VfrSyntax.cpp
 	$(BUILD_CXX) -c $(VFR_CPPFLAGS) $(INC) $(VFR_CXXFLAGS) $? -o $@
-	
+
 clean: localClean
 
 localClean:

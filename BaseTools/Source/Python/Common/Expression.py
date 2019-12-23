@@ -2,13 +2,7 @@
 # This file is used to parse and evaluate expression in directive or PCD value.
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.    The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 
 ## Import Modules
 #
@@ -439,6 +433,13 @@ class ValueExpression(BaseExpression):
                 else:
                     Val = Val3
                 continue
+            #
+            # PEP 238 -- Changing the Division Operator
+            # x/y to return a reasonable approximation of the mathematical result of the division ("true division")
+            # x//y to return the floor ("floor division")
+            #
+            if Op == '/':
+                Op = '//'
             try:
                 Val = self.Eval(Op, Val, EvalFunc())
             except WrnExpression as Warn:
@@ -912,7 +913,7 @@ class ValueExpressionEx(ValueExpression):
                         if TmpValue.bit_length() == 0:
                             PcdValue = '{0x00}'
                         else:
-                            for I in range((TmpValue.bit_length() + 7) / 8):
+                            for I in range((TmpValue.bit_length() + 7) // 8):
                                 TmpList.append('0x%02x' % ((TmpValue >> I * 8) & 0xff))
                             PcdValue = '{' + ', '.join(TmpList) + '}'
                     except:

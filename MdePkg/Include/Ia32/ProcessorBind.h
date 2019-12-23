@@ -2,13 +2,7 @@
   Processor or Compiler specific defines and types for IA-32 architecture.
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials are licensed and made available under
-the terms and conditions of the BSD License that accompanies this distribution.
-The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php.
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -287,7 +281,7 @@ typedef INT32   INTN;
   /// Microsoft* compiler specific method for EFIAPI calling convention.
   ///
   #define EFIAPI __cdecl
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__clang__)
   ///
   /// GCC specific method for EFIAPI calling convention.
   ///
@@ -300,7 +294,7 @@ typedef INT32   INTN;
   #define EFIAPI
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
   ///
   /// For GNU assembly code, .global or .globl can declare global symbols.
   /// Define this macro to unify the usage.

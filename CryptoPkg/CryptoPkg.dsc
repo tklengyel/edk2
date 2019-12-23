@@ -2,13 +2,7 @@
 #  Cryptographic Library Package for UEFI Security Implementation.
 #
 #  Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 ##
 
@@ -120,8 +114,12 @@
   CryptoPkg/Library/BaseCryptLib/BaseCryptLib.inf
   CryptoPkg/Library/BaseCryptLib/PeiCryptLib.inf
   CryptoPkg/Library/BaseCryptLib/RuntimeCryptLib.inf
+  CryptoPkg/Library/BaseCryptLibNull/BaseCryptLibNull.inf
+  CryptoPkg/Library/IntrinsicLib/IntrinsicLib.inf
   CryptoPkg/Library/TlsLib/TlsLib.inf
+  CryptoPkg/Library/TlsLibNull/TlsLibNull.inf
   CryptoPkg/Library/OpensslLib/OpensslLib.inf
+  CryptoPkg/Library/OpensslLib/OpensslLibCrypto.inf
 
 [Components.IA32, Components.X64]
   CryptoPkg/Library/BaseCryptLib/SmmCryptLib.inf

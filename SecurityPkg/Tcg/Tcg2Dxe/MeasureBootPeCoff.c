@@ -7,13 +7,7 @@
   buffer overflow, integer overflow.
 
 Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -92,7 +86,7 @@ Tcg2DxeImageRead (
   @param[in]  PCRIndex       TPM PCR index
   @param[in]  ImageAddress   Start address of image buffer.
   @param[in]  ImageSize      Image size
-  @param[out] DigestList     Digeest list of this image.
+  @param[out] DigestList     Digest list of this image.
 
   @retval EFI_SUCCESS            Successfully measure image.
   @retval EFI_OUT_OF_RESOURCES   No enough resource to measure image.

@@ -1,36 +1,13 @@
 /** @file
   Detects if PcdFmpDevicePkcs7CertBufferXdr contains a test key.
 
-  Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2018 - 2019, Intel Corporation. All rights reserved.<BR>
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are met:
-  1. Redistributions of source code must retain the above copyright notice,
-  this list of conditions and the following disclaimer.
-  2. Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-  OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
-#include <PiDxe.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/PcdLib.h>
-#include <Library/MemoryAllocationLib.h>
-#include <Library/BaseCryptLib.h>
+#include "FmpDxe.h"
 
 /**
   Check to see if any of the keys in PcdFmpDevicePkcs7CertBufferXdr matches
@@ -56,7 +33,7 @@ DetectTestKey (
   UINTN    TestKeyDigestSize;
 
   //
-  // If PcdFmpDeviceTestKeySha256Digest is not exacty SHA256_DIGEST_SIZE bytes,
+  // If PcdFmpDeviceTestKeySha256Digest is not exactly SHA256_DIGEST_SIZE bytes,
   // then skip the test key detection.
   //
   TestKeyDigestSize = PcdGetSize (PcdFmpDeviceTestKeySha256Digest);
@@ -156,13 +133,13 @@ DetectTestKey (
   }
 
   //
-  // If test key detected or an error occured checking for the test key, then
+  // If test key detected or an error occurred checking for the test key, then
   // set PcdTestKeyUsed to TRUE.
   //
   if (TestKeyUsed) {
-    DEBUG ((DEBUG_INFO, "FmpDxe: Test key detected in PcdFmpDevicePkcs7CertBufferXdr.\n"));
+    DEBUG ((DEBUG_INFO, "FmpDxe(%s): Test key detected in PcdFmpDevicePkcs7CertBufferXdr.\n", mImageIdName));
     PcdSetBoolS (PcdTestKeyUsed, TRUE);
   } else {
-    DEBUG ((DEBUG_INFO, "FmpDxe: No test key detected in PcdFmpDevicePkcs7CertBufferXdr.\n"));
+    DEBUG ((DEBUG_INFO, "FmpDxe(%s): No test key detected in PcdFmpDevicePkcs7CertBufferXdr.\n", mImageIdName));
   }
 }

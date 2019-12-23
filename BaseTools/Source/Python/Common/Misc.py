@@ -1,21 +1,15 @@
 ## @file
 # Common routines used by all tools
 #
-# Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# Copyright (c) 2007 - 2019, Intel Corporation. All rights reserved.<BR>
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
 # Import Modules
 #
 from __future__ import absolute_import
-import Common.LongFilePathOs as os
+
 import sys
 import string
 import threading
@@ -24,24 +18,29 @@ import re
 import pickle
 import array
 import shutil
+import filecmp
 from random import sample
 from struct import pack
-from UserDict import IterableUserDict
-from UserList import UserList
+import uuid
+import subprocess
+import tempfile
+from collections import OrderedDict
 
+import Common.LongFilePathOs as os
 from Common import EdkLogger as EdkLogger
 from Common import GlobalData as GlobalData
-from .DataType import *
-from .BuildToolError import *
+from Common.DataType import *
+from Common.BuildToolError import *
 from CommonDataClass.DataClass import *
-from .Parsing import GetSplitValueList
+from Common.Parsing import GetSplitValueList
 from Common.LongFilePathSupport import OpenLongFilePath as open
+from Common.LongFilePathSupport import CopyLongFilePath as CopyLong
+from Common.LongFilePathSupport import LongFilePath as LongFilePath
 from Common.MultipleWorkspace import MultipleWorkspace as mws
-import uuid
 from CommonDataClass.Exceptions import BadExpression
 from Common.caching import cached_property
-import subprocess
-from collections import OrderedDict
+
+ArrayIndex = re.compile("\[\s*[0-9a-fA-FxX]*\s*\]")
 ## Regular expression used to find out place holders in string template
 gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE | re.UNICODE)
 
@@ -53,9 +52,6 @@ pcdPatternGcc = re.compile('^([\da-fA-Fx]+) +([\da-fA-Fx]+)')
 secReGeneral = re.compile('^([\da-fA-F]+):([\da-fA-F]+) +([\da-fA-F]+)[Hh]? +([.\w\$]+) +(\w+)', re.UNICODE)
 
 StructPattern = re.compile(r'[_a-zA-Z][0-9A-Za-z_]*$')
-
-## Dictionary used to store file time stamp for quick re-access
-gFileTimeStampCache = {}    # {file path : file time stamp}
 
 ## Dictionary used to store dependencies of files
 gDependencyDatabase = {}    # arch : {file path : [dependent files list]}
@@ -85,19 +81,22 @@ def GetVariableOffset(mapfilepath, efifilepath, varnames):
 
     if len(lines) == 0: return None
     firstline = lines[0].strip()
+    if re.match('^\s*Address\s*Size\s*Align\s*Out\s*In\s*Symbol\s*$', firstline):
+        return _parseForXcodeAndClang9(lines, efifilepath, varnames)
     if (firstline.startswith("Archive member included ") and
         firstline.endswith(" file (symbol)")):
         return _parseForGCC(lines, efifilepath, varnames)
     if firstline.startswith("# Path:"):
-        return _parseForXcode(lines, efifilepath, varnames)
+        return _parseForXcodeAndClang9(lines, efifilepath, varnames)
     return _parseGeneral(lines, efifilepath, varnames)
 
-def _parseForXcode(lines, efifilepath, varnames):
+def _parseForXcodeAndClang9(lines, efifilepath, varnames):
     status = 0
     ret = []
     for line in lines:
         line = line.strip()
-        if status == 0 and line == "# Symbols:":
+        if status == 0 and (re.match('^\s*Address\s*Size\s*Align\s*Out\s*In\s*Symbol\s*$', line) \
+            or line == "# Symbols:"):
             status = 1
             continue
         if status == 1 and len(line) != 0:
@@ -170,7 +169,7 @@ def _parseGeneral(lines, efifilepath, varnames):
     status = 0    #0 - beginning of file; 1 - PE section definition; 2 - symbol table
     secs  = []    # key = section name
     varoffset = []
-    symRe = re.compile('^([\da-fA-F]+):([\da-fA-F]+) +([\.:\\\\\w\?@\$]+) +([\da-fA-F]+)', re.UNICODE)
+    symRe = re.compile('^([\da-fA-F]+):([\da-fA-F]+) +([\.:\\\\\w\?@\$-]+) +([\da-fA-F]+)', re.UNICODE)
 
     for line in lines:
         line = line.strip()
@@ -252,13 +251,8 @@ def ProcessDuplicatedInf(Path, BaseName, Workspace):
     else:
         Filename = BaseName + Path.BaseName
 
-    #
-    # If -N is specified on command line, cache is disabled
-    # The directory has to be created
-    #
     DbDir = os.path.split(GlobalData.gDatabasePath)[0]
-    if not os.path.exists(DbDir):
-        os.makedirs(DbDir)
+
     #
     # A temporary INF is copied to database path which must have write permission
     # The temporary will be removed at the end of build
@@ -288,6 +282,7 @@ def ProcessDuplicatedInf(Path, BaseName, Workspace):
     #
     RtPath.Path = TempFullPath
     RtPath.BaseName = BaseName
+    RtPath.OriginalPath = Path
     #
     # If file exists, compare contents
     #
@@ -458,16 +453,26 @@ def RemoveDirectory(Directory, Recursively=False):
 #   @retval     True            If the file content is changed and the file is renewed
 #   @retval     False           If the file content is the same
 #
-def SaveFileOnChange(File, Content, IsBinaryFile=True):
-    if not IsBinaryFile:
-        Content = Content.replace("\n", os.linesep)
+def SaveFileOnChange(File, Content, IsBinaryFile=True, FileLock=None):
+
+    # Convert to long file path format
+    File = LongFilePath(File)
 
     if os.path.exists(File):
-        try:
-            if Content == open(File, "rb").read():
-                return False
-        except:
-            EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
+        if IsBinaryFile:
+            try:
+                with open(File, "rb") as f:
+                    if Content == f.read():
+                        return False
+            except:
+                EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
+        else:
+            try:
+                with open(File, "r") as f:
+                    if Content == f.read():
+                        return False
+            except:
+                EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
 
     DirName = os.path.dirname(File)
     if not CreateDirectory(DirName):
@@ -478,51 +483,101 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
         if not os.access(DirName, os.W_OK):
             EdkLogger.error(None, PERMISSION_FAILURE, "Do not have write permission on directory %s" % DirName)
 
-    try:
-        Fd = open(File, "wb")
-        Fd.write(Content)
-        Fd.close()
-    except IOError as X:
-        EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData='IOError %s' % X)
+    OpenMode = "w"
+    if IsBinaryFile:
+        OpenMode = "wb"
+
+    # use default file_lock if no input new lock
+    if not FileLock:
+        FileLock = GlobalData.file_lock
+    if FileLock:
+        FileLock.acquire()
+
+
+    if GlobalData.gIsWindows and not os.path.exists(File):
+        try:
+            with open(File, OpenMode) as tf:
+                tf.write(Content)
+        except IOError as X:
+            if GlobalData.gBinCacheSource:
+                EdkLogger.quiet("[cache error]:fails to save file with error: %s" % (X))
+            else:
+                EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData='IOError %s' % X)
+        finally:
+            if FileLock:
+                FileLock.release()
+    else:
+        try:
+            with open(File, OpenMode) as Fd:
+                Fd.write(Content)
+        except IOError as X:
+            if GlobalData.gBinCacheSource:
+                EdkLogger.quiet("[cache error]:fails to save file with error: %s" % (X))
+            else:
+                EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData='IOError %s' % X)
+        finally:
+            if FileLock:
+                FileLock.release()
 
     return True
 
-## Make a Python object persistent on file system
+## Copy source file only if it is different from the destination file
 #
-#   @param      Data    The object to be stored in file
-#   @param      File    The path of file to store the object
+#  This method is used to copy file only if the source file and destination
+#  file content are different. This is quite useful to avoid duplicated
+#  file writing.
 #
-def DataDump(Data, File):
-    Fd = None
-    try:
-        Fd = open(File, 'wb')
-        pickle.dump(Data, Fd, pickle.HIGHEST_PROTOCOL)
-    except:
-        EdkLogger.error("", FILE_OPEN_FAILURE, ExtraData=File, RaiseError=False)
-    finally:
-        if Fd is not None:
-            Fd.close()
+#   @param      SrcFile   The path of source file
+#   @param      Dst       The path of destination file or folder
+#
+#   @retval     True      The two files content are different and the file is copied
+#   @retval     False     No copy really happen
+#
+def CopyFileOnChange(SrcFile, Dst, FileLock=None):
 
-## Restore a Python object from a file
-#
-#   @param      File    The path of file stored the object
-#
-#   @retval     object  A python object
-#   @retval     None    If failure in file operation
-#
-def DataRestore(File):
-    Data = None
-    Fd = None
+    # Convert to long file path format
+    SrcFile = LongFilePath(SrcFile)
+    Dst = LongFilePath(Dst)
+
+    if os.path.isdir(SrcFile):
+        EdkLogger.error(None, FILE_COPY_FAILURE, ExtraData='CopyFileOnChange SrcFile is a dir, not a file: %s' % SrcFile)
+        return False
+
+    if os.path.isdir(Dst):
+        DstFile = os.path.join(Dst, os.path.basename(SrcFile))
+    else:
+        DstFile = Dst
+
+    if os.path.exists(DstFile) and filecmp.cmp(SrcFile, DstFile, shallow=False):
+        return False
+
+    DirName = os.path.dirname(DstFile)
+    if not CreateDirectory(DirName):
+        EdkLogger.error(None, FILE_CREATE_FAILURE, "Could not create directory %s" % DirName)
+    else:
+        if DirName == '':
+            DirName = os.getcwd()
+        if not os.access(DirName, os.W_OK):
+            EdkLogger.error(None, PERMISSION_FAILURE, "Do not have write permission on directory %s" % DirName)
+
+    # use default file_lock if no input new lock
+    if not FileLock:
+        FileLock = GlobalData.file_lock
+    if FileLock:
+        FileLock.acquire()
+
     try:
-        Fd = open(File, 'rb')
-        Data = pickle.load(Fd)
-    except Exception as e:
-        EdkLogger.verbose("Failed to load [%s]\n\t%s" % (File, str(e)))
-        Data = None
+        CopyLong(SrcFile, DstFile)
+    except IOError as X:
+        if GlobalData.gBinCacheSource:
+            EdkLogger.quiet("[cache error]:fails to copy file with error: %s" % (X))
+        else:
+            EdkLogger.error(None, FILE_COPY_FAILURE, ExtraData='IOError %s' % X)
     finally:
-        if Fd is not None:
-            Fd.close()
-    return Data
+        if FileLock:
+            FileLock.release()
+
+    return True
 
 ## Retrieve and cache the real path name in file system
 #
@@ -603,32 +658,6 @@ def RealPath(File, Dir='', OverrideDir=''):
         NewFile = GlobalData.gAllFiles[NewFile]
     return NewFile
 
-def RealPath2(File, Dir='', OverrideDir=''):
-    NewFile = None
-    if OverrideDir:
-        NewFile = GlobalData.gAllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
-        if NewFile:
-            if OverrideDir[-1] == os.path.sep:
-                return NewFile[len(OverrideDir):], NewFile[0:len(OverrideDir)]
-            else:
-                return NewFile[len(OverrideDir) + 1:], NewFile[0:len(OverrideDir)]
-    if GlobalData.gAllFiles:
-        NewFile = GlobalData.gAllFiles[os.path.normpath(os.path.join(Dir, File))]
-    if not NewFile:
-        NewFile = os.path.normpath(os.path.join(Dir, File))
-        if not os.path.exists(NewFile):
-            return None, None
-    if NewFile:
-        if Dir:
-            if Dir[-1] == os.path.sep:
-                return NewFile[len(Dir):], NewFile[0:len(Dir)]
-            else:
-                return NewFile[len(Dir) + 1:], NewFile[0:len(Dir)]
-        else:
-            return NewFile, ''
-
-    return None, None
-
 ## Get GUID value from given packages
 #
 #   @param      CName           The CName of the GUID
@@ -640,50 +669,12 @@ def RealPath2(File, Dir='', OverrideDir=''):
 #
 def GuidValue(CName, PackageList, Inffile = None):
     for P in PackageList:
-        GuidKeys = P.Guids.keys()
+        GuidKeys = list(P.Guids.keys())
         if Inffile and P._PrivateGuids:
             if not Inffile.startswith(P.MetaFile.Dir):
                 GuidKeys = [x for x in P.Guids if x not in P._PrivateGuids]
         if CName in GuidKeys:
             return P.Guids[CName]
-    return None
-
-## Get Protocol value from given packages
-#
-#   @param      CName           The CName of the GUID
-#   @param      PackageList     List of packages looking-up in
-#   @param      Inffile         The driver file
-#
-#   @retval     GuidValue   if the CName is found in any given package
-#   @retval     None        if the CName is not found in all given packages
-#
-def ProtocolValue(CName, PackageList, Inffile = None):
-    for P in PackageList:
-        ProtocolKeys = P.Protocols.keys()
-        if Inffile and P._PrivateProtocols:
-            if not Inffile.startswith(P.MetaFile.Dir):
-                ProtocolKeys = [x for x in P.Protocols if x not in P._PrivateProtocols]
-        if CName in ProtocolKeys:
-            return P.Protocols[CName]
-    return None
-
-## Get PPI value from given packages
-#
-#   @param      CName           The CName of the GUID
-#   @param      PackageList     List of packages looking-up in
-#   @param      Inffile         The driver file
-#
-#   @retval     GuidValue   if the CName is found in any given package
-#   @retval     None        if the CName is not found in all given packages
-#
-def PpiValue(CName, PackageList, Inffile = None):
-    for P in PackageList:
-        PpiKeys = P.Ppis.keys()
-        if Inffile and P._PrivatePpis:
-            if not Inffile.startswith(P.MetaFile.Dir):
-                PpiKeys = [x for x in P.Ppis if x not in P._PrivatePpis]
-        if CName in PpiKeys:
-            return P.Ppis[CName]
     return None
 
 ## A string template class
@@ -865,10 +856,10 @@ class Progressor:
 
     ## Constructor
     #
-    #   @param      OpenMessage     The string printed before progress charaters
-    #   @param      CloseMessage    The string printed after progress charaters
-    #   @param      ProgressChar    The charater used to indicate the progress
-    #   @param      Interval        The interval in seconds between two progress charaters
+    #   @param      OpenMessage     The string printed before progress characters
+    #   @param      CloseMessage    The string printed after progress characters
+    #   @param      ProgressChar    The character used to indicate the progress
+    #   @param      Interval        The interval in seconds between two progress characters
     #
     def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1.0):
         self.PromptMessage = OpenMessage
@@ -878,9 +869,9 @@ class Progressor:
         if Progressor._StopFlag is None:
             Progressor._StopFlag = threading.Event()
 
-    ## Start to print progress charater
+    ## Start to print progress character
     #
-    #   @param      OpenMessage     The string printed before progress charaters
+    #   @param      OpenMessage     The string printed before progress characters
     #
     def Start(self, OpenMessage=None):
         if OpenMessage is not None:
@@ -891,9 +882,9 @@ class Progressor:
             Progressor._ProgressThread.setDaemon(False)
             Progressor._ProgressThread.start()
 
-    ## Stop printing progress charater
+    ## Stop printing progress character
     #
-    #   @param      CloseMessage    The string printed after progress charaters
+    #   @param      CloseMessage    The string printed after progress characters
     #
     def Stop(self, CloseMessage=None):
         OriginalCodaMessage = self.CodaMessage
@@ -926,165 +917,6 @@ class Progressor:
             Progressor._ProgressThread.join()
             Progressor._ProgressThread = None
 
-## A dict which can access its keys and/or values orderly
-#
-#  The class implements a new kind of dict which its keys or values can be
-#  accessed in the order they are added into the dict. It guarantees the order
-#  by making use of an internal list to keep a copy of keys.
-#
-class sdict(IterableUserDict):
-    ## Constructor
-    def __init__(self):
-        IterableUserDict.__init__(self)
-        self._key_list = []
-
-    ## [] operator
-    def __setitem__(self, key, value):
-        if key not in self._key_list:
-            self._key_list.append(key)
-        IterableUserDict.__setitem__(self, key, value)
-
-    ## del operator
-    def __delitem__(self, key):
-        self._key_list.remove(key)
-        IterableUserDict.__delitem__(self, key)
-
-    ## used in "for k in dict" loop to ensure the correct order
-    def __iter__(self):
-        return self.iterkeys()
-
-    ## len() support
-    def __len__(self):
-        return len(self._key_list)
-
-    ## "in" test support
-    def __contains__(self, key):
-        return key in self._key_list
-
-    ## indexof support
-    def index(self, key):
-        return self._key_list.index(key)
-
-    ## insert support
-    def insert(self, key, newkey, newvalue, order):
-        index = self._key_list.index(key)
-        if order == 'BEFORE':
-            self._key_list.insert(index, newkey)
-            IterableUserDict.__setitem__(self, newkey, newvalue)
-        elif order == 'AFTER':
-            self._key_list.insert(index + 1, newkey)
-            IterableUserDict.__setitem__(self, newkey, newvalue)
-
-    ## append support
-    def append(self, sdict):
-        for key in sdict:
-            if key not in self._key_list:
-                self._key_list.append(key)
-            IterableUserDict.__setitem__(self, key, sdict[key])
-
-    def has_key(self, key):
-        return key in self._key_list
-
-    ## Empty the dict
-    def clear(self):
-        self._key_list = []
-        IterableUserDict.clear(self)
-
-    ## Return a copy of keys
-    def keys(self):
-        keys = []
-        for key in self._key_list:
-            keys.append(key)
-        return keys
-
-    ## Return a copy of values
-    def values(self):
-        values = []
-        for key in self._key_list:
-            values.append(self[key])
-        return values
-
-    ## Return a copy of (key, value) list
-    def items(self):
-        items = []
-        for key in self._key_list:
-            items.append((key, self[key]))
-        return items
-
-    ## Iteration support
-    def iteritems(self):
-        return iter(self.items())
-
-    ## Keys interation support
-    def iterkeys(self):
-        return iter(self.keys())
-
-    ## Values interation support
-    def itervalues(self):
-        return iter(self.values())
-
-    ## Return value related to a key, and remove the (key, value) from the dict
-    def pop(self, key, *dv):
-        value = None
-        if key in self._key_list:
-            value = self[key]
-            self.__delitem__(key)
-        elif len(dv) != 0 :
-            value = kv[0]
-        return value
-
-    ## Return (key, value) pair, and remove the (key, value) from the dict
-    def popitem(self):
-        key = self._key_list[-1]
-        value = self[key]
-        self.__delitem__(key)
-        return key, value
-
-    def update(self, dict=None, **kwargs):
-        if dict is not None:
-            for k, v in dict.items():
-                self[k] = v
-        if len(kwargs):
-            for k, v in kwargs.items():
-                self[k] = v
-
-## Dictionary with restricted keys
-#
-class rdict(dict):
-    ## Constructor
-    def __init__(self, KeyList):
-        for Key in KeyList:
-            dict.__setitem__(self, Key, "")
-
-    ## []= operator
-    def __setitem__(self, key, value):
-        if key not in self:
-            EdkLogger.error("RestrictedDict", ATTRIBUTE_SET_FAILURE, "Key [%s] is not allowed" % key,
-                            ExtraData=", ".join(dict.keys(self)))
-        dict.__setitem__(self, key, value)
-
-    ## =[] operator
-    def __getitem__(self, key):
-        if key not in self:
-            return ""
-        return dict.__getitem__(self, key)
-
-    ## del operator
-    def __delitem__(self, key):
-        EdkLogger.error("RestrictedDict", ATTRIBUTE_ACCESS_DENIED, ExtraData="del")
-
-    ## Empty the dict
-    def clear(self):
-        for Key in self:
-            self.__setitem__(Key, "")
-
-    ## Return value related to a key, and remove the (key, value) from the dict
-    def pop(self, key, *dv):
-        EdkLogger.error("RestrictedDict", ATTRIBUTE_ACCESS_DENIED, ExtraData="pop")
-
-    ## Return (key, value) pair, and remove the (key, value) from the dict
-    def popitem(self):
-        EdkLogger.error("RestrictedDict", ATTRIBUTE_ACCESS_DENIED, ExtraData="popitem")
 
 ## Dictionary using prioritized list as key
 #
@@ -1224,22 +1056,6 @@ class tdict:
                 keys |= self.data[Key].GetKeys(KeyIndex - 1)
             return keys
 
-def IsFieldValueAnArray (Value):
-    Value = Value.strip()
-    if Value.startswith(TAB_GUID) and Value.endswith(')'):
-        return True
-    if Value.startswith('L"') and Value.endswith('"')  and len(list(Value[2:-1])) > 1:
-        return True
-    if Value[0] == '"' and Value[-1] == '"' and len(list(Value[1:-1])) > 1:
-        return True
-    if Value[0] == '{' and Value[-1] == '}':
-        return True
-    if Value.startswith("L'") and Value.endswith("'") and len(list(Value[2:-1])) > 1:
-        return True
-    if Value[0] == "'" and Value[-1] == "'" and len(list(Value[1:-1])) > 1:
-        return True
-    return False
-
 def AnalyzePcdExpression(Setting):
     RanStr = ''.join(sample(string.ascii_letters + string.digits, 8))
     Setting = Setting.replace('\\\\', RanStr).strip()
@@ -1280,31 +1096,32 @@ def AnalyzePcdExpression(Setting):
             FieldList[i] = ch.replace(RanStr,'\\\\')
     return FieldList
 
-def ParseDevPathValue (Value):
-    if '\\' in Value:
-        Value.replace('\\', '/').replace(' ', '')
-
-    Cmd = 'DevicePath ' + '"' + Value + '"'
-    try:
-        p = subprocess.Popen(Cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = p.communicate()
-    except Exception as X:
-        raise BadExpression("DevicePath: %s" % (str(X)) )
-    finally:
-        subprocess._cleanup()
-        p.stdout.close()
-        p.stderr.close()
-    if err:
-        raise BadExpression("DevicePath: %s" % str(err))
-    Size = len(out.split())
-    out = ','.join(out.split())
-    return '{' + out + '}', Size
-
 def ParseFieldValue (Value):
+    def ParseDevPathValue (Value):
+        if '\\' in Value:
+            Value.replace('\\', '/').replace(' ', '')
+
+        Cmd = 'DevicePath ' + '"' + Value + '"'
+        try:
+            p = subprocess.Popen(Cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            out, err = p.communicate()
+        except Exception as X:
+            raise BadExpression("DevicePath: %s" % (str(X)) )
+        finally:
+            subprocess._cleanup()
+            p.stdout.close()
+            p.stderr.close()
+        if err:
+            raise BadExpression("DevicePath: %s" % str(err))
+        out = out.decode()
+        Size = len(out.split())
+        out = ','.join(out.split())
+        return '{' + out + '}', Size
+
     if "{CODE(" in Value:
         return Value, len(Value.split(","))
     if isinstance(Value, type(0)):
-        return Value, (Value.bit_length() + 7) / 8
+        return Value, (Value.bit_length() + 7) // 8
     if not isinstance(Value, type('')):
         raise BadExpression('Type %s is %s' %(Value, type(Value)))
     Value = Value.strip()
@@ -1338,7 +1155,10 @@ def ParseFieldValue (Value):
         if Value[0] == '"' and Value[-1] == '"':
             Value = Value[1:-1]
         try:
-            Value = "'" + uuid.UUID(Value).get_bytes_le() + "'"
+            Value = str(uuid.UUID(Value).bytes_le)
+            if Value.startswith("b'"):
+                Value = Value[2:-1]
+            Value = "'" + Value + "'"
         except ValueError as Message:
             raise BadExpression(Message)
         Value, Size = ParseFieldValue(Value)
@@ -1425,12 +1245,12 @@ def ParseFieldValue (Value):
             raise BadExpression("invalid hex value: %s" % Value)
         if Value == 0:
             return 0, 1
-        return Value, (Value.bit_length() + 7) / 8
+        return Value, (Value.bit_length() + 7) // 8
     if Value[0].isdigit():
         Value = int(Value, 10)
         if Value == 0:
             return 0, 1
-        return Value, (Value.bit_length() + 7) / 8
+        return Value, (Value.bit_length() + 7) // 8
     if Value.lower() == 'true':
         return 1, 1
     if Value.lower() == 'false':
@@ -1589,10 +1409,12 @@ def CheckPcdDatum(Type, Value):
             return False, "Invalid value [%s] of type [%s]; must be one of TRUE, True, true, 0x1, 0x01, 1"\
                           ", FALSE, False, false, 0x0, 0x00, 0" % (Value, Type)
     elif Type in [TAB_UINT8, TAB_UINT16, TAB_UINT32, TAB_UINT64]:
-        if Value and int(Value, 0) < 0:
-            return False, "PCD can't be set to negative value[%s] for datum type [%s]" % (Value, Type)
+        if Value.startswith('0') and not Value.lower().startswith('0x') and len(Value) > 1 and Value.lstrip('0'):
+            Value = Value.lstrip('0')
         try:
-            Value = long(Value, 0)
+            if Value and int(Value, 0) < 0:
+                return False, "PCD can't be set to negative value[%s] for datum type [%s]" % (Value, Type)
+            Value = int(Value, 0)
             if Value > MAX_VAL_TYPE[Type]:
                 return False, "Too large PCD value[%s] for datum type [%s]" % (Value, Type)
         except:
@@ -1603,81 +1425,13 @@ def CheckPcdDatum(Type, Value):
 
     return True, ""
 
-## Split command line option string to list
-#
-# subprocess.Popen needs the args to be a sequence. Otherwise there's problem
-# in non-windows platform to launch command
-#
-def SplitOption(OptionString):
-    OptionList = []
-    LastChar = " "
-    OptionStart = 0
-    QuotationMark = ""
-    for Index in range(0, len(OptionString)):
-        CurrentChar = OptionString[Index]
-        if CurrentChar in ['"', "'"]:
-            if QuotationMark == CurrentChar:
-                QuotationMark = ""
-            elif QuotationMark == "":
-                QuotationMark = CurrentChar
-            continue
-        elif QuotationMark:
-            continue
-
-        if CurrentChar in ["/", "-"] and LastChar in [" ", "\t", "\r", "\n"]:
-            if Index > OptionStart:
-                OptionList.append(OptionString[OptionStart:Index - 1])
-            OptionStart = Index
-        LastChar = CurrentChar
-    OptionList.append(OptionString[OptionStart:])
-    return OptionList
-
 def CommonPath(PathList):
     P1 = min(PathList).split(os.path.sep)
     P2 = max(PathList).split(os.path.sep)
-    for Index in xrange(min(len(P1), len(P2))):
+    for Index in range(min(len(P1), len(P2))):
         if P1[Index] != P2[Index]:
             return os.path.sep.join(P1[:Index])
     return os.path.sep.join(P1)
-
-#
-# Convert string to C format array
-#
-def ConvertStringToByteArray(Value):
-    Value = Value.strip()
-    if not Value:
-        return None
-    if Value[0] == '{':
-        if not Value.endswith('}'):
-            return None
-        Value = Value.replace(' ', '').replace('{', '').replace('}', '')
-        ValFields = Value.split(',')
-        try:
-            for Index in range(len(ValFields)):
-                ValFields[Index] = str(int(ValFields[Index], 0))
-        except ValueError:
-            return None
-        Value = '{' + ','.join(ValFields) + '}'
-        return Value
-
-    Unicode = False
-    if Value.startswith('L"'):
-        if not Value.endswith('"'):
-            return None
-        Value = Value[1:]
-        Unicode = True
-    elif not Value.startswith('"') or not Value.endswith('"'):
-        return None
-
-    Value = eval(Value)         # translate escape character
-    NewValue = '{'
-    for Index in range(0, len(Value)):
-        if Unicode:
-            NewValue = NewValue + str(ord(Value[Index]) % 0x10000) + ','
-        else:
-            NewValue = NewValue + str(ord(Value[Index]) % 0x100) + ','
-    Value = NewValue + '0}'
-    return Value
 
 class PathClass(object):
     def __init__(self, File='', Root='', AlterRoot='', Type='', IsBinary=False,
@@ -1728,6 +1482,7 @@ class PathClass(object):
         self.TagName = TagName
         self.ToolCode = ToolCode
         self.ToolChainFamily = ToolChainFamily
+        self.OriginalPath = self
 
     ## Convert the object of this class to a string
     #
@@ -1750,7 +1505,7 @@ class PathClass(object):
 
     ## Override __cmp__ function
     #
-    # Customize the comparsion operation of two PathClass
+    # Customize the comparison operation of two PathClass
     #
     # @retval 0     The two PathClass are different
     # @retval -1    The first PathClass is less than the second PathClass
@@ -1784,6 +1539,32 @@ class PathClass(object):
         return os.stat(self.Path)[8]
 
     def Validate(self, Type='', CaseSensitive=True):
+        def RealPath2(File, Dir='', OverrideDir=''):
+            NewFile = None
+            if OverrideDir:
+                NewFile = GlobalData.gAllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
+                if NewFile:
+                    if OverrideDir[-1] == os.path.sep:
+                        return NewFile[len(OverrideDir):], NewFile[0:len(OverrideDir)]
+                    else:
+                        return NewFile[len(OverrideDir) + 1:], NewFile[0:len(OverrideDir)]
+            if GlobalData.gAllFiles:
+                NewFile = GlobalData.gAllFiles[os.path.normpath(os.path.join(Dir, File))]
+            if not NewFile:
+                NewFile = os.path.normpath(os.path.join(Dir, File))
+                if not os.path.exists(NewFile):
+                    return None, None
+            if NewFile:
+                if Dir:
+                    if Dir[-1] == os.path.sep:
+                        return NewFile[len(Dir):], NewFile[0:len(Dir)]
+                    else:
+                        return NewFile[len(Dir) + 1:], NewFile[0:len(Dir)]
+                else:
+                    return NewFile, ''
+
+            return None, None
+
         if GlobalData.gCaseInsensitive:
             CaseSensitive = False
         if Type and Type.lower() != self.Type:
@@ -1819,7 +1600,7 @@ class PathClass(object):
             self.Path = os.path.join(RealRoot, RealFile)
         return ErrorCode, ErrorInfo
 
-## Parse PE image to get the required PE informaion.
+## Parse PE image to get the required PE information.
 #
 class PeImageClass():
     ## Constructor
@@ -1854,7 +1635,7 @@ class PeImageClass():
         ByteArray = array.array('B')
         ByteArray.fromfile(PeObject, 4)
         # PE signature should be 'PE\0\0'
-        if ByteArray.tostring() != 'PE\0\0':
+        if ByteArray.tostring() != b'PE\0\0':
             self.ErrorInfo = self.FileName + ' has no valid PE signature PE00'
             return
 
@@ -1946,7 +1727,7 @@ class SkuClass():
                             ExtraData = "SKU-ID [%s] value %s exceeds the max value of UINT64"
                                       % (SkuName, SkuId))
 
-        self.AvailableSkuIds = sdict()
+        self.AvailableSkuIds = OrderedDict()
         self.SkuIdSet = []
         self.SkuIdNumberSet = []
         self.SkuData = SkuIds
@@ -1956,7 +1737,7 @@ class SkuClass():
             self.SkuIdSet = ['DEFAULT']
             self.SkuIdNumberSet = ['0U']
         elif SkuIdentifier == 'ALL':
-            self.SkuIdSet = SkuIds.keys()
+            self.SkuIdSet = list(SkuIds.keys())
             self.SkuIdNumberSet = [num[0].strip() + 'U' for num in SkuIds.values()]
         else:
             r = SkuIdentifier.split('|')
@@ -2063,12 +1844,6 @@ class SkuClass():
         else:
             return 'DEFAULT'
 
-#
-# Pack a registry format GUID
-#
-def PackRegistryFormatGuid(Guid):
-    return PackGUID(Guid.split('-'))
-
 ##  Get the integer value from string like "14U" or integer like 2
 #
 #   @param      Input   The object that may be either a integer value or a string
@@ -2076,7 +1851,7 @@ def PackRegistryFormatGuid(Guid):
 #   @retval     Value    The integer value that the input represents
 #
 def GetIntegerValue(Input):
-    if type(Input) in (int, long):
+    if not isinstance(Input, str):
         return Input
     String = Input
     if String.endswith("U"):
@@ -2152,11 +1927,3 @@ def CopyDict(ori_dict):
 #
 def RemoveCComments(ctext):
     return re.sub('//.*?\n|/\*.*?\*/', '\n', ctext, flags=re.S)
-##
-#
-# This acts like the main() function for the script, unless it is 'import'ed into another
-# script.
-#
-if __name__ == '__main__':
-    pass
-

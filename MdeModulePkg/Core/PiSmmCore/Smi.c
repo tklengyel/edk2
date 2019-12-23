@@ -2,13 +2,7 @@
   SMI management.
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -288,7 +282,7 @@ SmiHandlerUnRegister (
   //
   SmiHandler = NULL;
   for ( HandlerLink = GetFirstNode (&mRootSmiEntry.SmiHandlers)
-      ; !IsNull (&mRootSmiEntry.SmiHandlers, HandlerLink) && (SmiHandler != DispatchHandle)
+      ; !IsNull (&mRootSmiEntry.SmiHandlers, HandlerLink) && ((EFI_HANDLE) SmiHandler != DispatchHandle)
       ; HandlerLink = GetNextNode (&mRootSmiEntry.SmiHandlers, HandlerLink)
       ) {
     SmiHandler = CR (HandlerLink, SMI_HANDLER, Link, SMI_HANDLER_SIGNATURE);
@@ -298,19 +292,19 @@ SmiHandlerUnRegister (
   // Look for it in non-root SMI handlers
   //
   for ( EntryLink = GetFirstNode (&mSmiEntryList)
-      ; !IsNull (&mSmiEntryList, EntryLink) && (SmiHandler != DispatchHandle)
+      ; !IsNull (&mSmiEntryList, EntryLink) && ((EFI_HANDLE) SmiHandler != DispatchHandle)
       ; EntryLink = GetNextNode (&mSmiEntryList, EntryLink)
       ) {
     SmiEntry = CR (EntryLink, SMI_ENTRY, AllEntries, SMI_ENTRY_SIGNATURE);
     for ( HandlerLink = GetFirstNode (&SmiEntry->SmiHandlers)
-        ; !IsNull (&SmiEntry->SmiHandlers, HandlerLink) && (SmiHandler != DispatchHandle)
+        ; !IsNull (&SmiEntry->SmiHandlers, HandlerLink) && ((EFI_HANDLE) SmiHandler != DispatchHandle)
         ; HandlerLink = GetNextNode (&SmiEntry->SmiHandlers, HandlerLink)
         ) {
       SmiHandler = CR (HandlerLink, SMI_HANDLER, Link, SMI_HANDLER_SIGNATURE);
     }
   }
 
-  if (SmiHandler != DispatchHandle) {
+  if ((EFI_HANDLE) SmiHandler != DispatchHandle) {
     return EFI_INVALID_PARAMETER;
   }
 

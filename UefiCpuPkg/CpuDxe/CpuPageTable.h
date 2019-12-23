@@ -1,14 +1,8 @@
 /** @file
   Page table management header file.
 
-  Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2017 - 2019, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -20,6 +14,7 @@
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_PSE              BIT0
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_PAE              BIT1
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_PAGE_1G_SUPPORT  BIT2
+#define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_5_LEVEL          BIT3
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_WP_ENABLE        BIT30
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_XD_ACTIVATED     BIT31
 // Other bits are reserved for future use
@@ -142,6 +137,21 @@ VOID *
 EFIAPI
 AllocatePageTableMemory (
   IN UINTN           Pages
+  );
+
+/**
+  Get paging details.
+
+  @param  PagingContextData      The paging context.
+  @param  PageTableBase          Return PageTableBase field.
+  @param  Attributes             Return Attributes field.
+
+**/
+VOID
+GetPagingDetails (
+  IN  PAGE_TABLE_LIB_PAGING_CONTEXT_DATA *PagingContextData,
+  OUT UINTN                              **PageTableBase     OPTIONAL,
+  OUT UINT32                             **Attributes        OPTIONAL
   );
 
 #endif

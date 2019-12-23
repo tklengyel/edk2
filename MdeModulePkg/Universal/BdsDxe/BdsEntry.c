@@ -5,16 +5,10 @@
   After DxeCore finish DXE phase, gEfiBdsArchProtocolGuid->BdsEntry will be invoked
   to enter BDS phase.
 
-Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-(C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
+Copyright (c) 2004 - 2019, Intel Corporation. All rights reserved.<BR>
+(C) Copyright 2016-2019 Hewlett Packard Enterprise Development LP<BR>
 (C) Copyright 2015 Hewlett-Packard Development Company, L.P.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -347,6 +341,17 @@ BdsWait (
       TimeoutRemain--;
     }
   }
+
+  //
+  // If the platform configured a nonzero and finite time-out, and we have
+  // actually reached that, report 100% completion to the platform.
+  //
+  // Note that the (TimeoutRemain == 0) condition excludes
+  // PcdPlatformBootTimeOut=0xFFFF, and that's deliberate.
+  //
+  if (PcdGet16 (PcdPlatformBootTimeOut) != 0 && TimeoutRemain == 0) {
+    PlatformBootManagerWaitCallback (0);
+  }
   DEBUG ((EFI_D_INFO, "[Bds]Exit the waiting!\n"));
 }
 
@@ -552,10 +557,18 @@ BdsFormalizeOSIndicationVariable (
   //
   Status = EfiBootManagerGetBootManagerMenu (&BootManagerMenu);
   if (Status != EFI_NOT_FOUND) {
-    OsIndicationSupport = EFI_OS_INDICATIONS_BOOT_TO_FW_UI | EFI_OS_INDICATIONS_START_PLATFORM_RECOVERY;
+    OsIndicationSupport = EFI_OS_INDICATIONS_BOOT_TO_FW_UI;
     EfiBootManagerFreeLoadOption (&BootManagerMenu);
   } else {
-    OsIndicationSupport = EFI_OS_INDICATIONS_START_PLATFORM_RECOVERY;
+    OsIndicationSupport = 0;
+  }
+
+  if (PcdGetBool (PcdPlatformRecoverySupport)) {
+    OsIndicationSupport |= EFI_OS_INDICATIONS_START_PLATFORM_RECOVERY;
+  }
+
+  if (PcdGetBool(PcdCapsuleOnDiskSupport)) {
+    OsIndicationSupport |= EFI_OS_INDICATIONS_FILE_CAPSULE_DELIVERY_SUPPORTED;
   }
 
   Status = gRT->SetVariable (
@@ -668,6 +681,7 @@ BdsEntry (
   BOOLEAN                         BootSuccess;
   EFI_DEVICE_PATH_PROTOCOL        *FilePath;
   EFI_STATUS                      BootManagerMenuStatus;
+  EFI_BOOT_MANAGER_LOAD_OPTION    PlatformDefaultBootOption;
 
   HotkeyTriggered = NULL;
   Status          = EFI_SUCCESS;
@@ -769,14 +783,13 @@ BdsEntry (
   //
   InitializeLanguage (TRUE);
 
-  //
-  // System firmware must include a PlatformRecovery#### variable specifying
-  // a short-form File Path Media Device Path containing the platform default
-  // file path for removable media
-  //
   FilePath = FileDevicePath (NULL, EFI_REMOVABLE_MEDIA_FILE_NAME);
+  if (FilePath == NULL) {
+    DEBUG ((DEBUG_ERROR, "Fail to allocate memory for defualt boot file path. Unable to boot.\n"));
+    CpuDeadLoop ();
+  }
   Status = EfiBootManagerInitializeLoadOption (
-             &LoadOption,
+             &PlatformDefaultBootOption,
              LoadOptionNumberUnassigned,
              LoadOptionTypePlatformRecovery,
              LOAD_OPTION_ACTIVE,
@@ -786,24 +799,31 @@ BdsEntry (
              0
              );
   ASSERT_EFI_ERROR (Status);
-  LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypePlatformRecovery);
-  if (EfiBootManagerFindLoadOption (&LoadOption, LoadOptions, LoadOptionCount) == -1) {
-    for (Index = 0; Index < LoadOptionCount; Index++) {
-      //
-      // The PlatformRecovery#### options are sorted by OptionNumber.
-      // Find the the smallest unused number as the new OptionNumber.
-      //
-      if (LoadOptions[Index].OptionNumber != Index) {
-        break;
+
+  //
+  // System firmware must include a PlatformRecovery#### variable specifying
+  // a short-form File Path Media Device Path containing the platform default
+  // file path for removable media if the platform supports Platform Recovery.
+  //
+  if (PcdGetBool (PcdPlatformRecoverySupport)) {
+    LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypePlatformRecovery);
+    if (EfiBootManagerFindLoadOption (&PlatformDefaultBootOption, LoadOptions, LoadOptionCount) == -1) {
+      for (Index = 0; Index < LoadOptionCount; Index++) {
+        //
+        // The PlatformRecovery#### options are sorted by OptionNumber.
+        // Find the the smallest unused number as the new OptionNumber.
+        //
+        if (LoadOptions[Index].OptionNumber != Index) {
+          break;
+        }
       }
+      PlatformDefaultBootOption.OptionNumber = Index;
+      Status = EfiBootManagerLoadOptionToVariable (&PlatformDefaultBootOption);
+      ASSERT_EFI_ERROR (Status);
     }
-    LoadOption.OptionNumber = Index;
-    Status = EfiBootManagerLoadOptionToVariable (&LoadOption);
-    ASSERT_EFI_ERROR (Status);
+    EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
   }
-  EfiBootManagerFreeLoadOption (&LoadOption);
   FreePool (FilePath);
-  EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
 
   //
   // Report Status Code to indicate connecting drivers will happen
@@ -1049,10 +1069,18 @@ BdsEntry (
   }
 
   if (!BootSuccess) {
-    LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypePlatformRecovery);
-    ProcessLoadOptions (LoadOptions, LoadOptionCount);
-    EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
+    if (PcdGetBool (PcdPlatformRecoverySupport)) {
+      LoadOptions = EfiBootManagerGetLoadOptions (&LoadOptionCount, LoadOptionTypePlatformRecovery);
+      ProcessLoadOptions (LoadOptions, LoadOptionCount);
+      EfiBootManagerFreeLoadOptions (LoadOptions, LoadOptionCount);
+    } else {
+      //
+      // When platform recovery is not enabled, still boot to platform default file path.
+      //
+      EfiBootManagerProcessLoadOption (&PlatformDefaultBootOption);
+    }
   }
+  EfiBootManagerFreeLoadOption (&PlatformDefaultBootOption);
 
   DEBUG ((EFI_D_ERROR, "[Bds] Unable to boot!\n"));
   PlatformBootManagerUnableToBoot ();

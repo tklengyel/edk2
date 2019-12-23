@@ -6,13 +6,7 @@
 # HOST_ARCH = Arm or ARM for ARM build
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.    The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 
 ifndef HOST_ARCH
   #
@@ -29,8 +23,9 @@ ifndef HOST_ARCH
   endif
   ifneq (,$(findstring aarch64,$(uname_m)))
     HOST_ARCH=AARCH64
-  endif
-  ifneq (,$(findstring arm,$(uname_m)))
+  else ifneq (,$(findstring arm64,$(uname_m)))
+    HOST_ARCH=AARCH64
+  else ifneq (,$(findstring arm,$(uname_m)))
     HOST_ARCH=ARM
   endif
   ifndef HOST_ARCH
@@ -66,7 +61,7 @@ else
 $(error Bad HOST_ARCH)
 endif
 
-INCLUDE = $(TOOL_INCLUDE) -I $(MAKEROOT) -I $(MAKEROOT)/Include/Common -I $(MAKEROOT)/Include/ -I $(MAKEROOT)/Include/IndustryStandard -I $(MAKEROOT)/Common/ -I .. -I . $(ARCH_INCLUDE) 
+INCLUDE = $(TOOL_INCLUDE) -I $(MAKEROOT) -I $(MAKEROOT)/Include/Common -I $(MAKEROOT)/Include/ -I $(MAKEROOT)/Include/IndustryStandard -I $(MAKEROOT)/Common/ -I .. -I . $(ARCH_INCLUDE)
 BUILD_CPPFLAGS = $(INCLUDE)
 
 # keep EXTRA_OPTFLAGS last
@@ -74,16 +69,20 @@ BUILD_OPTFLAGS = -O2 $(EXTRA_OPTFLAGS)
 
 ifeq ($(DARWIN),Darwin)
 # assume clang or clang compatible flags on OS X
-BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-deprecated-declarations -Wno-self-assign -Wno-unused-result -nostdlib -g
+BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -Wall -Werror \
+-Wno-deprecated-declarations -Wno-self-assign -Wno-unused-result -nostdlib -g
 else
-BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-deprecated-declarations -Wno-stringop-truncation -Wno-restrict -Wno-unused-result -nostdlib -g
+BUILD_CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -fwrapv \
+-fno-delete-null-pointer-checks -Wall -Werror \
+-Wno-deprecated-declarations -Wno-stringop-truncation -Wno-restrict \
+-Wno-unused-result -nostdlib -g
 endif
 BUILD_LFLAGS =
 BUILD_CXXFLAGS = -Wno-unused-result
 
 ifeq ($(HOST_ARCH), IA32)
 #
-# Snow Leopard  is a 32-bit and 64-bit environment. uname -m returns i386, but gcc defaults 
+# Snow Leopard  is a 32-bit and 64-bit environment. uname -m returns i386, but gcc defaults
 #  to x86_64. So make sure tools match uname -m. You can manual have a 64-bit kernal on Snow Leopard
 #  so only do this is uname -m returns i386.
 #
@@ -97,7 +96,7 @@ endif
 # keep BUILD_OPTFLAGS last
 BUILD_CFLAGS   += $(BUILD_OPTFLAGS)
 BUILD_CXXFLAGS += $(BUILD_OPTFLAGS)
-  
+
 # keep EXTRA_LDFLAGS last
 BUILD_LFLAGS += $(EXTRA_LDFLAGS)
 
@@ -108,7 +107,7 @@ BUILD_LFLAGS += $(EXTRA_LDFLAGS)
 all:
 
 $(MAKEROOT)/libs:
-	mkdir $(MAKEROOT)/libs 
+	mkdir $(MAKEROOT)/libs
 
 $(MAKEROOT)/bin:
 	mkdir $(MAKEROOT)/bin

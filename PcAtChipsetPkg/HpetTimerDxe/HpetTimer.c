@@ -1,14 +1,8 @@
 /** @file
-  Timer Architectural Protocol module using High Precesion Event Timer (HPET)
+  Timer Architectural Protocol module using High Precision Event Timer (HPET)
 
   Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -252,7 +246,7 @@ HpetRead (
 /**
   Write a 64-bit HPET register.
 
-  @param  Offset  Specifies the ofsfert of the HPET register to write.
+  @param  Offset  Specifies the offset of the HPET register to write.
   @param  Value   Specifies the value to write to the HPET register specified by Offset.
 
   @return  The 64-bit value written to HPET register specified by Offset.
@@ -536,7 +530,7 @@ TimerDriverSetTimerPeriod (
     // If TimerPeriod is 0, then mask HPET Timer interrupts
     //
 
-    if (mTimerConfiguration.Bits.MsiInterruptCapablity != 0 && FeaturePcdGet (PcdHpetMsiEnable)) {
+    if (mTimerConfiguration.Bits.MsiInterruptCapability != 0 && FeaturePcdGet (PcdHpetMsiEnable)) {
       //
       // Disable HPET MSI interrupt generation
       //
@@ -582,7 +576,7 @@ TimerDriverSetTimerPeriod (
     //
     // Enable HPET Timer interrupt generation
     //
-    if (mTimerConfiguration.Bits.MsiInterruptCapablity != 0 && FeaturePcdGet (PcdHpetMsiEnable)) {
+    if (mTimerConfiguration.Bits.MsiInterruptCapability != 0 && FeaturePcdGet (PcdHpetMsiEnable)) {
       //
       // Program MSI Address and MSI Data values in the selected HPET Timer
       // Program HPET register with APIC ID of current BSP in case BSP has been switched
@@ -840,7 +834,7 @@ TimerDriverInitialize (
     //
     // Check to see if this HPET Timer supports MSI
     //
-    if (mTimerConfiguration.Bits.MsiInterruptCapablity != 0) {
+    if (mTimerConfiguration.Bits.MsiInterruptCapability != 0) {
       //
       // Save the index of the first HPET Timer that supports MSI interrupts
       //
@@ -965,7 +959,7 @@ TimerDriverInitialize (
   // Show state of enabled HPET timer
   //
   DEBUG_CODE (
-    if (mTimerConfiguration.Bits.MsiInterruptCapablity != 0 && FeaturePcdGet (PcdHpetMsiEnable)) {
+    if (mTimerConfiguration.Bits.MsiInterruptCapability != 0 && FeaturePcdGet (PcdHpetMsiEnable)) {
       DEBUG ((DEBUG_INFO, "HPET Interrupt Mode MSI\n"));
     } else {
       DEBUG ((DEBUG_INFO, "HPET Interrupt Mode I/O APIC\n"));

@@ -3,13 +3,7 @@
 
 Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
 Copyright (c) 2017, Microsoft Corporation.  All rights reserved. <BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -85,7 +79,7 @@ UINT32 mMeasuredMaxChildFvIndex = 0;
 UINT32 mMeasuredChildFvIndex = 0;
 
 /**
-  Measure and record the Firmware Volum Information once FvInfoPPI install.
+  Measure and record the Firmware Volume Information once FvInfoPPI install.
 
   @param[in] PeiServices       An indirect pointer to the EFI_PEI_SERVICES table published by the PEI Foundation.
   @param[in] NotifyDescriptor  Address of the notification descriptor data structure.
@@ -97,14 +91,14 @@ UINT32 mMeasuredChildFvIndex = 0;
 **/
 EFI_STATUS
 EFIAPI
-FirmwareVolmeInfoPpiNotifyCallback (
+FirmwareVolumeInfoPpiNotifyCallback (
   IN EFI_PEI_SERVICES              **PeiServices,
   IN EFI_PEI_NOTIFY_DESCRIPTOR     *NotifyDescriptor,
   IN VOID                          *Ppi
   );
 
 /**
-  Record all measured Firmware Volum Information into a Guid Hob
+  Record all measured Firmware Volume Information into a Guid Hob
 
   @param[in] PeiServices       An indirect pointer to the EFI_PEI_SERVICES table published by the PEI Foundation.
   @param[in] NotifyDescriptor  Address of the notification descriptor data structure.
@@ -126,12 +120,12 @@ EFI_PEI_NOTIFY_DESCRIPTOR           mNotifyList[] = {
   {
     EFI_PEI_PPI_DESCRIPTOR_NOTIFY_CALLBACK,
     &gEfiPeiFirmwareVolumeInfoPpiGuid,
-    FirmwareVolmeInfoPpiNotifyCallback
+    FirmwareVolumeInfoPpiNotifyCallback
   },
   {
     EFI_PEI_PPI_DESCRIPTOR_NOTIFY_CALLBACK,
     &gEfiPeiFirmwareVolumeInfo2PpiGuid,
-    FirmwareVolmeInfoPpiNotifyCallback
+    FirmwareVolumeInfoPpiNotifyCallback
   },
   {
     (EFI_PEI_PPI_DESCRIPTOR_NOTIFY_CALLBACK | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
@@ -142,7 +136,7 @@ EFI_PEI_NOTIFY_DESCRIPTOR           mNotifyList[] = {
 
 
 /**
-  Record all measured Firmware Volum Information into a Guid Hob
+  Record all measured Firmware Volume Information into a Guid Hob
   Guid Hob payload layout is
 
      UINT32 *************************** FIRMWARE_BLOB number
@@ -694,7 +688,7 @@ MeasureMainBios (
 }
 
 /**
-  Measure and record the Firmware Volum Information once FvInfoPPI install.
+  Measure and record the Firmware Volume Information once FvInfoPPI install.
 
   @param[in] PeiServices       An indirect pointer to the EFI_PEI_SERVICES table published by the PEI Foundation.
   @param[in] NotifyDescriptor  Address of the notification descriptor data structure.
@@ -706,7 +700,7 @@ MeasureMainBios (
 **/
 EFI_STATUS
 EFIAPI
-FirmwareVolmeInfoPpiNotifyCallback (
+FirmwareVolumeInfoPpiNotifyCallback (
   IN EFI_PEI_SERVICES               **PeiServices,
   IN EFI_PEI_NOTIFY_DESCRIPTOR      *NotifyDescriptor,
   IN VOID                           *Ppi

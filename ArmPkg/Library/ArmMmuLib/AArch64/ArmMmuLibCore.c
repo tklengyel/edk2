@@ -5,13 +5,7 @@
 *  Copyright (c) 2016, Linaro Limited. All rights reserved.
 *  Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
 *
-*  This program and the accompanying materials
-*  are licensed and made available under the terms and conditions of the BSD License
-*  which accompanies this distribution.  The full text of the license may be found at
-*  http://opensource.org/licenses/bsd-license.php
-*
-*  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+*  SPDX-License-Identifier: BSD-2-Clause-Patent
 *
 **/
 
@@ -129,13 +123,14 @@ STATIC
 VOID
 ReplaceLiveEntry (
   IN  UINT64  *Entry,
-  IN  UINT64  Value
+  IN  UINT64  Value,
+  IN  UINT64  RegionStart
   )
 {
   if (!ArmMmuEnabled ()) {
     *Entry = Value;
   } else {
-    ArmReplaceLiveTranslationEntry (Entry, Value);
+    ArmReplaceLiveTranslationEntry (Entry, Value, RegionStart);
   }
 }
 
@@ -296,7 +291,8 @@ GetBlockEntryListFromAddress (
 
         // Fill the BlockEntry with the new TranslationTable
         ReplaceLiveEntry (BlockEntry,
-          ((UINTN)TranslationTable & TT_ADDRESS_MASK_DESCRIPTION_TABLE) | TableAttributes | TT_TYPE_TABLE_ENTRY);
+          (UINTN)TranslationTable | TableAttributes | TT_TYPE_TABLE_ENTRY,
+          RegionStart);
       }
     } else {
       if (IndexLevel != PageLevel) {
@@ -356,7 +352,7 @@ UpdateRegionMapping (
 
   do {
     // Get the first Block Entry that matches the Virtual Address and also the information on the Table Descriptor
-    // such as the the size of the Block Entry and the address of the last BlockEntry of the Table Descriptor
+    // such as the size of the Block Entry and the address of the last BlockEntry of the Table Descriptor
     BlockEntrySize = RegionLength;
     BlockEntry = GetBlockEntryListFromAddress (RootTable, RegionStart, &TableLevel, &BlockEntrySize, &LastBlockEntry);
     if (BlockEntry == NULL) {
@@ -374,6 +370,8 @@ UpdateRegionMapping (
       // Fill the Block Entry with attribute and output block address
       *BlockEntry &= BlockEntryMask;
       *BlockEntry |= (RegionStart & TT_ADDRESS_MASK_BLOCK_ENTRY) | Attributes | Type;
+
+      ArmUpdateTranslationTableEntry (BlockEntry, (VOID *)RegionStart);
 
       // Go to the next BlockEntry
       RegionStart += BlockEntrySize;
@@ -487,9 +485,6 @@ ArmSetMemoryAttributes (
     return Status;
   }
 
-  // Invalidate all TLB entries so changes are synced
-  ArmInvalidateTlb ();
-
   return EFI_SUCCESS;
 }
 
@@ -511,9 +506,6 @@ SetMemoryRegionAttribute (
   if (EFI_ERROR (Status)) {
     return Status;
   }
-
-  // Invalidate all TLB entries so changes are synced
-  ArmInvalidateTlb ();
 
   return EFI_SUCCESS;
 }

@@ -1,12 +1,6 @@
 ;------------------------------------------------------------------------------ ;
-; Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-; This program and the accompanying materials
-; are licensed and made available under the terms and conditions of the BSD License
-; which accompanies this distribution.  The full text of the license may be found at
-; http://opensource.org/licenses/bsd-license.php.
-;
-; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+; Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+; SPDX-License-Identifier: BSD-2-Clause-Patent
 ;
 ; Module Name:
 ;
@@ -19,10 +13,25 @@
 ;-------------------------------------------------------------------------------
 
 %include "StuffRsbNasm.inc"
+%include "Nasm.inc"
 
 ;
 ; Variables referrenced by C code
 ;
+
+%define MSR_IA32_S_CET                     0x6A2
+%define   MSR_IA32_CET_SH_STK_EN             0x1
+%define   MSR_IA32_CET_WR_SHSTK_EN           0x2
+%define   MSR_IA32_CET_ENDBR_EN              0x4
+%define   MSR_IA32_CET_LEG_IW_EN             0x8
+%define   MSR_IA32_CET_NO_TRACK_EN           0x10
+%define   MSR_IA32_CET_SUPPRESS_DIS          0x20
+%define   MSR_IA32_CET_SUPPRESS              0x400
+%define   MSR_IA32_CET_TRACKER               0x800
+%define MSR_IA32_PL0_SSP                   0x6A4
+%define MSR_IA32_INTERRUPT_SSP_TABLE_ADDR  0x6A8
+
+%define CR4_CET                            0x800000
 
 %define MSR_IA32_MISC_ENABLE 0x1A0
 %define MSR_EFER      0xc0000080
@@ -60,8 +69,15 @@ extern ASM_PFX(mXdSupported)
 global ASM_PFX(gPatchXdSupported)
 global ASM_PFX(gPatchSmiStack)
 global ASM_PFX(gPatchSmiCr3)
+global ASM_PFX(gPatch5LevelPagingNeeded)
 global ASM_PFX(gcSmiHandlerTemplate)
 global ASM_PFX(gcSmiHandlerSize)
+
+extern ASM_PFX(mCetSupported)
+global ASM_PFX(mPatchCetSupported)
+global ASM_PFX(mPatchCetPl0Ssp)
+global ASM_PFX(mPatchCetInterruptSsp)
+global ASM_PFX(mPatchCetInterruptSspTable)
 
     DEFAULT REL
     SECTION .text
@@ -109,6 +125,17 @@ ProtFlatMode:
 ASM_PFX(gPatchSmiCr3):
     mov     cr3, rax
     mov     eax, 0x668                   ; as cr4.PGE is not set here, refresh cr3
+
+    mov     cl, strict byte 0            ; source operand will be patched
+ASM_PFX(gPatch5LevelPagingNeeded):
+    cmp     cl, 0
+    je      SkipEnable5LevelPaging
+    ;
+    ; Enable 5-Level Paging bit
+    ;
+    bts     eax, 12                     ; Set LA57 bit (bit #12)
+SkipEnable5LevelPaging:
+
     mov     cr4, rax                    ; in PreModifyMtrrs() to flush TLB.
 ; Load TSS
     sub     esp, 8                      ; reserve room in stack
@@ -174,8 +201,71 @@ SmiHandlerIdtrAbsAddr:
     mov     ax, [rbx + DSC_SS]
     mov     ss, eax
 
-_SmiHandler:
-    mov     rbx, [rsp + 0x8]             ; rcx <- CpuIndex
+    mov     rbx, [rsp + 0x8]             ; rbx <- CpuIndex
+
+; enable CET if supported
+    mov     al, strict byte 1           ; source operand may be patched
+ASM_PFX(mPatchCetSupported):
+    cmp     al, 0
+    jz      CetDone
+
+    mov     ecx, MSR_IA32_S_CET
+    rdmsr
+    push    rdx
+    push    rax
+
+    mov     ecx, MSR_IA32_PL0_SSP
+    rdmsr
+    push    rdx
+    push    rax
+
+    mov     ecx, MSR_IA32_INTERRUPT_SSP_TABLE_ADDR
+    rdmsr
+    push    rdx
+    push    rax
+
+    mov     ecx, MSR_IA32_S_CET
+    mov     eax, MSR_IA32_CET_SH_STK_EN
+    xor     edx, edx
+    wrmsr
+
+    mov     ecx, MSR_IA32_PL0_SSP
+    mov     eax, strict dword 0         ; source operand will be patched
+ASM_PFX(mPatchCetPl0Ssp):
+    xor     edx, edx
+    wrmsr
+    mov     rcx, cr0
+    btr     ecx, 16                     ; clear WP
+    mov     cr0, rcx
+    mov     [eax], eax                  ; reload SSP, and clear busyflag.
+    xor     ecx, ecx
+    mov     [eax + 4], ecx
+
+    mov     ecx, MSR_IA32_INTERRUPT_SSP_TABLE_ADDR
+    mov     eax, strict dword 0         ; source operand will be patched
+ASM_PFX(mPatchCetInterruptSspTable):
+    xor     edx, edx
+    wrmsr
+
+    mov     eax, strict dword 0         ; source operand will be patched
+ASM_PFX(mPatchCetInterruptSsp):
+    cmp     eax, 0
+    jz      CetInterruptDone
+    mov     [eax], eax                  ; reload SSP, and clear busyflag.
+    xor     ecx, ecx
+    mov     [eax + 4], ecx
+CetInterruptDone:
+
+    mov     rcx, cr0
+    bts     ecx, 16                     ; set WP
+    mov     cr0, rcx
+
+    mov     eax, 0x668 | CR4_CET
+    mov     cr4, rax
+
+    SETSSBSY
+
+CetDone:
 
     ;
     ; Save FP registers
@@ -209,6 +299,31 @@ CpuSmmDebugExitAbsAddr:
 
     add     rsp, 0x200
 
+    mov     rax, strict qword 0        ;    mov     rax, ASM_PFX(mCetSupported)
+mCetSupportedAbsAddr:
+    mov     al, [rax]
+    cmp     al, 0
+    jz      CetDone2
+
+    mov     eax, 0x668
+    mov     cr4, rax       ; disable CET
+
+    mov     ecx, MSR_IA32_INTERRUPT_SSP_TABLE_ADDR
+    pop     rax
+    pop     rdx
+    wrmsr
+
+    mov     ecx, MSR_IA32_PL0_SSP
+    pop     rax
+    pop     rdx
+    wrmsr
+
+    mov     ecx, MSR_IA32_S_CET
+    pop     rax
+    pop     rdx
+    wrmsr
+CetDone2:
+
     mov     rax, strict qword 0         ;       lea     rax, [ASM_PFX(mXdSupported)]
 mXdSupportedAbsAddr:
     mov     al, [rax]
@@ -223,6 +338,7 @@ mXdSupportedAbsAddr:
     wrmsr
 
 .1:
+
     StuffRsb64
     rsm
 
@@ -256,5 +372,9 @@ ASM_PFX(PiSmmCpuSmiEntryFixupAddress):
 
     lea    rax, [ASM_PFX(mXdSupported)]
     lea    rcx, [mXdSupportedAbsAddr]
+    mov    qword [rcx - 8], rax
+
+    lea    rax, [ASM_PFX(mCetSupported)]
+    lea    rcx, [mCetSupportedAbsAddr]
     mov    qword [rcx - 8], rax
     ret

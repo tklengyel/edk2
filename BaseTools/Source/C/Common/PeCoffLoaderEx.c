@@ -3,13 +3,7 @@ IA32 and X64 Specific relocation fixups
 
 Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
 Portions Copyright (c) 2011 - 2013, ARM Ltd. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 --*/
 
@@ -101,7 +95,7 @@ Returns:
 
 
 /**
-  Pass in a pointer to an ARM MOVT or MOVW immediate instruciton and
+  Pass in a pointer to an ARM MOVT or MOVW immediate instruction and
   return the immediate data encoded in the instruction
 
   @param  Instruction   Pointer to ARM MOVT or MOVW immediate instruction
@@ -137,7 +131,7 @@ ThumbMovtImmediateAddress (
   Update an ARM MOVT or MOVW immediate instruction immediate data.
 
   @param  Instruction   Pointer to ARM MOVT or MOVW immediate instruction
-  @param  Address       New addres to patch into the instruction
+  @param  Address       New address to patch into the instruction
 **/
 VOID
 ThumbMovtImmediatePatch (
@@ -147,7 +141,7 @@ ThumbMovtImmediatePatch (
 {
   UINT16  Patch;
 
-  // First 16-bit chunk of instruciton
+  // First 16-bit chunk of instruction
   Patch  = ((Address >> 12) & 0x000f);             // imm4
   Patch |= (((Address & BIT11) != 0) ? BIT10 : 0); // i
   *Instruction = (*Instruction & ~0x040f) | Patch;
@@ -160,10 +154,10 @@ ThumbMovtImmediatePatch (
 }
 
 /**
-  Pass in a pointer to an ARM MOVW/MOVT instruciton pair and
+  Pass in a pointer to an ARM MOVW/MOVT instruction pair and
   return the immediate data encoded in the two` instruction
 
-  @param  Instructions  Pointer to ARM MOVW/MOVT insturction pair
+  @param  Instructions  Pointer to ARM MOVW/MOVT instruction pair
 
   @return Immediate address encoded in the instructions
 
@@ -188,7 +182,7 @@ ThumbMovwMovtImmediateAddress (
   Update an ARM MOVW/MOVT immediate instruction instruction pair.
 
   @param  Instructions  Pointer to ARM MOVW/MOVT instruction pair
-  @param  Address       New addres to patch into the instructions
+  @param  Address       New address to patch into the instructions
 **/
 VOID
 EFIAPI

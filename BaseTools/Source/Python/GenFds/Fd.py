@@ -3,13 +3,7 @@
 #
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -72,7 +66,7 @@ class FD(FDClassObject):
                 HasCapsuleRegion = True
                 break
         if HasCapsuleRegion:
-            TempFdBuffer = BytesIO('')
+            TempFdBuffer = BytesIO()
             PreviousRegionStart = -1
             PreviousRegionSize = 1
 
@@ -101,7 +95,7 @@ class FD(FDClassObject):
                 GenFdsGlobalVariable.VerboseLogger('Call each region\'s AddToBuffer function')
                 RegionObj.AddToBuffer (TempFdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, GenFdsGlobalVariable.ImageBinDict, self.DefineVarDict)
 
-        FdBuffer = BytesIO('')
+        FdBuffer = BytesIO()
         PreviousRegionStart = -1
         PreviousRegionSize = 1
         for RegionObj in self.RegionList :

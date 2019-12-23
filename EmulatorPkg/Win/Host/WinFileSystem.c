@@ -1,14 +1,8 @@
 /*++ @file
   Support OS native directory access.
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 
 **/
@@ -211,8 +205,14 @@ WinNtOpenVolume (
     goto Done;
   }
 
-  StrCpy (PrivateFile->FilePath, Private->FilePath);
-  StrCpy (PrivateFile->FileName, PrivateFile->FilePath);
+  StrCpyS (PrivateFile->FilePath,
+    StrSize (Private->FilePath) / sizeof (CHAR16),
+    Private->FilePath
+    );
+  StrCpyS (PrivateFile->FileName,
+    StrSize (Private->FilePath) / sizeof (CHAR16),
+    PrivateFile->FilePath
+    );
   PrivateFile->Signature = WIN_NT_EFI_FILE_PRIVATE_SIGNATURE;
   PrivateFile->Thunk = Private->Thunk;
   PrivateFile->SimpleFileSystem = This;
@@ -249,8 +249,8 @@ WinNtOpenVolume (
   if (TempFileName == NULL) {
     goto Done;
   }
-  StrCpy (TempFileName, PrivateFile->FilePath);
-  StrCat (TempFileName, L"\\*");
+  StrCpyS (TempFileName, Size / sizeof (CHAR16), PrivateFile->FilePath);
+  StrCatS (TempFileName, Size / sizeof (CHAR16), L"\\*");
 
   PrivateFile->LHandle = FindFirstFile (TempFileName, &PrivateFile->FindBuf);
   FreePool (TempFileName);
@@ -368,7 +368,7 @@ GetNextFileNameToken (
   } else {
     Offset = SlashPos - *FileName;
     Token = AllocateZeroPool ((Offset + 1) * sizeof (CHAR16));
-    StrnCpy (Token, *FileName, Offset);
+    StrnCpyS (Token, Offset + 1, *FileName, Offset);
     //
     // Point *FileName to the next character after L'\'.
     //
@@ -502,7 +502,7 @@ WinNtFileOpen (
   if (TempFileName == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }
-  StrCpy (TempFileName, FileName);
+  StrCpyS (TempFileName, StrSize (FileName) / sizeof (CHAR16), FileName);
   FileName = TempFileName;
 
   if (FileName[StrLen (FileName) - 1] == L'\\') {
@@ -554,9 +554,17 @@ WinNtFileOpen (
   }
 
   if (PrivateFile->IsDirectoryPath) {
-    StrCpy (NewPrivateFile->FilePath, PrivateFile->FileName);
+    StrCpyS (
+      NewPrivateFile->FilePath,
+      StrSize (PrivateFile->FileName) / sizeof (CHAR16),
+      PrivateFile->FileName
+      );
   } else {
-    StrCpy (NewPrivateFile->FilePath, PrivateFile->FilePath);
+    StrCpyS (
+      NewPrivateFile->FilePath,
+      StrSize (PrivateFile->FileName) / sizeof (CHAR16),
+      PrivateFile->FilePath
+      );
   }
 
   Size = StrSize (NewPrivateFile->FilePath);
@@ -569,17 +577,17 @@ WinNtFileOpen (
   }
 
   if (*FileName == L'\\') {
-    StrCpy (NewPrivateFile->FileName, PrivateRoot->FilePath);
-    StrCat (NewPrivateFile->FileName, L"\\");
-    StrCat (NewPrivateFile->FileName, FileName + 1);
+    StrCpyS (NewPrivateFile->FileName, Size / sizeof (CHAR16), PrivateRoot->FilePath);
+    StrCatS (NewPrivateFile->FileName, Size / sizeof (CHAR16), L"\\");
+    StrCatS (NewPrivateFile->FileName, Size / sizeof (CHAR16), FileName + 1);
   } else {
-    StrCpy (NewPrivateFile->FileName, NewPrivateFile->FilePath);
+    StrCpyS (NewPrivateFile->FileName, Size / sizeof (CHAR16), NewPrivateFile->FilePath);
     if (StrCmp (FileName, L"") != 0) {
       //
       // In case the filename becomes empty, especially after trimming dots and blanks
       //
-      StrCat (NewPrivateFile->FileName, L"\\");
-      StrCat (NewPrivateFile->FileName, FileName);
+      StrCatS (NewPrivateFile->FileName, Size / sizeof (CHAR16), L"\\");
+      StrCatS (NewPrivateFile->FileName, Size / sizeof (CHAR16), FileName);
     }
   }
 
@@ -663,7 +671,11 @@ WinNtFileOpen (
     goto Done;
   }
 
-  StrCpy (NewPrivateFile->FilePath, NewPrivateFile->FileName);
+  StrCpyS (
+    NewPrivateFile->FilePath,
+    StrSize (NewPrivateFile->FileName) / sizeof (CHAR16),
+    NewPrivateFile->FileName
+    );
   if (TempChar != 0) {
     *(RealFileName - 1) = TempChar;
   }
@@ -721,7 +733,7 @@ WinNtFileOpen (
       goto Done;
     }
 
-    StrCpy (TempFileName, NewPrivateFile->FileName);
+    StrCpyS (TempFileName, Size / sizeof (CHAR16), NewPrivateFile->FileName);
 
     if ((OpenMode & EFI_FILE_MODE_CREATE)) {
       //
@@ -775,7 +787,7 @@ WinNtFileOpen (
     //
     // Find the first file under it
     //
-    StrCat (TempFileName, L"\\*");
+    StrCatS (TempFileName, Size / sizeof (CHAR16), L"\\*");
     NewPrivateFile->LHandle = FindFirstFile (TempFileName, &NewPrivateFile->FindBuf);
     FreePool (TempFileName);
 
@@ -1336,8 +1348,8 @@ WinNtFileSetPossition (
       goto Done;
     }
 
-    StrCpy (FileName, PrivateFile->FileName);
-    StrCat (FileName, L"\\*");
+    StrCpyS (FileName, Size / sizeof (CHAR16), PrivateFile->FileName);
+    StrCatS (FileName, Size / sizeof (CHAR16), L"\\*");
 
     if (PrivateFile->LHandle != INVALID_HANDLE_VALUE) {
       FindClose (PrivateFile->LHandle);
@@ -1605,7 +1617,11 @@ WinNtFileGetInfo (
       goto Done;
     }
 
-    StrCpy (DriveName, PrivateFile->FilePath);
+    StrCpyS (
+      DriveName,
+      (StrSize (PrivateFile->FilePath) + 1) / sizeof (CHAR16),
+      PrivateFile->FilePath
+      );
     for (Index = 0; DriveName[Index] != 0 && DriveName[Index] != ':'; Index++) {
       ;
     }
@@ -1670,7 +1686,11 @@ WinNtFileGetInfo (
       }
     }
 
-    StrCpy ((CHAR16 *)FileSystemInfoBuffer->VolumeLabel, PrivateRoot->VolumeLabel);
+    StrCpyS (
+      (CHAR16 *)FileSystemInfoBuffer->VolumeLabel,
+      (*BufferSize - SIZE_OF_EFI_FILE_SYSTEM_INFO) / sizeof (CHAR16),
+      PrivateRoot->VolumeLabel
+      );
     *BufferSize = SIZE_OF_EFI_FILE_SYSTEM_INFO + StrSize (PrivateRoot->VolumeLabel);
     Status = EFI_SUCCESS;
   }
@@ -1682,7 +1702,11 @@ WinNtFileGetInfo (
       goto Done;
     }
 
-    StrCpy ((CHAR16 *)Buffer, PrivateRoot->VolumeLabel);
+    StrCpyS (
+      (CHAR16 *)Buffer,
+      *BufferSize / sizeof (CHAR16),
+      PrivateRoot->VolumeLabel
+      );
     *BufferSize = StrSize (PrivateRoot->VolumeLabel);
     Status = EFI_SUCCESS;
   }
@@ -1774,7 +1798,11 @@ WinNtFileSetInfo (
       goto Done;
     }
 
-    StrCpy (PrivateRoot->VolumeLabel, NewFileSystemInfo->VolumeLabel);
+    StrCpyS (
+      PrivateRoot->VolumeLabel,
+      StrSize (NewFileSystemInfo->VolumeLabel) / sizeof (CHAR16),
+      NewFileSystemInfo->VolumeLabel
+      );
 
     Status = EFI_SUCCESS;
     goto Done;
@@ -1789,7 +1817,11 @@ WinNtFileSetInfo (
       goto Done;
     }
 
-    StrCpy (PrivateRoot->VolumeLabel, (CHAR16 *)Buffer);
+    StrCpyS (
+      PrivateRoot->VolumeLabel,
+      StrSize (PrivateRoot->VolumeLabel) / sizeof (CHAR16),
+      (CHAR16 *)Buffer
+      );
 
     Status = EFI_SUCCESS;
     goto Done;
@@ -1858,7 +1890,11 @@ WinNtFileSetInfo (
     goto Done;
   }
 
-  StrCpy (OldFileName, PrivateFile->FileName);
+  StrCpyS (
+    OldFileName,
+    StrSize (PrivateFile->FileName) / sizeof (CHAR16),
+    PrivateFile->FileName
+    );
 
   //
   // Make full pathname from new filename and rootpath.
@@ -1873,9 +1909,9 @@ WinNtFileSetInfo (
       goto Done;
     }
 
-    StrCpy (NewFileName, PrivateRoot->FilePath);
-    StrCat (NewFileName, L"\\");
-    StrCat (NewFileName, NewFileInfo->FileName + 1);
+    StrCpyS (NewFileName, Size / sizeof (CHAR16), PrivateRoot->FilePath);
+    StrCatS (NewFileName, Size / sizeof (CHAR16), L"\\");
+    StrCatS (NewFileName, Size / sizeof (CHAR16), NewFileInfo->FileName + 1);
   } else {
     Size = StrSize (PrivateFile->FilePath);
     Size += StrSize (L"\\");
@@ -1886,9 +1922,9 @@ WinNtFileSetInfo (
       goto Done;
     }
 
-    StrCpy (NewFileName, PrivateFile->FilePath);
-    StrCat (NewFileName, L"\\");
-    StrCat (NewFileName, NewFileInfo->FileName);
+    StrCpyS (NewFileName, Size / sizeof (CHAR16), PrivateFile->FilePath);
+    StrCatS (NewFileName, Size / sizeof (CHAR16), L"\\");
+    StrCatS (NewFileName, Size / sizeof (CHAR16), NewFileInfo->FileName);
   }
 
   //
@@ -1996,13 +2032,13 @@ WinNtFileSetInfo (
         goto Done;
       }
 
-      StrCpy (PrivateFile->FileName, NewFileName);
+      StrCpyS (PrivateFile->FileName, StrSize (NewFileName) / sizeof (CHAR16), NewFileName);
 
       Size = StrSize (NewFileName);
       Size += StrSize (L"\\*");
       TempFileName = AllocatePool (Size);
 
-      StrCpy (TempFileName, NewFileName);
+      StrCpyS (TempFileName, Size / sizeof (CHAR16), NewFileName);
 
       if (!PrivateFile->IsDirectoryPath) {
         PrivateFile->LHandle = CreateFile (
@@ -2035,7 +2071,7 @@ WinNtFileSetInfo (
           NULL
         );
 
-        StrCat (TempFileName, L"\\*");
+        StrCatS (TempFileName, Size / sizeof (CHAR16), L"\\*");
         PrivateFile->LHandle = FindFirstFile (TempFileName, &FindBuf);
 
         FreePool (TempFileName);
@@ -2054,7 +2090,7 @@ WinNtFileSetInfo (
       Size += StrSize (L"\\*");
       TempFileName = AllocatePool (Size);
 
-      StrCpy (TempFileName, OldFileName);
+      StrCpyS (TempFileName, Size / sizeof (CHAR16), OldFileName);
 
       if (!PrivateFile->IsDirectoryPath) {
         PrivateFile->LHandle = CreateFile (
@@ -2077,7 +2113,7 @@ WinNtFileSetInfo (
           NULL
         );
 
-        StrCat (TempFileName, L"\\*");
+        StrCatS (TempFileName, Size / sizeof (CHAR16), L"\\*");
         PrivateFile->LHandle = FindFirstFile (TempFileName, &FindBuf);
       }
 

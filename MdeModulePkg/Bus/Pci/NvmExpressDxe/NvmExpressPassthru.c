@@ -4,13 +4,7 @@
 
   (C) Copyright 2014 Hewlett-Packard Development Company, L.P.<BR>
   Copyright (c) 2013 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -458,6 +452,7 @@ NvmExpressPassThru (
   NVME_SQ                        *Sq;
   NVME_CQ                        *Cq;
   UINT16                         QueueId;
+  UINT16                         QueueSize;
   UINT32                         Bytes;
   UINT16                         Offset;
   EFI_EVENT                      TimerEvent;
@@ -546,6 +541,7 @@ NvmExpressPassThru (
   Prp         = NULL;
   TimerEvent  = NULL;
   Status      = EFI_SUCCESS;
+  QueueSize   = MIN (NVME_ASYNC_CSQ_SIZE, Private->Cap.Mqes) + 1;
 
   if (Packet->QueueType == NVME_ADMIN_QUEUE) {
     QueueId = 0;
@@ -558,7 +554,7 @@ NvmExpressPassThru (
       //
       // Submission queue full check.
       //
-      if ((Private->SqTdbl[QueueId].Sqt + 1) % (NVME_ASYNC_CSQ_SIZE + 1) ==
+      if ((Private->SqTdbl[QueueId].Sqt + 1) % QueueSize ==
           Private->AsyncSqHead) {
         return EFI_NOT_READY;
       }
@@ -707,7 +703,7 @@ NvmExpressPassThru (
   //
   if ((Event != NULL) && (QueueId != 0)) {
     Private->SqTdbl[QueueId].Sqt =
-      (Private->SqTdbl[QueueId].Sqt + 1) % (NVME_ASYNC_CSQ_SIZE + 1);
+      (Private->SqTdbl[QueueId].Sqt + 1) % QueueSize;
   } else {
     Private->SqTdbl[QueueId].Sqt ^= 1;
   }

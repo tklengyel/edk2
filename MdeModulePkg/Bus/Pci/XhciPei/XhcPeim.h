@@ -3,14 +3,7 @@ Private Header file for Usb Host Controller PEIM
 
 Copyright (c) 2014 - 2016, Intel Corporation. All rights reserved.<BR>
 
-This program and the accompanying materials
-are licensed and made available under the terms and conditions
-of the BSD License which accompanies this distribution.  The
-full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -347,6 +340,34 @@ IoMmuFreeBuffer (
   IN UINTN                  Pages,
   IN VOID                   *HostAddress,
   IN VOID                   *Mapping
+  );
+
+/**
+  Allocates aligned pages that are suitable for an OperationBusMasterCommonBuffer or
+  OperationBusMasterCommonBuffer64 mapping.
+
+  @param  Pages                 The number of pages to allocate.
+  @param  Alignment             The requested alignment of the allocation.  Must be a power of two.
+  @param  HostAddress           A pointer to store the base system memory address of the
+                                allocated range.
+  @param  DeviceAddress         The resulting map address for the bus master PCI controller to use to
+                                access the hosts HostAddress.
+  @param  Mapping               A resulting value to pass to Unmap().
+
+  @retval EFI_SUCCESS           The requested memory pages were allocated.
+  @retval EFI_UNSUPPORTED       Attributes is unsupported. The only legal attribute bits are
+                                MEMORY_WRITE_COMBINE and MEMORY_CACHED.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+  @retval EFI_OUT_OF_RESOURCES  The memory pages could not be allocated.
+
+**/
+EFI_STATUS
+IoMmuAllocateAlignedBuffer (
+  IN UINTN                  Pages,
+  IN UINTN                  Alignment,
+  OUT VOID                  **HostAddress,
+  OUT EFI_PHYSICAL_ADDRESS  *DeviceAddress,
+  OUT VOID                  **Mapping
   );
 
 #endif

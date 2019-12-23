@@ -1,14 +1,8 @@
 /** @file
   Values defined and used by the Opal UEFI Driver.
 
-Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -28,6 +22,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Protocol/StorageSecurityCommand.h>
 
 #include <Guid/EventGroup.h>
+#include <Guid/S3StorageDeviceInitList.h>
 
 #include <Library/UefiLib.h>
 #include <Library/UefiBootServicesTableLib.h>
@@ -42,7 +37,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/HiiLib.h>
 #include <Library/UefiHiiServicesLib.h>
 #include <Library/PciLib.h>
-#include <Library/S3BootScriptLib.h>
 #include <Library/LockBoxLib.h>
 #include <Library/TcgStorageOpalLib.h>
 #include <Library/Tcg2PhysicalPresenceLib.h>
@@ -67,7 +61,7 @@ extern EFI_DRIVER_BINDING_PROTOCOL   gOpalDriverBinding;
 extern EFI_COMPONENT_NAME_PROTOCOL   gOpalComponentName;
 extern EFI_COMPONENT_NAME2_PROTOCOL  gOpalComponentName2;
 
-#define OPAL_MSID_LENGHT        128
+#define OPAL_MSID_LENGTH        128
 
 #define MAX_PASSWORD_TRY_COUNT  5
 
@@ -137,7 +131,7 @@ typedef struct {
 //
 typedef struct {
   UINT32                                          MsidLength;             // Byte length of MSID Pin for device
-  UINT8                                           Msid[OPAL_MSID_LENGHT]; // MSID Pin for device
+  UINT8                                           Msid[OPAL_MSID_LENGTH]; // MSID Pin for device
   EFI_STORAGE_SECURITY_COMMAND_PROTOCOL           *Sscp;
   UINT32                                          MediaId;                // MediaId is used by Ssc Protocol.
   EFI_DEVICE_PATH_PROTOCOL                        *OpalDevicePath;
@@ -149,6 +143,7 @@ typedef struct {
   UINT8                                           Password[OPAL_MAX_PASSWORD_SIZE];
 
   UINT32                                          EstimateTimeCost;
+  BOOLEAN                                         SentBlockSID;           // Check whether BlockSid command has been sent.
 } OPAL_DISK;
 
 //
@@ -314,7 +309,7 @@ OpalEfiDriverBindingSupported(
   "controller", which is a child handle, contains the EF_STORAGE_SECURITY_COMMAND protocols.
   This function will complete the other necessary checks, such as verifying the device supports
   the correct version of Opal.  Upon verification, it will add the device to the
-  Opal HII list in order to expose Opal managmeent options.
+  Opal HII list in order to expose Opal management options.
 
   @param[in]  This                  A pointer to the EFI_DRIVER_BINDING_PROTOCOL instance.
   @param[in]  ControllerHandle      The handle of the controller to start. This handle

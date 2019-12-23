@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 '''
@@ -155,10 +149,10 @@ def GenModuleHeaderUserExt(DefineObj, ArchString):
 ## Generate the define statement that will be put into userextension
 #  Not support comments.
 #
-# @param HeaderComment: the original header comment (# not remvoed)
+# @param HeaderComment: the original header comment (# not removed)
 # @param Name: the definition keyword, should not be empty or none
 # @param Value: the definition keyword value
-# @param TailComment: the original Tail comment (# not remvoed)
+# @param TailComment: the original Tail comment (# not removed)
 #
 # @return: the regenerated define statement
 #

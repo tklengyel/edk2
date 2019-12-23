@@ -2,13 +2,7 @@
 # This file is used to define common parsing related functions used in parsing INF/DEC/DSC process
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -36,7 +30,7 @@ def ParseDefineMacro2(Table, RecordSets, GlobalMacro):
         Macros[Record[0]] = Record[1]
 
     #
-    # Overrided by Global Macros
+    # Overridden by Global Macros
     #
     Macros.update(GlobalMacro)
 
@@ -76,7 +70,7 @@ def ParseDefineMacro(Table, GlobalMacro):
         Macros[Record[0]] = Record[1]
 
     #
-    # Overrided by Global Macros
+    # Overridden by Global Macros
     #
     Macros.update(GlobalMacro)
 
@@ -830,7 +824,7 @@ def InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdLi
 # @param Table:            The Table to be inserted
 # @param FileID:           The ID of belonging file
 # @param Filename:         The name of belonging file
-# @param CurrentSection:   The name of currect section
+# @param CurrentSection:   The name of current section
 # @param SectionItemList:  A list of items of the section
 # @param ArchList:         A list of arches
 # @param ThirdList:        A list of third parameters, ModuleType for LibraryClass and SkuId for Dynamic Pcds

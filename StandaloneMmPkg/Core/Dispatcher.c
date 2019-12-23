@@ -5,7 +5,7 @@
             is added to the mDiscoveredList. The Before, and After Depex are
             pre-processed as drivers are added to the mDiscoveredList. If an Apriori
             file exists in the FV those drivers are addeded to the
-            mScheduledQueue. The mFvHandleList is used to make sure a
+            mScheduledQueue. The mFwVolList is used to make sure a
             FV is only processed once.
 
   Step #2 - Dispatch. Remove driver from the mScheduledQueue and load and
@@ -31,13 +31,7 @@
   Copyright (c) 2009 - 2014, Intel Corporation. All rights reserved.<BR>
   Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.<BR>
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -46,13 +40,13 @@
 //
 // MM Dispatcher Data structures
 //
-#define KNOWN_HANDLE_SIGNATURE  SIGNATURE_32('k','n','o','w')
+#define KNOWN_FWVOL_SIGNATURE  SIGNATURE_32('k','n','o','w')
 
 typedef struct {
-  UINTN           Signature;
-  LIST_ENTRY      Link;         // mFvHandleList
-  EFI_HANDLE      Handle;
-} KNOWN_HANDLE;
+  UINTN                      Signature;
+  LIST_ENTRY                 Link;         // mFwVolList
+  EFI_FIRMWARE_VOLUME_HEADER *FwVolHeader;
+} KNOWN_FWVOL;
 
 //
 // Function Prototypes
@@ -92,9 +86,10 @@ LIST_ENTRY  mDiscoveredList = INITIALIZE_LIST_HEAD_VARIABLE (mDiscoveredList);
 LIST_ENTRY  mScheduledQueue = INITIALIZE_LIST_HEAD_VARIABLE (mScheduledQueue);
 
 //
-// List of handles who's Fv's have been parsed and added to the mFwDriverList.
+// List of firmware volume headers whose containing firmware volumes have been
+// parsed and added to the mFwDriverList.
 //
-LIST_ENTRY  mFvHandleList = INITIALIZE_LIST_HEAD_VARIABLE (mFvHandleList);
+LIST_ENTRY  mFwVolList = INITIALIZE_LIST_HEAD_VARIABLE (mFwVolList);
 
 //
 // Flag for the MM Dispacher.  TRUE if dispatcher is execuing.
@@ -294,7 +289,6 @@ MmLoadImage (
   IN OUT EFI_MM_DRIVER_ENTRY  *DriverEntry
   )
 {
-  VOID                           *Buffer;
   UINTN                          PageCount;
   EFI_STATUS                     Status;
   EFI_PHYSICAL_ADDRESS           DstBuffer;
@@ -302,17 +296,12 @@ MmLoadImage (
 
   DEBUG ((DEBUG_INFO, "MmLoadImage - %g\n", &DriverEntry->FileName));
 
-  Buffer = AllocateCopyPool (DriverEntry->Pe32DataSize, DriverEntry->Pe32Data);
-  if (Buffer == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-
   Status               = EFI_SUCCESS;
 
   //
   // Initialize ImageContext
   //
-  ImageContext.Handle = Buffer;
+  ImageContext.Handle = DriverEntry->Pe32Data;
   ImageContext.ImageRead = PeCoffLoaderImageReadFromMemory;
 
   //
@@ -320,9 +309,6 @@ MmLoadImage (
   //
   Status = PeCoffLoaderGetImageInfo (&ImageContext);
   if (EFI_ERROR (Status)) {
-    if (Buffer != NULL) {
-      MmFreePool (Buffer);
-    }
     return Status;
   }
 
@@ -336,9 +322,6 @@ MmLoadImage (
              &DstBuffer
              );
   if (EFI_ERROR (Status)) {
-    if (Buffer != NULL) {
-      MmFreePool (Buffer);
-    }
     return Status;
   }
 
@@ -355,9 +338,6 @@ MmLoadImage (
   //
   Status = PeCoffLoaderLoadImage (&ImageContext);
   if (EFI_ERROR (Status)) {
-    if (Buffer != NULL) {
-      MmFreePool (Buffer);
-    }
     MmFreePages (DstBuffer, PageCount);
     return Status;
   }
@@ -367,9 +347,6 @@ MmLoadImage (
   //
   Status = PeCoffLoaderRelocateImage (&ImageContext);
   if (EFI_ERROR (Status)) {
-    if (Buffer != NULL) {
-      MmFreePool (Buffer);
-    }
     MmFreePages (DstBuffer, PageCount);
     return Status;
   }
@@ -393,9 +370,6 @@ MmLoadImage (
                                               (VOID **)&DriverEntry->LoadedImage
                                               );
     if (EFI_ERROR (Status)) {
-      if (Buffer != NULL) {
-        MmFreePool (Buffer);
-      }
       MmFreePages (DstBuffer, PageCount);
       return Status;
     }
@@ -482,13 +456,6 @@ MmLoadImage (
 
   DEBUG_CODE_END ();
 
-  //
-  // Free buffer allocated by Fv->ReadSection.
-  //
-  // The UEFI Boot Services FreePool() function must be used because Fv->ReadSection
-  // used the UEFI Boot Services AllocatePool() function
-  //
-  MmFreePool (Buffer);
   return Status;
 }
 
@@ -603,7 +570,6 @@ MmDispatcher (
   LIST_ENTRY            *Link;
   EFI_MM_DRIVER_ENTRY  *DriverEntry;
   BOOLEAN               ReadyToRun;
-  BOOLEAN               PreviousMmEntryPointRegistered;
 
   DEBUG ((DEBUG_INFO, "MmDispatcher\n"));
 
@@ -668,11 +634,6 @@ MmDispatcher (
       RemoveEntryList (&DriverEntry->ScheduledLink);
 
       //
-      // Cache state of MmEntryPointRegistered before calling entry point
-      //
-      PreviousMmEntryPointRegistered = gMmCorePrivate->MmEntryPointRegistered;
-
-      //
       // For each MM driver, pass NULL as ImageHandle
       //
       if (mEfiSystemTable == NULL) {
@@ -688,20 +649,6 @@ MmDispatcher (
       if (EFI_ERROR(Status)) {
         DEBUG ((DEBUG_INFO, "StartImage Status - %r\n", Status));
         MmFreePages(DriverEntry->ImageBuffer, DriverEntry->NumberOfPage);
-      }
-
-      if (!PreviousMmEntryPointRegistered && gMmCorePrivate->MmEntryPointRegistered) {
-        //
-        // Return immediately if the MM Entry Point was registered by the MM
-        // Driver that was just dispatched.  The MM IPL will reinvoke the MM
-        // Core Dispatcher.  This is required so MM Mode may be enabled as soon
-        // as all the dependent MM Drivers for MM Mode have been dispatched.
-        // Once the MM Entry Point has been registered, then MM Mode will be
-        // used.
-        //
-        gRequestDispatch = TRUE;
-        gDispatcherRunning = FALSE;
-        return EFI_NOT_READY;
       }
     }
 
@@ -823,26 +770,30 @@ MmInsertOnScheduledQueueWhileProcessingBeforeAndAfter (
 }
 
 /**
-  Return TRUE if the Fv has been processed, FALSE if not.
+  Return TRUE if the firmware volume has been processed, FALSE if not.
 
-  @param  FvHandle              The handle of a FV that's being tested
+  @param  FwVolHeader           The header of the firmware volume that's being
+                                tested.
 
-  @retval TRUE                  Fv protocol on FvHandle has been processed
-  @retval FALSE                 Fv protocol on FvHandle has not yet been
-                                processed
+  @retval TRUE                  The firmware volume denoted by FwVolHeader has
+                                been processed
+  @retval FALSE                 The firmware volume denoted by FwVolHeader has
+                                not yet been processed
 
 **/
 BOOLEAN
 FvHasBeenProcessed (
-  IN EFI_HANDLE  FvHandle
+  IN EFI_FIRMWARE_VOLUME_HEADER *FwVolHeader
   )
 {
   LIST_ENTRY    *Link;
-  KNOWN_HANDLE  *KnownHandle;
+  KNOWN_FWVOL   *KnownFwVol;
 
-  for (Link = mFvHandleList.ForwardLink; Link != &mFvHandleList; Link = Link->ForwardLink) {
-    KnownHandle = CR (Link, KNOWN_HANDLE, Link, KNOWN_HANDLE_SIGNATURE);
-    if (KnownHandle->Handle == FvHandle) {
+  for (Link = mFwVolList.ForwardLink;
+       Link != &mFwVolList;
+       Link = Link->ForwardLink) {
+    KnownFwVol = CR (Link, KNOWN_FWVOL, Link, KNOWN_FWVOL_SIGNATURE);
+    if (KnownFwVol->FwVolHeader == FwVolHeader) {
       return TRUE;
     }
   }
@@ -850,28 +801,29 @@ FvHasBeenProcessed (
 }
 
 /**
-  Remember that Fv protocol on FvHandle has had it's drivers placed on the
-  mDiscoveredList. This fucntion adds entries on the mFvHandleList. Items are
-  never removed/freed from the mFvHandleList.
+  Remember that the firmware volume denoted by FwVolHeader has had its drivers
+  placed on mDiscoveredList. This function adds entries to mFwVolList. Items
+  are never removed/freed from mFwVolList.
 
-  @param  FvHandle              The handle of a FV that has been processed
+  @param  FwVolHeader           The header of the firmware volume that's being
+                                processed.
 
 **/
 VOID
-FvIsBeingProcesssed (
-  IN EFI_HANDLE  FvHandle
+FvIsBeingProcessed (
+  IN EFI_FIRMWARE_VOLUME_HEADER *FwVolHeader
   )
 {
-  KNOWN_HANDLE  *KnownHandle;
+  KNOWN_FWVOL   *KnownFwVol;
 
-  DEBUG ((DEBUG_INFO, "FvIsBeingProcesssed - 0x%08x\n", FvHandle));
+  DEBUG ((DEBUG_INFO, "FvIsBeingProcessed - 0x%08x\n", KnownFwVol));
 
-  KnownHandle = AllocatePool (sizeof (KNOWN_HANDLE));
-  ASSERT (KnownHandle != NULL);
+  KnownFwVol = AllocatePool (sizeof (KNOWN_FWVOL));
+  ASSERT (KnownFwVol != NULL);
 
-  KnownHandle->Signature = KNOWN_HANDLE_SIGNATURE;
-  KnownHandle->Handle = FvHandle;
-  InsertTailList (&mFvHandleList, &KnownHandle->Link);
+  KnownFwVol->Signature = KNOWN_FWVOL_SIGNATURE;
+  KnownFwVol->FwVolHeader = FwVolHeader;
+  InsertTailList (&mFwVolList, &KnownFwVol->Link);
 }
 
 /**
@@ -896,12 +848,12 @@ FvIsBeingProcesssed (
 **/
 EFI_STATUS
 MmAddToDriverList (
-  IN EFI_HANDLE   FvHandle,
-  IN VOID         *Pe32Data,
-  IN UINTN        Pe32DataSize,
-  IN VOID         *Depex,
-  IN UINTN        DepexSize,
-  IN EFI_GUID     *DriverName
+  IN EFI_FIRMWARE_VOLUME_HEADER *FwVolHeader,
+  IN VOID                       *Pe32Data,
+  IN UINTN                      Pe32DataSize,
+  IN VOID                       *Depex,
+  IN UINTN                      DepexSize,
+  IN EFI_GUID                   *DriverName
   )
 {
   EFI_MM_DRIVER_ENTRY  *DriverEntry;
@@ -917,7 +869,7 @@ MmAddToDriverList (
 
   DriverEntry->Signature        = EFI_MM_DRIVER_ENTRY_SIGNATURE;
   CopyGuid (&DriverEntry->FileName, DriverName);
-  DriverEntry->FvHandle         = FvHandle;
+  DriverEntry->FwVolHeader      = FwVolHeader;
   DriverEntry->Pe32Data         = Pe32Data;
   DriverEntry->Pe32DataSize     = Pe32DataSize;
   DriverEntry->Depex            = Depex;
@@ -929,124 +881,6 @@ MmAddToDriverList (
   gRequestDispatch = TRUE;
 
   return EFI_SUCCESS;
-}
-
-/**
-  This function is the main entry point for an MM handler dispatch
-  or communicate-based callback.
-
-  Event notification that is fired every time a FV dispatch protocol is added.
-  More than one protocol may have been added when this event is fired, so you
-  must loop on MmLocateHandle () to see how many protocols were added and
-  do the following to each FV:
-  If the Fv has already been processed, skip it. If the Fv has not been
-  processed then mark it as being processed, as we are about to process it.
-  Read the Fv and add any driver in the Fv to the mDiscoveredList.The
-  mDiscoveredList is never free'ed and contains variables that define
-  the other states the MM driver transitions to..
-  While you are at it read the A Priori file into memory.
-  Place drivers in the A Priori list onto the mScheduledQueue.
-
-  @param  DispatchHandle  The unique handle assigned to this handler by SmiHandlerRegister().
-  @param  Context         Points to an optional handler context which was specified when the handler was registered.
-  @param  CommBuffer      A pointer to a collection of data in memory that will
-                          be conveyed from a non-MM environment into an MM environment.
-  @param  CommBufferSize  The size of the CommBuffer.
-
-  @return Status Code
-
-**/
-EFI_STATUS
-EFIAPI
-MmDriverDispatchHandler (
-  IN     EFI_HANDLE  DispatchHandle,
-  IN     CONST VOID  *Context,        OPTIONAL
-  IN OUT VOID        *CommBuffer,     OPTIONAL
-  IN OUT UINTN       *CommBufferSize  OPTIONAL
-  )
-{
-  EFI_STATUS                            Status;
-
-  DEBUG ((DEBUG_INFO, "MmDriverDispatchHandler\n"));
-
-  //
-  // Execute the MM Dispatcher on any newly discovered FVs and previously
-  // discovered MM drivers that have been discovered but not dispatched.
-  //
-  Status = MmDispatcher ();
-
-  //
-  // Check to see if CommBuffer and CommBufferSize are valid
-  //
-  if (CommBuffer != NULL && CommBufferSize != NULL) {
-    if (*CommBufferSize > 0) {
-      if (Status == EFI_NOT_READY) {
-        //
-        // If a the MM Core Entry Point was just registered, then set flag to
-        // request the MM Dispatcher to be restarted.
-        //
-        *(UINT8 *)CommBuffer = COMM_BUFFER_MM_DISPATCH_RESTART;
-      } else if (!EFI_ERROR (Status)) {
-        //
-        // Set the flag to show that the MM Dispatcher executed without errors
-        //
-        *(UINT8 *)CommBuffer = COMM_BUFFER_MM_DISPATCH_SUCCESS;
-      } else {
-        //
-        // Set the flag to show that the MM Dispatcher encountered an error
-        //
-        *(UINT8 *)CommBuffer = COMM_BUFFER_MM_DISPATCH_ERROR;
-      }
-    }
-  }
-
-  return EFI_SUCCESS;
-}
-
-/**
-  This function is the main entry point for an MM handler dispatch
-  or communicate-based callback.
-
-  @param  DispatchHandle  The unique handle assigned to this handler by SmiHandlerRegister().
-  @param  Context         Points to an optional handler context which was specified when the handler was registered.
-  @param  CommBuffer      A pointer to a collection of data in memory that will
-                          be conveyed from a non-MM environment into an MM environment.
-  @param  CommBufferSize  The size of the CommBuffer.
-
-  @return Status Code
-
-**/
-EFI_STATUS
-EFIAPI
-MmFvDispatchHandler (
-  IN     EFI_HANDLE               DispatchHandle,
-  IN     CONST VOID               *Context,        OPTIONAL
-  IN OUT VOID                     *CommBuffer,     OPTIONAL
-  IN OUT UINTN                    *CommBufferSize  OPTIONAL
-  )
-{
-  EFI_STATUS                            Status;
-  EFI_MM_COMMUNICATE_FV_DISPATCH_DATA  *CommunicationFvDispatchData;
-  EFI_FIRMWARE_VOLUME_HEADER            *FwVolHeader;
-
-  DEBUG ((DEBUG_INFO, "MmFvDispatchHandler\n"));
-
-  CommunicationFvDispatchData = CommBuffer;
-
-  DEBUG ((DEBUG_INFO, "  Dispatch - 0x%016lx - 0x%016lx\n", CommunicationFvDispatchData->Address,
-          CommunicationFvDispatchData->Size));
-
-  FwVolHeader = (EFI_FIRMWARE_VOLUME_HEADER *)(UINTN)CommunicationFvDispatchData->Address;
-
-  MmCoreFfsFindMmDriver (FwVolHeader);
-
-  //
-  // Execute the MM Dispatcher on any newly discovered FVs and previously
-  // discovered MM drivers that have been discovered but not dispatched.
-  //
-  Status = MmDispatcher ();
-
-  return Status;
 }
 
 /**
