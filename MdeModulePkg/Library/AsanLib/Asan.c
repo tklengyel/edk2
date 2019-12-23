@@ -1558,6 +1558,11 @@ void __ubsan_handle_pointer_overflow(UINTN *Data, UINTN Base, UINTN Result) {
 void __ubsan_handle_pointer_overflow_abort(UINTN *Data, UINTN Base, UINTN Result) {
   SANITIZER_CALLSTACK_DUMP("__ubsan_handle_pointer_overflow_abort");
 }
+
+void __ubsan_handle_float_cast_overflow(UINTN *Data, UINTN From) {
+  SANITIZER_CALLSTACK_DUMP("__ubsan_handle_float_cast_overflow");
+}
+
 //define internal void @asan.module_ctor() {
 //  call void @__asan_init()
 //  call void @__asan_version_mismatch_check_v8()
