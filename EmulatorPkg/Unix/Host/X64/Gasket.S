@@ -8,24 +8,18 @@
 # RSI, RDI calle-save on EFI, scatch on UNIX callign
 #
 # Copyright (c) 2008 - 2011, Apple Inc. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #------------------------------------------------------------------------------
 
 //
 // Gaskets are EFI ABI to UNIX ABI calls
 // EFI ABI code will sub 40 (0x28) from %rsp before calling a function
-//  This is the 32 (0x20) byte to spill registers and 8 bytes to align stack on 16 byte boundry.
+//  This is the 32 (0x20) byte to spill registers and 8 bytes to align stack on 16 byte boundary.
 //
   .text
 
-// 32 byte shadow to spill rcx-r9, 8 bytes to align stack on 16 byte boundry
+// 32 byte shadow to spill rcx-r9, 8 bytes to align stack on 16 byte boundary
 // Any call with 0 - 4 arguments allocates 40 bytes on the stack.
 // For more than 4 args you always have to increase in quanta of 16 so 5 or 6 args is 56,
 // 7 or 8 args is 72, and 9 or 10 args is 88

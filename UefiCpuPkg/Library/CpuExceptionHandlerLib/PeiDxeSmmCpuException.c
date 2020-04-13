@@ -2,13 +2,7 @@
   CPU Exception Library provides PEI/DXE/SMM CPU common exception handler.
 
 Copyright (c) 2012 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials are licensed and made available under
-the terms and conditions of the BSD License that accompanies this distribution.
-The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php.
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -74,7 +68,7 @@ CommonExceptionHandlerWorker (
         //
         ArchRestoreExceptionContext (ExceptionType, SystemContext, ExceptionHandlerData);
         //
-        // Rlease spin lock for ApicId
+        // Release spin lock for ApicId
         //
         ReleaseSpinLock (&ReservedVectors[ExceptionType].SpinLock);
         break;
@@ -236,7 +230,7 @@ InitializeCpuExceptionHandlersWorker (
   IdtEntryCount = (IdtDescriptor.Limit + 1) / sizeof (IA32_IDT_GATE_DESCRIPTOR);
   if (IdtEntryCount > CPU_EXCEPTION_NUM) {
     //
-    // CPU exeption library only setup CPU_EXCEPTION_NUM exception handler at most
+    // CPU exception library only setup CPU_EXCEPTION_NUM exception handler at most
     //
     IdtEntryCount = CPU_EXCEPTION_NUM;
   }

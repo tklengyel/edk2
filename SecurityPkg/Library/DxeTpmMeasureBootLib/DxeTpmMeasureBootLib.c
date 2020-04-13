@@ -16,13 +16,7 @@
   partition data carefully.
 
 Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -655,7 +649,7 @@ TcgMeasurePeImage (
   if (Status == EFI_OUT_OF_RESOURCES) {
     //
     // Out of resource here means the image is hashed and its result is extended to PCR.
-    // But the event log cann't be saved since log area is full.
+    // But the event log can't be saved since log area is full.
     // Just return EFI_SUCCESS in order not to block the image load.
     //
     Status = EFI_SUCCESS;
@@ -684,7 +678,7 @@ Finish:
   and other exception operations.  The File parameter allows for possible logging
   within the SAP of the driver.
 
-  If File is NULL, then EFI_INVALID_PARAMETER is returned.
+  If File is NULL, then EFI_ACCESS_DENIED is returned.
 
   If the file specified by File with an authentication status specified by
   AuthenticationStatus is safe for the DXE Core to use, then EFI_SUCCESS is returned.
@@ -738,6 +732,13 @@ DxeTpmMeasureBootHandler (
   EFI_PHYSICAL_ADDRESS                FvAddress;
   UINT32                              Index;
 
+  //
+  // Check for invalid parameters.
+  //
+  if (File == NULL) {
+    return EFI_ACCESS_DENIED;
+  }
+
   Status = gBS->LocateProtocol (&gEfiTcgProtocolGuid, NULL, (VOID **) &TcgProtocol);
   if (EFI_ERROR (Status)) {
     //
@@ -775,7 +776,7 @@ DxeTpmMeasureBootHandler (
   Status = gBS->LocateDevicePath (&gEfiBlockIoProtocolGuid, &DevicePathNode, &Handle);
   if (!EFI_ERROR (Status) && !mMeasureGptTableFlag) {
     //
-    // Find the gpt partion on the given devicepath
+    // Find the gpt partition on the given devicepath
     //
     DevicePathNode = OrigDevicePathNode;
     ASSERT (DevicePathNode != NULL);
@@ -844,7 +845,7 @@ DxeTpmMeasureBootHandler (
     }
     //
     // The PE image from unmeasured Firmware volume need be measured
-    // The PE image from measured Firmware volume will be mearsured according to policy below.
+    // The PE image from measured Firmware volume will be measured according to policy below.
     //   If it is driver, do not measure
     //   If it is application, still measure.
     //

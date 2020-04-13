@@ -3,13 +3,7 @@
 #
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -20,7 +14,7 @@ from .GenFdsGlobalVariable import GenFdsGlobalVariable, FindExtendTool
 from CommonDataClass.FdfClass import CapsuleClassObject
 import Common.LongFilePathOs as os
 from io import BytesIO
-from Common.Misc import SaveFileOnChange, PackRegistryFormatGuid
+from Common.Misc import SaveFileOnChange, PackGUID
 import uuid
 from struct import pack
 from Common import EdkLogger
@@ -66,7 +60,7 @@ class Capsule (CapsuleClassObject):
         #
         # Use FMP capsule GUID: 6DCBD5ED-E82D-4C44-BDA1-7194199AD92A
         #
-        Header.write(PackRegistryFormatGuid('6DCBD5ED-E82D-4C44-BDA1-7194199AD92A'))
+        Header.write(PackGUID('6DCBD5ED-E82D-4C44-BDA1-7194199AD92A'.split('-')))
         HdrSize = 0
         if 'CAPSULE_HEADER_SIZE' in self.TokensDict:
             Header.write(pack('=I', int(self.TokensDict['CAPSULE_HEADER_SIZE'], 16)))
@@ -181,7 +175,7 @@ class Capsule (CapsuleClassObject):
         #
         # The real capsule header structure is 28 bytes
         #
-        Header.write('\x00'*(HdrSize-28))
+        Header.write(b'\x00'*(HdrSize-28))
         Header.write(FwMgrHdr.getvalue())
         Header.write(Content.getvalue())
         #
@@ -206,18 +200,17 @@ class Capsule (CapsuleClassObject):
             return self.GenFmpCapsule()
 
         CapInfFile = self.GenCapInf()
-        CapInfFile.writelines("[files]" + TAB_LINE_BREAK)
+        CapInfFile.append("[files]" + TAB_LINE_BREAK)
         CapFileList = []
         for CapsuleDataObj in self.CapsuleDataList:
             CapsuleDataObj.CapsuleName = self.CapsuleName
             FileName = CapsuleDataObj.GenCapsuleSubItem()
             CapsuleDataObj.CapsuleName = None
             CapFileList.append(FileName)
-            CapInfFile.writelines("EFI_FILE_NAME = " + \
+            CapInfFile.append("EFI_FILE_NAME = " + \
                                    FileName      + \
                                    TAB_LINE_BREAK)
-        SaveFileOnChange(self.CapInfFileName, CapInfFile.getvalue(), False)
-        CapInfFile.close()
+        SaveFileOnChange(self.CapInfFileName, ''.join(CapInfFile), False)
         #
         # Call GenFv tool to generate capsule
         #
@@ -243,12 +236,12 @@ class Capsule (CapsuleClassObject):
     def GenCapInf(self):
         self.CapInfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiCapsuleName +  "_Cap" + '.inf')
-        CapInfFile = BytesIO() #open (self.CapInfFileName , 'w+')
+        CapInfFile = []
 
-        CapInfFile.writelines("[options]" + TAB_LINE_BREAK)
+        CapInfFile.append("[options]" + TAB_LINE_BREAK)
 
         for Item in self.TokensDict:
-            CapInfFile.writelines("EFI_"                    + \
+            CapInfFile.append("EFI_"                    + \
                                   Item                      + \
                                   ' = '                     + \
                                   self.TokensDict[Item]     + \

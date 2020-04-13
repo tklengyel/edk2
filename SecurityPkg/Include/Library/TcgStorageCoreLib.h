@@ -7,13 +7,7 @@
   Check http://trustedcomputinggroup.org for latest specification updates.
 
 Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -594,7 +588,7 @@ TcgAddEndTransaction(
   );
 
 /**
-  Initial the tcg parse stucture.
+  Initial the tcg parse structure.
 
   @param    ParseStruct    Input parse structure.
   @param    Buffer         Input buffer data.
@@ -702,7 +696,7 @@ TcgGetTokenUINT64(
   Get next specify value.
 
   @param    ParseStruct   Input parse structure.
-  @param    Value         Return vlaue.
+  @param    Value         Return value.
 
   @retval   return the action result.
 
@@ -719,7 +713,7 @@ TcgGetNextUINT8(
   Get next specify value.
 
   @param    ParseStruct   Input parse structure.
-  @param    Value         Return vlaue.
+  @param    Value         Return value.
 
   @retval   return the action result.
 
@@ -735,7 +729,7 @@ TcgGetNextUINT16(
   Get next specify value.
 
   @param    ParseStruct   Input parse structure.
-  @param    Value         Return vlaue.
+  @param    Value         Return value.
 
   @retval   return the action result.
 
@@ -751,7 +745,7 @@ TcgGetNextUINT32(
   Get next specify value.
 
   @param    ParseStruct   Input parse structure.
-  @param    Value         Return vlaue.
+  @param    Value         Return value.
 
   @retval   return the action result.
 
@@ -767,7 +761,7 @@ TcgGetNextUINT64(
   Get next specify value.
 
   @param    ParseStruct   Input parse structure.
-  @param    Value         Return vlaue.
+  @param    Value         Return value.
 
   @retval   return the action result.
 
@@ -1224,7 +1218,7 @@ TcgParseSyncSession(
   @param     HostSession       Host session data.
   @param     AceRow            Ace row info.
   @param     Authority1        Authority 1 info.
-  @param     LogicalOperator   Logiccal operator info.
+  @param     LogicalOperator   Logical operator info.
   @param     Authority2        Authority 2 info.
 
   @retval    Return the action result.
@@ -1267,7 +1261,7 @@ TcgEnumLevel0Discovery(
   Get Feature code from the header.
 
   @param     DiscoveryHeader    The discovery header.
-  @param     FeatureCode        reutrn the Feature code.
+  @param     FeatureCode        return the Feature code.
   @param     FeatureSize        return the Feature size.
 
   @retval    return the Feature code data.

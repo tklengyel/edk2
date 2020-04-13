@@ -1,15 +1,9 @@
 /** @file
-  Supporting functions implementaion for PCI devices management.
+  Supporting functions implementation for PCI devices management.
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2018 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -66,7 +60,7 @@ InsertPciDevice (
 }
 
 /**
-  Destroy root bridge and remove it from deivce tree.
+  Destroy root bridge and remove it from device tree.
 
   @param RootBridge     The bridge want to be removed.
 
@@ -86,7 +80,7 @@ DestroyRootBridge (
 
   All direct or indirect allocated resource for this node will be freed.
 
-  @param PciIoDevice  A pointer to the PCI_IO_DEVICE to be destoried.
+  @param PciIoDevice  A pointer to the PCI_IO_DEVICE to be destroyed.
 
 **/
 VOID
@@ -155,7 +149,7 @@ DestroyPciDeviceTree (
 
   @param  Controller    Root bridge handle.
 
-  @retval EFI_SUCCESS   Destory all devcie nodes successfully.
+  @retval EFI_SUCCESS   Destroy all device nodes successfully.
   @retval EFI_NOT_FOUND Cannot find any PCI device under specified
                         root bridge.
 
@@ -259,7 +253,7 @@ RegisterPciDevice (
                                        );
       if (!EFI_ERROR (Status)) {
         PciIoDevice->EmbeddedRom    = FALSE;
-        PciIoDevice->RomSize        = PlatformOpRomSize;
+        PciIoDevice->RomSize        = (UINT32) PlatformOpRomSize;
         PciIoDevice->PciIo.RomSize  = PlatformOpRomSize;
         PciIoDevice->PciIo.RomImage = PlatformOpRomBuffer;
         //
@@ -285,7 +279,7 @@ RegisterPciDevice (
                                        );
       if (!EFI_ERROR (Status)) {
         PciIoDevice->EmbeddedRom    = FALSE;
-        PciIoDevice->RomSize        = PlatformOpRomSize;
+        PciIoDevice->RomSize        = (UINT32) PlatformOpRomSize;
         PciIoDevice->PciIo.RomSize  = PlatformOpRomSize;
         PciIoDevice->PciIo.RomImage = PlatformOpRomBuffer;
         //
@@ -319,7 +313,7 @@ RegisterPciDevice (
                     );
     if (EFI_ERROR (Status)) {
       gBS->UninstallMultipleProtocolInterfaces (
-             &PciIoDevice->Handle,
+             PciIoDevice->Handle,
              &gEfiDevicePathProtocolGuid,
              PciIoDevice->DevicePath,
              &gEfiPciIoProtocolGuid,
@@ -357,7 +351,7 @@ RegisterPciDevice (
                     );
     if (EFI_ERROR (Status)) {
       gBS->UninstallMultipleProtocolInterfaces (
-             &PciIoDevice->Handle,
+             PciIoDevice->Handle,
              &gEfiDevicePathProtocolGuid,
              PciIoDevice->DevicePath,
              &gEfiPciIoProtocolGuid,
@@ -366,7 +360,7 @@ RegisterPciDevice (
              );
       if (HasEfiImage) {
         gBS->UninstallMultipleProtocolInterfaces (
-               &PciIoDevice->Handle,
+               PciIoDevice->Handle,
                &gEfiLoadFile2ProtocolGuid,
                &PciIoDevice->LoadFile2,
                NULL
@@ -824,7 +818,7 @@ StartPciDevices (
 /**
   Create root bridge device.
 
-  @param RootBridgeHandle    Specified root bridge hanle.
+  @param RootBridgeHandle    Specified root bridge handle.
 
   @return The crated root bridge device instance, NULL means no
           root bridge device instance created.
@@ -937,9 +931,9 @@ GetRootBridgeByHandle (
 }
 
 /**
-  Judege whether Pci device existed.
+  Judge whether Pci device existed.
 
-  @param Bridge       Parent bridege instance.
+  @param Bridge       Parent bridge instance.
   @param PciIoDevice  Device instance.
 
   @retval TRUE        Pci device existed.

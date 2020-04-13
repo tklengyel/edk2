@@ -2,15 +2,9 @@
 
   Provides some data structure definitions used by the SD/MMC host controller driver.
 
-Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
-Copyright (c) 2015, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2018-2019, NVIDIA CORPORATION. All rights reserved.
+Copyright (c) 2015 - 2020, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -84,11 +78,13 @@ typedef enum {
 } EFI_SD_MMC_SLOT_TYPE;
 
 typedef struct {
-  BOOLEAN                           Enable;
-  EFI_SD_MMC_SLOT_TYPE              SlotType;
-  BOOLEAN                           MediaPresent;
-  BOOLEAN                           Initialized;
-  SD_MMC_CARD_TYPE                  CardType;
+  BOOLEAN                            Enable;
+  EFI_SD_MMC_SLOT_TYPE               SlotType;
+  BOOLEAN                            MediaPresent;
+  BOOLEAN                            Initialized;
+  SD_MMC_CARD_TYPE                   CardType;
+  UINT64                             CurrentFreq;
+  EDKII_SD_MMC_OPERATING_PARAMETERS  OperatingParameters;
 } SD_MMC_HC_SLOT;
 
 typedef struct {
@@ -126,7 +122,16 @@ typedef struct {
   UINT32                              BaseClkFreq[SD_MMC_HC_MAX_SLOT];
 } SD_MMC_HC_PRIVATE_DATA;
 
+typedef struct {
+  SD_MMC_BUS_MODE               BusTiming;
+  UINT8                         BusWidth;
+  UINT32                        ClockFreq;
+  EDKII_SD_MMC_DRIVER_STRENGTH  DriverStrength;
+} SD_MMC_BUS_SETTINGS;
+
 #define SD_MMC_HC_TRB_SIG             SIGNATURE_32 ('T', 'R', 'B', 'T')
+
+#define SD_MMC_TRB_RETRIES            5
 
 //
 // TRB (Transfer Request Block) contains information for the cmd request.
@@ -145,13 +150,20 @@ typedef struct {
   EFI_PHYSICAL_ADDRESS                DataPhy;
   VOID                                *DataMap;
   SD_MMC_HC_TRANSFER_MODE             Mode;
+  SD_MMC_HC_ADMA_LENGTH_MODE          AdmaLengthMode;
 
   EFI_EVENT                           Event;
   BOOLEAN                             Started;
+  BOOLEAN                             CommandComplete;
   UINT64                              Timeout;
+  UINT32                              Retries;
+
+  BOOLEAN                             PioModeTransferCompleted;
+  UINT32                              PioBlockIndex;
 
   SD_MMC_HC_ADMA_32_DESC_LINE         *Adma32Desc;
-  SD_MMC_HC_ADMA_64_DESC_LINE         *Adma64Desc;
+  SD_MMC_HC_ADMA_64_V3_DESC_LINE      *Adma64V3Desc;
+  SD_MMC_HC_ADMA_64_V4_DESC_LINE      *Adma64V4Desc;
   EFI_PHYSICAL_ADDRESS                AdmaDescPhy;
   VOID                                *AdmaMap;
   UINT32                              AdmaPages;
@@ -790,6 +802,30 @@ EFI_STATUS
 SdCardIdentification (
   IN SD_MMC_HC_PRIVATE_DATA             *Private,
   IN UINT8                              Slot
+  );
+
+/**
+  SD/MMC card clock supply.
+
+  Refer to SD Host Controller Simplified spec 3.0 Section 3.2.1 for details.
+
+  @param[in] Private         A pointer to the SD_MMC_HC_PRIVATE_DATA instance.
+  @param[in] Slot            The slot number of the SD card to send the command to.
+  @param[in] BusTiming       BusTiming at which the frequency change is done.
+  @param[in] FirstTimeSetup  Flag to indicate whether the clock is being setup for the first time.
+  @param[in] ClockFreq       The max clock frequency to be set. The unit is KHz.
+
+  @retval EFI_SUCCESS       The clock is supplied successfully.
+  @retval Others            The clock isn't supplied successfully.
+
+**/
+EFI_STATUS
+SdMmcHcClockSupply (
+  IN SD_MMC_HC_PRIVATE_DATA  *Private,
+  IN UINT8                   Slot,
+  IN SD_MMC_BUS_MODE         BusTiming,
+  IN BOOLEAN                 FirstTimeSetup,
+  IN UINT64                  ClockFreq
   );
 
 /**

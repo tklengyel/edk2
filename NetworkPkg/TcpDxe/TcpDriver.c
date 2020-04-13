@@ -3,13 +3,7 @@
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -202,16 +196,11 @@ TcpDriverEntryPoint (
              &gTcpComponentName2
              );
   if (EFI_ERROR (Status)) {
-    gBS->UninstallMultipleProtocolInterfaces (
-           ImageHandle,
-           &gEfiDriverBindingProtocolGuid,
-           &gTcp4DriverBinding,
-           &gEfiComponentName2ProtocolGuid,
-           &gTcpComponentName2,
-           &gEfiComponentNameProtocolGuid,
-           &gTcpComponentName,
-           NULL
-           );
+    EfiLibUninstallDriverBindingComponentName2 (
+      &gTcp4DriverBinding,
+      &gTcpComponentName,
+      &gTcpComponentName2
+      );
     return Status;
   }
 
@@ -743,13 +732,13 @@ Tcp6DriverBindingStop (
 }
 
 /**
-  The Callback funtion called after the TCP socket was created.
+  The Callback function called after the TCP socket was created.
 
   @param[in]  This            Pointer to the socket just created
   @param[in]  Context         Context of the socket
 
   @retval EFI_SUCCESS         This protocol installed successfully.
-  @retval other               An error occured.
+  @retval other               An error occurred.
 
 **/
 EFI_STATUS
@@ -867,7 +856,7 @@ TcpDestroySocketCallback (
                                 If it is a pointer to an existing UEFI handle,
                                 then the protocol is added to the existing UEFI handle.
 
-  @retval EFI_SUCCES            The protocol was added to ChildHandle.
+  @retval EFI_SUCCESS           The protocol was added to ChildHandle.
   @retval EFI_INVALID_PARAMETER ChildHandle is NULL.
   @retval EFI_OUT_OF_RESOURCES  There are not enough resources available to create
                                 the child.
@@ -899,7 +888,7 @@ TcpServiceBindingCreateChild (
   TcpProto.TcpPcb     = NULL;
 
   //
-  // Create a tcp instance with defualt Tcp default
+  // Create a tcp instance with default Tcp default
   // sock init data and TcpProto
   //
   mTcpDefaultSockData.ProtoData     = &TcpProto;
@@ -941,7 +930,7 @@ TcpServiceBindingCreateChild (
   @param  This        Pointer to the EFI_SERVICE_BINDING_PROTOCOL instance.
   @param  ChildHandle Handle of the child to be destroyed.
 
-  @retval EFI_SUCCES            The protocol was removed from ChildHandle.
+  @retval EFI_SUCCESS           The protocol was removed from ChildHandle.
   @retval EFI_UNSUPPORTED       ChildHandle does not support the protocol that is being removed.
   @retval EFI_INVALID_PARAMETER Child handle is NULL.
   @retval EFI_ACCESS_DENIED     The protocol could not be removed from the ChildHandle

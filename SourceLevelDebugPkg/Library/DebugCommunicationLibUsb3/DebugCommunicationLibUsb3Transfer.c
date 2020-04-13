@@ -2,13 +2,7 @@
   Debug Port Library implementation based on usb3 debug port.
 
   Copyright (c) 2014 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 #include "DebugCommunicationLibUsb3Internal.h"
@@ -158,7 +152,7 @@ XhcCheckNewEvent (
 
   EvtRing->EventRingDequeue += sizeof (TRB_TEMPLATE);
   //
-  // If the dequeue pointer is beyond the ring, then roll-back it to the begining of the ring.
+  // If the dequeue pointer is beyond the ring, then roll-back it to the beginning of the ring.
   //
   if ((UINTN)EvtRing->EventRingDequeue >= ((UINTN) EvtRing->EventRingSeg0 + sizeof (TRB_TEMPLATE) * EvtRing->TrbNumber)) {
     EvtRing->EventRingDequeue = EvtRing->EventRingSeg0;
@@ -516,7 +510,7 @@ XhcCreateUrb (
   @param  Direction             The direction of data transfer.
   @param  Data                  Array of pointers to the buffers of data to transmit
                                 from or receive into.
-  @param  DataLength            The lenght of the data buffer.
+  @param  DataLength            The length of the data buffer.
   @param  Timeout               Indicates the maximum time, in microsecond, which
                                 the transfer is allowed to complete.
 

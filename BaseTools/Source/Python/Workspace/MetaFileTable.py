@@ -2,13 +2,7 @@
 # This file is used to create/update/query/erase a meta file table
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -76,7 +70,7 @@ class MetaFileTable():
         self.CurrentContent.append(self._DUMMY_)
 
     def GetAll(self):
-        return [item for item in self.CurrentContent if item[0] >= 0 ]
+        return [item for item in self.CurrentContent if item[0] >= 0 and item[-1]>=0]
 
 ## Python class representation of table storing module data
 class ModuleTable(MetaFileTable):
@@ -373,7 +367,6 @@ class PlatformTable(MetaFileTable):
 
         QueryTab = self.CurrentContent
         result = [item for item in QueryTab if item[1] == Model and item[-1]>0 ]
-
         if Scope1 is not None and Scope1 != TAB_ARCH_COMMON:
             Sc1 = set(['COMMON'])
             Sc1.add(Scope1)
@@ -394,9 +387,13 @@ class PlatformTable(MetaFileTable):
         if FromItem is not None:
             result = [item for item in result if item[9] == FromItem]
 
-        result = [ [r[2],r[3],r[4],r[5],r[6],r[7],r[0],r[9]] for r in result ]
+        result = [ [r[2],r[3],r[4],r[5],r[6],r[7],r[0],r[10]] for r in result ]
         return result
 
+    def DisableComponent(self,comp_id):
+        for item in self.CurrentContent:
+            if item[0] == comp_id or item[8] == comp_id:
+                item[-1] = -1
 
 ## Factory class to produce different storage for different type of meta-file
 class MetaFileStorage(object):

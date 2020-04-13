@@ -1,14 +1,8 @@
 ## @file
-# Standardized Error Hanlding infrastructures.
+# Standardized Error Handling infrastructures.
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ERROR_GENERAL_CHECK_ALL = 1000
@@ -47,7 +41,6 @@ ERROR_C_FUNCTION_LAYOUT_CHECK_NO_INIT_OF_VARIABLE = 5007
 ERROR_C_FUNCTION_LAYOUT_CHECK_NO_STATIC = 5008
 ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_PROTO_TYPE_2 = 5009
 ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_PROTO_TYPE_3 = 5010
-ERROR_C_FUNCTION_LAYOUT_CHECK_NO_DEPRECATE = 5011
 
 ERROR_INCLUDE_FILE_CHECK_ALL = 6000
 ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_1 = 6001
@@ -147,17 +140,16 @@ gEccErrorMessage = {
     ERROR_C_FUNCTION_LAYOUT_CHECK_DATA_DECLARATION : "The data declarations should be the first code in a module",
     ERROR_C_FUNCTION_LAYOUT_CHECK_NO_INIT_OF_VARIABLE : "There should be no initialization of a variable as part of its declaration",
     ERROR_C_FUNCTION_LAYOUT_CHECK_NO_STATIC : "There should be no use of STATIC for functions",
-    ERROR_C_FUNCTION_LAYOUT_CHECK_NO_DEPRECATE : "The deprecated function should NOT be used",
 
     ERROR_INCLUDE_FILE_CHECK_ALL : "",
     ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_1 : "All include file contents should be guarded by a #ifndef statement.",
     ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_2 : "The #ifndef must be the first line of code following the file header comment",
     ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_3 : "The #endif must appear on the last line in the file",
     ERROR_INCLUDE_FILE_CHECK_DATA : "Include files should contain only public or only private data and cannot contain code or define data variables",
-    ERROR_INCLUDE_FILE_CHECK_NAME : "No permission for the inlcude file with same names",
+    ERROR_INCLUDE_FILE_CHECK_NAME : "No permission for the include file with same names",
 
     ERROR_DECLARATION_DATA_TYPE_CHECK_ALL : "",
-    ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE : "There should be no use of int, unsigned, char, void, static, long in any .c, .h or .asl files",
+    ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE : "There should be no use of int, unsigned, char, void, long in any .c, .h or .asl files",
     ERROR_DECLARATION_DATA_TYPE_CHECK_IN_OUT_MODIFIER : """The modifiers IN, OUT, OPTIONAL, and UNALIGNED should be used only to qualify arguments to a function and should not appear in a data type declaration""",
     ERROR_DECLARATION_DATA_TYPE_CHECK_EFI_API_MODIFIER : "The EFIAPI modifier should be used at the entry of drivers, events, and member functions of protocols",
     ERROR_DECLARATION_DATA_TYPE_CHECK_ENUMERATED_TYPE : "Enumerated Type should have a 'typedef' and the name must be in capital letters",
@@ -169,7 +161,7 @@ gEccErrorMessage = {
     ERROR_NAMING_CONVENTION_CHECK_ALL : "",
     ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT : "Only capital letters are allowed to be used for #define declarations",
     ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT : "Only capital letters are allowed to be used for typedef declarations",
-    ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT : "The #ifndef at the start of an include file should use a postfix underscore characters, '_'",
+    ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT : "The #ifndef at the start of an include file should use both prefix and postfix underscore characters, '_'",
     ERROR_NAMING_CONVENTION_CHECK_PATH_NAME : """Path name does not follow the rules: 1. First character should be upper case 2. Must contain lower case characters 3. No white space characters""",
     ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME : """Variable name does not follow the rules: 1. First character should be upper case 2. Must contain lower case characters 3. No white space characters 4. Global variable name must start with a 'g'""",
     ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME : """Function name does not follow the rules: 1. First character should be upper case 2. Must contain lower case characters 3. No white space characters""",

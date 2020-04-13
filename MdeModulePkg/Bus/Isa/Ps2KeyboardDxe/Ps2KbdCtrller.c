@@ -2,13 +2,7 @@
   Routines that access 8042 keyboard controller
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -805,7 +799,7 @@ KeyboardTimerHandler (
   //
   // To let KB driver support Hot plug, here should skip the 'resend' command  for the case that
   // KB is not connected to system. If KB is not connected to system, driver will find there's something
-  // error in the following code and wait for the input buffer empty, this waiting time shoulb be short enough since
+  // error in the following code and wait for the input buffer empty, this waiting time should be short enough since
   // this is a NOTIFY TPL period function, or the system performance will degrade hardly when KB is not connected.
   // Just skip the 'resend' process simply.
   //
@@ -833,7 +827,7 @@ KeyboardTimerHandler (
   @param ConsoleIn - Pointer to instance of KEYBOARD_CONSOLE_IN_DEV
   @param Data      - Pointer to outof buffer for keeping key value
 
-  @retval EFI_TIMEOUT Status resigter time out
+  @retval EFI_TIMEOUT Status register time out
   @retval EFI_SUCCESS Success to read keyboard
 
 **/
@@ -877,7 +871,7 @@ KeyboardRead (
   @param Data      value wanted to be written
 
   @retval EFI_TIMEOUT   The input buffer register is full for putting new value util timeout
-  @retval EFI_SUCCESS   The new value is sucess put into input buffer register.
+  @retval EFI_SUCCESS   The new value is success put into input buffer register.
 
 **/
 EFI_STATUS
@@ -1694,7 +1688,7 @@ InitKeyboard (
     if (EFI_ERROR (Status)) {
       KeyboardError (
         ConsoleIn,
-        L"Some specific value not aquired from 8042 controller!\n\r"
+        L"Some specific value not acquired from 8042 controller!\n\r"
         );
       goto Done;
     }
@@ -1709,7 +1703,7 @@ InitKeyboard (
 
     Status = KeyboardWaitForValue (ConsoleIn, KEYBOARD_8048_RETURN_8042_ACK);
     if (EFI_ERROR (Status)) {
-      KeyboardError (ConsoleIn, L"Some specific value not aquired from 8042 controller!\n\r");
+      KeyboardError (ConsoleIn, L"Some specific value not acquired from 8042 controller!\n\r");
       goto Done;
     }
     //
@@ -1736,7 +1730,7 @@ InitKeyboard (
 
     Status = KeyboardWaitForValue (ConsoleIn, KEYBOARD_8048_RETURN_8042_ACK);
     if (EFI_ERROR (Status)) {
-      KeyboardError (ConsoleIn, L"Some specific value not aquired from 8042 controller!\n\r");
+      KeyboardError (ConsoleIn, L"Some specific value not acquired from 8042 controller!\n\r");
       goto Done;
     }
 
@@ -1748,7 +1742,7 @@ InitKeyboard (
 
     Status = KeyboardWaitForValue (ConsoleIn, KEYBOARD_8048_RETURN_8042_ACK);
     if (EFI_ERROR (Status)) {
-      KeyboardError (ConsoleIn, L"Some specific value not aquired from 8042 controller!\n\r");
+      KeyboardError (ConsoleIn, L"Some specific value not acquired from 8042 controller!\n\r");
       goto Done;
     }
 
@@ -1763,7 +1757,7 @@ InitKeyboard (
 
   Status = KeyboardWaitForValue (ConsoleIn, KEYBOARD_8048_RETURN_8042_ACK);
   if (EFI_ERROR (Status)) {
-    KeyboardError (ConsoleIn, L"Some specific value not aquired from 8042 controller!\n\r");
+    KeyboardError (ConsoleIn, L"Some specific value not acquired from 8042 controller!\n\r");
     goto Done;
   }
   //

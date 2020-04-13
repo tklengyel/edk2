@@ -2,13 +2,7 @@
   Memory Detection for Virtual Machines.
 
   Copyright (c) 2006 - 2016, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 Module Name:
 
@@ -20,8 +14,10 @@ Module Name:
 // The package level header files this module uses
 //
 #include <IndustryStandard/E820.h>
+#include <IndustryStandard/I440FxPiix4.h>
 #include <IndustryStandard/Q35MchIch9.h>
 #include <PiPei.h>
+#include <Register/Intel/SmramSaveStateMap.h>
 
 //
 // The Library classes this module consumes
@@ -48,6 +44,10 @@ STATIC UINT32 mS3AcpiReservedMemorySize;
 
 STATIC UINT16 mQ35TsegMbytes;
 
+BOOLEAN mQ35SmramAtDefaultSmbase;
+
+UINT32 mQemuUc32Base;
+
 VOID
 Q35TsegMbytesInitialization (
   VOID
@@ -56,18 +56,7 @@ Q35TsegMbytesInitialization (
   UINT16        ExtendedTsegMbytes;
   RETURN_STATUS PcdStatus;
 
-  if (mHostBridgeDevId != INTEL_Q35_MCH_DEVICE_ID) {
-    DEBUG ((
-      DEBUG_ERROR,
-      "%a: no TSEG (SMRAM) on host bridge DID=0x%04x; "
-      "only DID=0x%04x (Q35) is supported\n",
-      __FUNCTION__,
-      mHostBridgeDevId,
-      INTEL_Q35_MCH_DEVICE_ID
-      ));
-    ASSERT (FALSE);
-    CpuDeadLoop ();
-  }
+  ASSERT (mHostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID);
 
   //
   // Check if QEMU offers an extended TSEG.
@@ -101,6 +90,86 @@ Q35TsegMbytesInitialization (
   PcdStatus = PcdSet16S (PcdQ35TsegMbytes, ExtendedTsegMbytes);
   ASSERT_RETURN_ERROR (PcdStatus);
   mQ35TsegMbytes = ExtendedTsegMbytes;
+}
+
+
+VOID
+Q35SmramAtDefaultSmbaseInitialization (
+  VOID
+  )
+{
+  RETURN_STATUS PcdStatus;
+
+  ASSERT (mHostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID);
+
+  mQ35SmramAtDefaultSmbase = FALSE;
+  if (FeaturePcdGet (PcdCsmEnable)) {
+    DEBUG ((DEBUG_INFO, "%a: SMRAM at default SMBASE not checked due to CSM\n",
+      __FUNCTION__));
+  } else {
+    UINTN CtlReg;
+    UINT8 CtlRegVal;
+
+    CtlReg = DRAMC_REGISTER_Q35 (MCH_DEFAULT_SMBASE_CTL);
+    PciWrite8 (CtlReg, MCH_DEFAULT_SMBASE_QUERY);
+    CtlRegVal = PciRead8 (CtlReg);
+    mQ35SmramAtDefaultSmbase = (BOOLEAN)(CtlRegVal ==
+                                         MCH_DEFAULT_SMBASE_IN_RAM);
+    DEBUG ((DEBUG_INFO, "%a: SMRAM at default SMBASE %a\n", __FUNCTION__,
+      mQ35SmramAtDefaultSmbase ? "found" : "not found"));
+  }
+
+  PcdStatus = PcdSetBoolS (PcdQ35SmramAtDefaultSmbase,
+                mQ35SmramAtDefaultSmbase);
+  ASSERT_RETURN_ERROR (PcdStatus);
+}
+
+
+VOID
+QemuUc32BaseInitialization (
+  VOID
+  )
+{
+  UINT32 LowerMemorySize;
+  UINT32 Uc32Size;
+
+  if (mXen) {
+    return;
+  }
+
+  if (mHostBridgeDevId == INTEL_Q35_MCH_DEVICE_ID) {
+    //
+    // On q35, the 32-bit area that we'll mark as UC, through variable MTRRs,
+    // starts at PcdPciExpressBaseAddress. The platform DSC is responsible for
+    // setting PcdPciExpressBaseAddress such that describing the
+    // [PcdPciExpressBaseAddress, 4GB) range require a very small number of
+    // variable MTRRs (preferably 1 or 2).
+    //
+    ASSERT (FixedPcdGet64 (PcdPciExpressBaseAddress) <= MAX_UINT32);
+    mQemuUc32Base = (UINT32)FixedPcdGet64 (PcdPciExpressBaseAddress);
+    return;
+  }
+
+  ASSERT (mHostBridgeDevId == INTEL_82441_DEVICE_ID);
+  //
+  // On i440fx, start with the [LowerMemorySize, 4GB) range. Make sure one
+  // variable MTRR suffices by truncating the size to a whole power of two,
+  // while keeping the end affixed to 4GB. This will round the base up.
+  //
+  LowerMemorySize = GetSystemMemorySizeBelow4gb ();
+  Uc32Size = GetPowerOfTwo32 ((UINT32)(SIZE_4GB - LowerMemorySize));
+  mQemuUc32Base = (UINT32)(SIZE_4GB - Uc32Size);
+  //
+  // Assuming that LowerMemorySize is at least 1 byte, Uc32Size is at most 2GB.
+  // Therefore mQemuUc32Base is at least 2GB.
+  //
+  ASSERT (mQemuUc32Base >= BASE_2GB);
+
+  if (mQemuUc32Base != LowerMemorySize) {
+    DEBUG ((DEBUG_VERBOSE, "%a: rounded UC32 base from 0x%x up to 0x%x, for "
+      "an UC32 size of 0x%x\n", __FUNCTION__, LowerMemorySize, mQemuUc32Base,
+      Uc32Size));
+  }
 }
 
 
@@ -575,12 +644,43 @@ PublishPeiMemory (
   }
 
   //
+  // MEMFD_BASE_ADDRESS separates the SMRAM at the default SMBASE from the
+  // normal boot permanent PEI RAM. Regarding the S3 boot path, the S3
+  // permanent PEI RAM is located even higher.
+  //
+  if (FeaturePcdGet (PcdSmmSmramRequire) && mQ35SmramAtDefaultSmbase) {
+    ASSERT (SMM_DEFAULT_SMBASE + MCH_DEFAULT_SMBASE_SIZE <= MemoryBase);
+  }
+
+  //
   // Publish this memory to the PEI Core
   //
   Status = PublishSystemMemory(MemoryBase, MemorySize);
   ASSERT_EFI_ERROR (Status);
 
   return Status;
+}
+
+
+STATIC
+VOID
+QemuInitializeRamBelow1gb (
+  VOID
+  )
+{
+  if (FeaturePcdGet (PcdSmmSmramRequire) && mQ35SmramAtDefaultSmbase) {
+    AddMemoryRangeHob (0, SMM_DEFAULT_SMBASE);
+    AddReservedMemoryBaseSizeHob (SMM_DEFAULT_SMBASE, MCH_DEFAULT_SMBASE_SIZE,
+      TRUE /* Cacheable */);
+    STATIC_ASSERT (
+      SMM_DEFAULT_SMBASE + MCH_DEFAULT_SMBASE_SIZE < BASE_512KB + BASE_128KB,
+      "end of SMRAM at default SMBASE ends at, or exceeds, 640KB"
+      );
+    AddMemoryRangeHob (SMM_DEFAULT_SMBASE + MCH_DEFAULT_SMBASE_SIZE,
+      BASE_512KB + BASE_128KB);
+  } else {
+    AddMemoryRangeHob (0, BASE_512KB + BASE_128KB);
+  }
 }
 
 
@@ -628,12 +728,12 @@ QemuInitializeRam (
     // allocation HOBs, and to honor preexistent memory allocation HOBs when
     // looking for an area to borrow.
     //
-    AddMemoryRangeHob (0, BASE_512KB + BASE_128KB);
+    QemuInitializeRamBelow1gb ();
   } else {
     //
     // Create memory HOBs
     //
-    AddMemoryRangeHob (0, BASE_512KB + BASE_128KB);
+    QemuInitializeRamBelow1gb ();
 
     if (FeaturePcdGet (PcdSmmSmramRequire)) {
       UINT32 TsegSize;
@@ -694,11 +794,11 @@ QemuInitializeRam (
     ASSERT_EFI_ERROR (Status);
 
     //
-    // Set memory range from the "top of lower RAM" (RAM below 4GB) to 4GB as
-    // uncacheable
+    // Set the memory range from the start of the 32-bit MMIO area (32-bit PCI
+    // MMIO aperture on i440fx, PCIEXBAR on q35) to 4GB as uncacheable.
     //
-    Status = MtrrSetMemoryAttribute (LowerMemorySize,
-               SIZE_4GB - LowerMemorySize, CacheUncacheable);
+    Status = MtrrSetMemoryAttribute (mQemuUc32Base, SIZE_4GB - mQemuUc32Base,
+               CacheUncacheable);
     ASSERT_EFI_ERROR (Status);
   }
 }
@@ -799,6 +899,17 @@ InitializeRamRegions (
         TsegSize,
         EfiReservedMemoryType
         );
+      //
+      // Similarly, allocate away the (already reserved) SMRAM at the default
+      // SMBASE, if it exists.
+      //
+      if (mQ35SmramAtDefaultSmbase) {
+        BuildMemoryAllocationHob (
+          SMM_DEFAULT_SMBASE,
+          MCH_DEFAULT_SMBASE_SIZE,
+          EfiReservedMemoryType
+          );
+      }
     }
   }
 }

@@ -2,13 +2,7 @@
   SMM Memory page management functions.
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -89,7 +83,7 @@ SmmInternalAllocatePagesEx (
   Please Note this algorithm to allocate the memory map descriptor has a property
   that the memory allocated for memory entries always grows, and will never really be freed.
 
-  @return The Memory map descriptor dequed from the mFreeMemoryMapEntryList
+  @return The Memory map descriptor dequeued from the mFreeMemoryMapEntryList
 
 **/
 MEMORY_MAP *
@@ -123,7 +117,7 @@ AllocateMemoryMapEntry (
       FreeDescriptorEntries = (MEMORY_MAP *)(UINTN)Mem;
       //DEBUG((DEBUG_INFO, "New FreeDescriptorEntries - 0x%x\n", FreeDescriptorEntries));
       //
-      // Enque the free memmory map entries into the list
+      // Enqueue the free memory map entries into the list
       //
       for (Index = 0; Index< RUNTIME_PAGE_ALLOCATION_GRANULARITY / sizeof(MEMORY_MAP); Index++) {
         FreeDescriptorEntries[Index].Signature = MEMORY_MAP_SIGNATURE;

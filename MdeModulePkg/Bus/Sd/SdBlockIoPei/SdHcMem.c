@@ -2,14 +2,7 @@
 
 Copyright (c) 2015 - 2017, Intel Corporation. All rights reserved.<BR>
 
-This program and the accompanying materials
-are licensed and made available under the terms and conditions
-of the BSD License which accompanies this distribution.  The
-full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -135,7 +128,7 @@ SdPeimAllocMemFromBlock (
     //
     // If current bit is zero, the corresponding memory unit is
     // available, otherwise we need to restart our searching.
-    // Available counts the consective number of zero bit.
+    // Available counts the consecutive number of zero bit.
     //
     if (!SD_PEIM_MEM_BIT_IS_SET (Block->Bits[Byte], Bit)) {
       Available++;

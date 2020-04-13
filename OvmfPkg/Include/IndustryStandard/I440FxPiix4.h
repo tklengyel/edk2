@@ -8,13 +8,7 @@
   Copyright (C) 2015, Red Hat, Inc.
   Copyright (c) 2014, Gabriel L. Somlo <somlo@cmu.edu>
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.   The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #ifndef __I440FX_PIIX4_H__
@@ -51,5 +45,10 @@
 
 #define PIIX4_PMREGMISC        0x80
 #define PIIX4_PMREGMISC_PMIOSE   BIT0
+
+//
+// IO ports
+//
+#define PIIX4_CPU_HOTPLUG_BASE 0xAF00
 
 #endif

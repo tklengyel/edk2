@@ -1,18 +1,14 @@
 /** @file
   CPU PEI Module installs CPU Multiple Processor PPI.
 
-  Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
 #include "CpuMpPei.h"
+
+extern EDKII_PEI_MP_SERVICES2_PPI            mMpServices2Ppi;
 
 //
 // CPU MP PPI to be installed
@@ -27,10 +23,17 @@ EFI_PEI_MP_SERVICES_PPI                mMpServicesPpi = {
   PeiWhoAmI,
 };
 
-EFI_PEI_PPI_DESCRIPTOR           mPeiCpuMpPpiDesc = {
-  (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
-  &gEfiPeiMpServicesPpiGuid,
-  &mMpServicesPpi
+EFI_PEI_PPI_DESCRIPTOR           mPeiCpuMpPpiList[] = {
+  {
+    EFI_PEI_PPI_DESCRIPTOR_PPI,
+    &gEdkiiPeiMpServices2PpiGuid,
+    &mMpServices2Ppi
+  },
+  {
+    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+    &gEfiPeiMpServicesPpiGuid,
+    &mMpServicesPpi
+  }
 };
 
 /**
@@ -673,7 +676,7 @@ InitializeCpuMpWorker (
   //
   // Install CPU MP PPI
   //
-  Status = PeiServicesInstallPpi(&mPeiCpuMpPpiDesc);
+  Status = PeiServicesInstallPpi(mPeiCpuMpPpiList);
   ASSERT_EFI_ERROR (Status);
 
   return Status;

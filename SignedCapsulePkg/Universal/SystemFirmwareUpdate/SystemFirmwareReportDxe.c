@@ -9,13 +9,7 @@
   FmpSetImage() will receive untrusted input and do basic validation.
 
   Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -36,7 +30,7 @@ SYSTEM_FMP_PRIVATE_DATA *mSystemFmpPrivate = NULL;
   @param[out] LastAttemptVersion The last attempt version, which will be recorded in ESRT and FMP EFI_FIRMWARE_IMAGE_DESCRIPTOR.
   @param[out] LastAttemptStatus  The last attempt status, which will be recorded in ESRT and FMP EFI_FIRMWARE_IMAGE_DESCRIPTOR.
 
-  @retval EFI_SUCESS            Process Capsule Image successfully.
+  @retval EFI_SUCCESS           Process Capsule Image successfully.
   @retval EFI_UNSUPPORTED       Capsule image is not supported by the firmware.
   @retval EFI_VOLUME_CORRUPTED  FV volume in the capsule is corrupted.
   @retval EFI_OUT_OF_RESOURCES  Not enough memory.
@@ -180,7 +174,7 @@ FmpSetImage (
   // Process FV
   //
   Status = DispatchSystemFmpImages((VOID *)Image, ImageSize, &SystemFmpPrivate->LastAttempt.LastAttemptVersion, &SystemFmpPrivate->LastAttempt.LastAttemptStatus);
-  DEBUG((DEBUG_INFO, "(Agent)SetImage - LastAttemp Version - 0x%x, State - 0x%x\n", SystemFmpPrivate->LastAttempt.LastAttemptVersion, SystemFmpPrivate->LastAttempt.LastAttemptStatus));
+  DEBUG((DEBUG_INFO, "(Agent)SetImage - LastAttempt Version - 0x%x, State - 0x%x\n", SystemFmpPrivate->LastAttempt.LastAttemptVersion, SystemFmpPrivate->LastAttempt.LastAttemptStatus));
   if (EFI_ERROR(Status)) {
     VarStatus = gRT->SetVariable(
                        SYSTEM_FMP_LAST_ATTEMPT_VARIABLE_NAME,
@@ -189,7 +183,7 @@ FmpSetImage (
                        sizeof(SystemFmpPrivate->LastAttempt),
                        &SystemFmpPrivate->LastAttempt
                        );
-    DEBUG((DEBUG_INFO, "(Agent)SetLastAttemp - %r\n", VarStatus));
+    DEBUG((DEBUG_INFO, "(Agent)SetLastAttempt - %r\n", VarStatus));
     return Status;
   }
 
@@ -217,7 +211,7 @@ FmpSetImage (
                          sizeof(SystemFmpPrivate->LastAttempt),
                          &SystemFmpPrivate->LastAttempt
                          );
-      DEBUG((DEBUG_INFO, "(Agent)SetLastAttemp - %r\n", VarStatus));
+      DEBUG((DEBUG_INFO, "(Agent)SetLastAttempt - %r\n", VarStatus));
       return Status;
     }
   }

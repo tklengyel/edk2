@@ -2,13 +2,7 @@
   Debug Port Library implementation based on usb3 debug port.
 
   Copyright (c) 2014 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -91,7 +85,7 @@
 #define XHC_DEBUG_PORT_ON_OFF_DELAY    100000
 
 //
-// USB debug device string descritpor (header size + unicode string length)
+// USB debug device string descriptor (header size + unicode string length)
 //
 #define STRING0_DESC_LEN      4
 #define MANU_DESC_LEN         12
@@ -686,7 +680,7 @@ USB3InitializeReal (
   @param  Direction             The direction of data transfer.
   @param  Data                  Array of pointers to the buffers of data to transmit
                                 from or receive into.
-  @param  DataLength            The lenght of the data buffer.
+  @param  DataLength            The length of the data buffer.
   @param  Timeout               Indicates the maximum time, in millisecond, which
                                 the transfer is allowed to complete.
 

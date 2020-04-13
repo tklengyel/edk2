@@ -2,13 +2,7 @@
   Functions implementation related with DHCPv4 for HTTP boot driver.
 
 Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials are licensed and made available under
-the terms and conditions of the BSD License that accompanies this distribution.
-The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php.
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -100,7 +94,7 @@ HttpBootBuildDhcp4Options (
   OptEnt.Uuid->Type       = 0;
   if (EFI_ERROR (NetLibGetSystemGuid ((EFI_GUID *) OptEnt.Uuid->Guid))) {
     //
-    // Zero the Guid to indicate NOT programable if failed to get system Guid.
+    // Zero the Guid to indicate NOT programmable if failed to get system Guid.
     //
     ZeroMem (OptEnt.Uuid->Guid, sizeof (EFI_GUID));
   }

@@ -1,13 +1,7 @@
 /** @file
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 Module Name:
 
@@ -306,7 +300,7 @@ WinNtWndGetKey (
 
   Routine Description:
     Reads the next keystroke from the input device. The WaitForKey Event can
-    be used to test for existance of a keystroke via WaitForEvent () call.
+    be used to test for existence of a keystroke via WaitForEvent () call.
 
   Arguments:
     Private    - The private structure of WinNt Gop device.
@@ -315,7 +309,7 @@ WinNtWndGetKey (
 
   Returns:
     EFI_SUCCESS           - The keystroke information was returned.
-    EFI_NOT_READY         - There was no keystroke data availiable.
+    EFI_NOT_READY         - There was no keystroke data available.
     EFI_DEVICE_ERROR      - The keystroke information was not returned due to
                             hardware errors.
     EFI_INVALID_PARAMETER - KeyData is NULL.
@@ -415,9 +409,12 @@ WinNtWndCheckPointer (
 
   Private = GRAPHICS_PRIVATE_DATA_FROM_THIS (GraphicsIo);
 
-  return EFI_NOT_READY;
-}
+  if (!Private->PointerStateChanged) {
+    return EFI_NOT_READY;
+  }
 
+  return EFI_SUCCESS;
+}
 
 EFI_STATUS
 EFIAPI
@@ -430,5 +427,21 @@ WinNtWndGetPointerState (
 
   Private = GRAPHICS_PRIVATE_DATA_FROM_THIS (GraphicsIo);
 
-  return EFI_NOT_READY;
+  if (!Private->PointerStateChanged) {
+    return EFI_NOT_READY;
+  }
+
+  State->RelativeMovementX = Private->PointerState.RelativeMovementX;
+  State->RelativeMovementY = Private->PointerState.RelativeMovementY;
+  State->RelativeMovementZ = Private->PointerState.RelativeMovementZ;
+  State->LeftButton        = Private->PointerState.LeftButton;
+  State->RightButton       = Private->PointerState.RightButton;
+
+  Private->PointerState.RelativeMovementX = 0;
+  Private->PointerState.RelativeMovementY = 0;
+  Private->PointerState.RelativeMovementZ = 0;
+
+  Private->PointerStateChanged = FALSE;
+
+  return EFI_SUCCESS;
 }

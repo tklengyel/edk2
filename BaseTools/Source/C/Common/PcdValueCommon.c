@@ -3,13 +3,7 @@ This file contains the PcdValue structure definition.
 
 Copyright (c) 2017 - 2018, Intel Corporation. All rights reserved.<BR>
 
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -484,7 +478,7 @@ Returns:
   //
   // Read all of the file contents.
   //
-  BytesRead = fread (*FileBuffer, sizeof (UINT8), *FileSize, InputFile);
+  BytesRead = (UINT32)fread (*FileBuffer, sizeof (UINT8), *FileSize, InputFile);
   if (BytesRead != *FileSize * sizeof (UINT8)) {
     fprintf (stderr, "Error reading the input file %s\n", InputFileName);
     fclose (InputFile);
@@ -715,7 +709,7 @@ Returns:
   }
 
   //
-  // Check Input paramters
+  // Check Input parameters
   //
   if (*InputFileName == NULL) {
     fprintf (stderr, "Missing option.  Input files is not specified\n");

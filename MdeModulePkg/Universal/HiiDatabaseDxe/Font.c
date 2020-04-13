@@ -3,13 +3,7 @@ Implementation for EFI_HII_FONT_PROTOCOL.
 
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1005,6 +999,7 @@ GetSystemFont (
   }
 
   Info->ForegroundColor    = mHiiEfiColors[Private->Attribute & 0x0f];
+  ASSERT ((Private->Attribute >> 4) < 8);
   Info->BackgroundColor    = mHiiEfiColors[Private->Attribute >> 4];
   Info->FontInfoMask       = EFI_FONT_INFO_SYS_FONT | EFI_FONT_INFO_SYS_SIZE | EFI_FONT_INFO_SYS_STYLE;
   Info->FontInfo.FontStyle = 0;

@@ -5,13 +5,7 @@
 # Copyright (c) 2014 Hewlett-Packard Development Company, L.P.<BR>
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 
 ##
 # Import Modules
@@ -24,7 +18,7 @@ from io import BytesIO
 from Common.BuildToolError import *
 from Common.StringUtils import GetLineNo
 from Common.Misc import PathClass
-from Common.LongFilePathSupport import LongFilePath, UniToStr
+from Common.LongFilePathSupport import LongFilePath
 from Common.GlobalData import *
 ##
 # Static definitions
@@ -99,12 +93,12 @@ LangConvTable = {'eng':'en', 'fra':'fr', \
 ## GetLanguageCode
 #
 # Check the language code read from .UNI file and convert ISO 639-2 codes to RFC 4646 codes if appropriate
-# ISO 639-2 language codes supported in compatiblity mode
+# ISO 639-2 language codes supported in compatibility mode
 # RFC 4646 language codes supported in native mode
 #
 # @param LangName:   Language codes read from .UNI file
 #
-# @retval LangName:  Valid lanugage code in RFC 4646 format or None
+# @retval LangName:  Valid language code in RFC 4646 format or None
 #
 def GetLanguageCode(LangName, IsCompatibleMode, File):
     length = len(LangName)
@@ -377,13 +371,12 @@ class UniFileClassObject(object):
     # Pre-process before parse .uni file
     #
     def PreProcess(self, File):
-        if not os.path.exists(File.Path) or not os.path.isfile(File.Path):
-            EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File.Path)
-
         try:
             FileIn = UniFileClassObject.OpenUniFile(LongFilePath(File.Path))
         except UnicodeError as X:
             EdkLogger.error("build", FILE_READ_FAILURE, "File read failure: %s" % str(X), ExtraData=File.Path);
+        except OSError:
+            EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File.Path)
         except:
             EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=File.Path);
 
@@ -427,7 +420,7 @@ class UniFileClassObject(object):
                 if EndPos != -1 and EndPos - StartPos == 6 :
                     if g4HexChar.match(Line[StartPos + 2 : EndPos], re.UNICODE):
                         EndStr = Line[EndPos: ]
-                        UniStr = ('\u' + (Line[StartPos + 2 : EndPos])).decode('unicode_escape')
+                        UniStr = Line[StartPos + 2: EndPos]
                         if EndStr.startswith(u'\\x') and len(EndStr) >= 7:
                             if EndStr[6] == u'\\' and g4HexChar.match(EndStr[2 : 6], re.UNICODE):
                                 Line = Line[0 : StartPos] + UniStr + EndStr

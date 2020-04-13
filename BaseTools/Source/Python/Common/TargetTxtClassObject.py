@@ -2,13 +2,7 @@
 # This file is used to define each component of Target.txt file
 #
 # Copyright (c) 2007 - 2014, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -16,12 +10,15 @@
 #
 from __future__ import print_function
 from __future__ import absolute_import
+
+import Common.GlobalData as GlobalData
 import Common.LongFilePathOs as os
 from . import EdkLogger
 from . import DataType
 from .BuildToolError import *
-from . import GlobalData
+
 from Common.LongFilePathSupport import OpenLongFilePath as open
+from Common.MultipleWorkspace import MultipleWorkspace as mws
 
 gDefaultTargetTxtFile = "target.txt"
 
@@ -147,10 +144,47 @@ class TargetTxtClassObject(object):
 #
 # @retval Target An instance of TargetTxtClassObject() with loaded target.txt
 #
-def TargetTxtDict(ConfDir):
-    Target = TargetTxtClassObject()
-    Target.LoadTargetTxtFile(os.path.normpath(os.path.join(ConfDir, gDefaultTargetTxtFile)))
-    return Target
+
+class TargetTxtDict():
+
+    def __new__(cls, *args, **kw):
+        if not hasattr(cls, '_instance'):
+            orig = super(TargetTxtDict, cls)
+            cls._instance = orig.__new__(cls, *args, **kw)
+        return cls._instance
+
+    def __init__(self):
+        if not hasattr(self, 'Target'):
+            self.TxtTarget = None
+
+    @property
+    def Target(self):
+        if not self.TxtTarget:
+            self._GetTarget()
+        return self.TxtTarget
+
+    def _GetTarget(self):
+        Target = TargetTxtClassObject()
+        ConfDirectory = GlobalData.gCmdConfDir
+        if ConfDirectory:
+            # Get alternate Conf location, if it is absolute, then just use the absolute directory name
+            ConfDirectoryPath = os.path.normpath(ConfDirectory)
+
+            if not os.path.isabs(ConfDirectoryPath):
+                # Since alternate directory name is not absolute, the alternate directory is located within the WORKSPACE
+                # This also handles someone specifying the Conf directory in the workspace. Using --conf=Conf
+                ConfDirectoryPath = mws.join(os.environ["WORKSPACE"], ConfDirectoryPath)
+        else:
+            if "CONF_PATH" in os.environ:
+                ConfDirectoryPath = os.path.normcase(os.path.normpath(os.environ["CONF_PATH"]))
+            else:
+                # Get standard WORKSPACE/Conf use the absolute path to the WORKSPACE/Conf
+                ConfDirectoryPath = mws.join(os.environ["WORKSPACE"], 'Conf')
+        GlobalData.gConfDirectory = ConfDirectoryPath
+        targettxt = os.path.normpath(os.path.join(ConfDirectoryPath, gDefaultTargetTxtFile))
+        if os.path.exists(targettxt):
+            Target.LoadTargetTxtFile(targettxt)
+        self.TxtTarget = Target
 
 ##
 #

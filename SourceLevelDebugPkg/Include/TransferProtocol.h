@@ -1,15 +1,9 @@
 /** @file
-  Transfer protocol defintions used by debug agent and host. It is only
+  Transfer protocol definitions used by debug agent and host. It is only
   intended to be used by Debug related module implementation.
 
   Copyright (c) 2010 - 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -146,7 +140,7 @@ typedef struct {
   UINT64      StopAddress;
 } DEBUG_DATA_RESPONSE_BREAK_CAUSE;
 //
-// Break type defintions for DEBUG_DATA_BREAK_CAUSE
+// Break type definitions for DEBUG_DATA_BREAK_CAUSE
 //
 #define DEBUG_DATA_BREAK_CAUSE_UNKNOWN        0
 #define DEBUG_DATA_BREAK_CAUSE_HW_BREAKPOINT  1
@@ -166,7 +160,7 @@ typedef struct {
   UINT8       CpuMode;
 } DEBUG_DATA_RESPONSE_ARCH_MODE;
 //
-// Cpu architecture defintions for DEBUG_DATA_RESPONSE_ARCH_MODE
+// Cpu architecture definitions for DEBUG_DATA_RESPONSE_ARCH_MODE
 //
 #define DEBUG_DATA_BREAK_CPU_ARCH_IA16        0
 #define DEBUG_DATA_BREAK_CPU_ARCH_IA32        1

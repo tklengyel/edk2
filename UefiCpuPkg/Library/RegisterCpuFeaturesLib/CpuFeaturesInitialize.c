@@ -1,36 +1,30 @@
 /** @file
   CPU Features Initialize functions.
 
-  Copyright (c) 2017 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2017 - 2020, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
 #include "RegisterCpuFeatures.h"
 
 CHAR16 *mDependTypeStr[]   = {L"None", L"Thread", L"Core", L"Package", L"Invalid" };
-CHAR16 *mRegisterTypeStr[] = {L"MSR", L"CR", L"MMIO", L"CACHE", L"SEMAP", L"INVALID" };
 
 /**
   Worker function to save PcdCpuFeaturesCapability.
 
   @param[in]  SupportedFeatureMask  The pointer to CPU feature bits mask buffer
+  @param[in]  BitMaskSize           CPU feature bits mask buffer size.
+
 **/
 VOID
 SetCapabilityPcd (
-  IN UINT8               *SupportedFeatureMask
+  IN UINT8               *SupportedFeatureMask,
+  IN UINTN               BitMaskSize
   )
 {
   EFI_STATUS             Status;
-  UINTN                  BitMaskSize;
 
-  BitMaskSize = PcdGetSize (PcdCpuFeaturesCapability);
   Status = PcdSetPtrS (PcdCpuFeaturesCapability, &BitMaskSize, SupportedFeatureMask);
   ASSERT_EFI_ERROR (Status);
 }
@@ -39,60 +33,18 @@ SetCapabilityPcd (
   Worker function to save PcdCpuFeaturesSetting.
 
   @param[in]  SupportedFeatureMask  The pointer to CPU feature bits mask buffer
+  @param[in]  BitMaskSize           CPU feature bits mask buffer size.
 **/
 VOID
 SetSettingPcd (
-  IN UINT8               *SupportedFeatureMask
+  IN UINT8               *SupportedFeatureMask,
+  IN UINTN               BitMaskSize
   )
 {
   EFI_STATUS             Status;
-  UINTN                  BitMaskSize;
 
-  BitMaskSize = PcdGetSize (PcdCpuFeaturesSetting);
   Status = PcdSetPtrS (PcdCpuFeaturesSetting, &BitMaskSize, SupportedFeatureMask);
   ASSERT_EFI_ERROR (Status);
-}
-
-/**
-  Worker function to get PcdCpuFeaturesSupport.
-
-  @return  The pointer to CPU feature bits mask buffer.
-**/
-UINT8 *
-GetSupportPcd (
-  VOID
-  )
-{
-  UINT8                  *SupportBitMask;
-
-  SupportBitMask = AllocateCopyPool (
-          PcdGetSize (PcdCpuFeaturesSupport),
-          PcdGetPtr (PcdCpuFeaturesSupport)
-          );
-  ASSERT (SupportBitMask != NULL);
-
-  return SupportBitMask;
-}
-
-/**
-  Worker function to get PcdCpuFeaturesUserConfiguration.
-
-  @return  The pointer to CPU feature bits mask buffer.
-**/
-UINT8 *
-GetConfigurationPcd (
-  VOID
-  )
-{
-  UINT8                  *SupportBitMask;
-
-  SupportBitMask = AllocateCopyPool (
-          PcdGetSize (PcdCpuFeaturesUserConfiguration),
-          PcdGetPtr (PcdCpuFeaturesUserConfiguration)
-          );
-  ASSERT (SupportBitMask != NULL);
-
-  return SupportBitMask;
 }
 
 /**
@@ -134,11 +86,10 @@ FillProcessorInfo (
 /**
   Prepares for private data used for CPU features.
 
-  @param[in]  NumberOfCpus  Number of processor in system
 **/
 VOID
 CpuInitDataInitialize (
-  IN UINTN                             NumberOfCpus
+  VOID
   )
 {
   EFI_STATUS                           Status;
@@ -154,15 +105,28 @@ CpuInitDataInitialize (
   EFI_CPU_PHYSICAL_LOCATION            *Location;
   BOOLEAN                              *CoresVisited;
   UINTN                                Index;
+  UINT32                               PackageIndex;
+  UINT32                               CoreIndex;
+  UINT32                               First;
   ACPI_CPU_DATA                        *AcpiCpuData;
   CPU_STATUS_INFORMATION               *CpuStatus;
   UINT32                               *ValidCoreCountPerPackage;
+  UINTN                                NumberOfCpus;
+  UINTN                                NumberOfEnabledProcessors;
 
   Core    = 0;
   Package = 0;
   Thread  = 0;
 
   CpuFeaturesData = GetCpuFeaturesData ();
+
+  //
+  // Initialize CpuFeaturesData->MpService as early as possile, so later function can use it.
+  //
+  CpuFeaturesData->MpService = GetMpService ();
+
+  GetNumberOfProcessor (&NumberOfCpus, &NumberOfEnabledProcessors);
+
   CpuFeaturesData->InitOrder = AllocateZeroPool (sizeof (CPU_FEATURES_INIT_ORDER) * NumberOfCpus);
   ASSERT (CpuFeaturesData->InitOrder != NULL);
 
@@ -275,10 +239,75 @@ CpuInitDataInitialize (
   ASSERT (CpuFeaturesData->CpuFlags.PackageSemaphoreCount != NULL);
 
   //
-  // Get support and configuration PCDs
+  // Initialize CpuFeaturesData->InitOrder[].CpuInfo.First
   //
-  CpuFeaturesData->SupportPcd       = GetSupportPcd ();
-  CpuFeaturesData->ConfigurationPcd = GetConfigurationPcd ();
+
+  //
+  // Set First.Package for each thread belonging to the first package.
+  //
+  First = MAX_UINT32;
+  for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+    Location = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.ProcessorInfo.Location;
+    First = MIN (Location->Package, First);
+  }
+  for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+    Location = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.ProcessorInfo.Location;
+    if (Location->Package == First) {
+      CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.First.Package = 1;
+    }
+  }
+
+  //
+  // Set First.Die/Tile/Module for each thread assuming:
+  //  single Die under each package, single Tile under each Die, single Module under each Tile
+  //
+  for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+    CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.First.Die = 1;
+    CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.First.Tile = 1;
+    CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.First.Module = 1;
+  }
+
+  for (PackageIndex = 0; PackageIndex < CpuStatus->PackageCount; PackageIndex++) {
+    //
+    // Set First.Core for each thread in the first core of each package.
+    //
+    First = MAX_UINT32;
+    for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+      Location = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.ProcessorInfo.Location;
+      if (Location->Package == PackageIndex) {
+        First = MIN (Location->Core, First);
+      }
+    }
+
+    for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+      Location = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.ProcessorInfo.Location;
+      if (Location->Package == PackageIndex && Location->Core == First) {
+        CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.First.Core = 1;
+      }
+    }
+  }
+
+  for (PackageIndex = 0; PackageIndex < CpuStatus->PackageCount; PackageIndex++) {
+    for (CoreIndex = 0; CoreIndex < CpuStatus->MaxCoreCount; CoreIndex++) {
+      //
+      // Set First.Thread for the first thread of each core.
+      //
+      First = MAX_UINT32;
+      for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+        Location = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.ProcessorInfo.Location;
+        if (Location->Package == PackageIndex && Location->Core == CoreIndex) {
+          First = MIN (Location->Thread, First);
+        }
+      }
+
+      for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
+        Location = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.ProcessorInfo.Location;
+        if (Location->Package == PackageIndex && Location->Core == CoreIndex && Location->Thread == First) {
+          CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo.First.Thread = 1;
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -286,19 +315,20 @@ CpuInitDataInitialize (
 
   @param[in]  SupportedFeatureMask  The pointer to CPU feature bits mask buffer
   @param[in]  OrFeatureBitMask      The feature bit mask to do OR operation
+  @param[in]  BitMaskSize           The CPU feature bits mask buffer size.
+
 **/
 VOID
 SupportedMaskOr (
   IN UINT8               *SupportedFeatureMask,
-  IN UINT8               *OrFeatureBitMask
+  IN UINT8               *OrFeatureBitMask,
+  IN UINT32              BitMaskSize
   )
 {
   UINTN                  Index;
-  UINTN                  BitMaskSize;
   UINT8                  *Data1;
   UINT8                  *Data2;
 
-  BitMaskSize = PcdGetSize (PcdCpuFeaturesSupport);
   Data1 = SupportedFeatureMask;
   Data2 = OrFeatureBitMask;
   for (Index = 0; Index < BitMaskSize; Index++) {
@@ -311,19 +341,20 @@ SupportedMaskOr (
 
   @param[in]  SupportedFeatureMask  The pointer to CPU feature bits mask buffer
   @param[in]  AndFeatureBitMask     The feature bit mask to do AND operation
+  @param[in]  BitMaskSize           CPU feature bits mask buffer size.
+
 **/
 VOID
 SupportedMaskAnd (
-  IN UINT8               *SupportedFeatureMask,
-  IN UINT8               *AndFeatureBitMask
+  IN       UINT8               *SupportedFeatureMask,
+  IN CONST UINT8               *AndFeatureBitMask,
+  IN       UINT32              BitMaskSize
   )
 {
   UINTN                  Index;
-  UINTN                  BitMaskSize;
   UINT8                  *Data1;
-  UINT8                  *Data2;
+  CONST UINT8            *Data2;
 
-  BitMaskSize = PcdGetSize (PcdCpuFeaturesSupport);
   Data1 = SupportedFeatureMask;
   Data2 = AndFeatureBitMask;
   for (Index = 0; Index < BitMaskSize; Index++) {
@@ -336,19 +367,19 @@ SupportedMaskAnd (
 
   @param[in]  SupportedFeatureMask  The pointer to CPU feature bits mask buffer
   @param[in]  AndFeatureBitMask     The feature bit mask to do XOR operation
+  @param[in]  BitMaskSize           CPU feature bits mask buffer size.
 **/
 VOID
 SupportedMaskCleanBit (
   IN UINT8               *SupportedFeatureMask,
-  IN UINT8               *AndFeatureBitMask
+  IN UINT8               *AndFeatureBitMask,
+  IN UINT32              BitMaskSize
   )
 {
   UINTN                  Index;
-  UINTN                  BitMaskSize;
   UINT8                  *Data1;
   UINT8                  *Data2;
 
-  BitMaskSize = PcdGetSize (PcdCpuFeaturesSupport);
   Data1 = SupportedFeatureMask;
   Data2 = AndFeatureBitMask;
   for (Index = 0; Index < BitMaskSize; Index++) {
@@ -362,6 +393,7 @@ SupportedMaskCleanBit (
 
   @param[in]  SupportedFeatureMask   The pointer to CPU feature bits mask buffer
   @param[in]  ComparedFeatureBitMask The feature bit mask to be compared
+  @param[in]  BitMaskSize            CPU feature bits mask buffer size.
 
   @retval TRUE   The ComparedFeatureBitMask is set in CPU feature supported bits
                  mask buffer.
@@ -371,15 +403,13 @@ SupportedMaskCleanBit (
 BOOLEAN
 IsBitMaskMatch (
   IN UINT8               *SupportedFeatureMask,
-  IN UINT8               *ComparedFeatureBitMask
+  IN UINT8               *ComparedFeatureBitMask,
+  IN UINT32              BitMaskSize
   )
 {
   UINTN                  Index;
-  UINTN                  BitMaskSize;
   UINT8                  *Data1;
   UINT8                  *Data2;
-
-  BitMaskSize = PcdGetSize (PcdCpuFeaturesSupport);
 
   Data1 = SupportedFeatureMask;
   Data2 = ComparedFeatureBitMask;
@@ -409,7 +439,7 @@ CollectProcessorData (
   CPU_FEATURES_DATA                    *CpuFeaturesData;
 
   CpuFeaturesData = (CPU_FEATURES_DATA *)Buffer;
-  ProcessorNumber = GetProcessorIndex ();
+  ProcessorNumber = GetProcessorIndex (CpuFeaturesData);
   CpuInfo = &CpuFeaturesData->InitOrder[ProcessorNumber].CpuInfo;
   //
   // collect processor information
@@ -418,21 +448,21 @@ CollectProcessorData (
   Entry = GetFirstNode (&CpuFeaturesData->FeatureList);
   while (!IsNull (&CpuFeaturesData->FeatureList, Entry)) {
     CpuFeature = CPU_FEATURE_ENTRY_FROM_LINK (Entry);
-    if (IsBitMaskMatch (CpuFeaturesData->SupportPcd, CpuFeature->FeatureMask)) {
-      if (CpuFeature->SupportFunc == NULL) {
-        //
-        // If SupportFunc is NULL, then the feature is supported.
-        //
-        SupportedMaskOr (
-          CpuFeaturesData->InitOrder[ProcessorNumber].FeaturesSupportedMask,
-          CpuFeature->FeatureMask
-          );
-      } else if (CpuFeature->SupportFunc (ProcessorNumber, CpuInfo, CpuFeature->ConfigData)) {
-        SupportedMaskOr (
-          CpuFeaturesData->InitOrder[ProcessorNumber].FeaturesSupportedMask,
-          CpuFeature->FeatureMask
-          );
-      }
+    if (CpuFeature->SupportFunc == NULL) {
+      //
+      // If SupportFunc is NULL, then the feature is supported.
+      //
+      SupportedMaskOr (
+        CpuFeaturesData->InitOrder[ProcessorNumber].FeaturesSupportedMask,
+        CpuFeature->FeatureMask,
+        CpuFeaturesData->BitMaskSize
+        );
+    } else if (CpuFeature->SupportFunc (ProcessorNumber, CpuInfo, CpuFeature->ConfigData)) {
+      SupportedMaskOr (
+        CpuFeaturesData->InitOrder[ProcessorNumber].FeaturesSupportedMask,
+        CpuFeature->FeatureMask,
+        CpuFeaturesData->BitMaskSize
+        );
     }
     Entry = Entry->ForwardLink;
   }
@@ -473,8 +503,9 @@ DumpRegisterTableOnProcessor (
     case Msr:
       DEBUG ((
         DebugPrintErrorLevel,
-        "Processor: %d:   MSR: %x, Bit Start: %d, Bit Length: %d, Value: %lx\r\n",
-        ProcessorNumber,
+        "Processor: %04d: Index %04d, MSR  : %08x, Bit Start: %02d, Bit Length: %02d, Value: %016lx\r\n",
+        (UINT32) ProcessorNumber,
+        (UINT32) FeatureIndex,
         RegisterTableEntry->Index,
         RegisterTableEntry->ValidBitStart,
         RegisterTableEntry->ValidBitLength,
@@ -484,8 +515,9 @@ DumpRegisterTableOnProcessor (
     case ControlRegister:
       DEBUG ((
         DebugPrintErrorLevel,
-        "Processor: %d:    CR: %x, Bit Start: %d, Bit Length: %d, Value: %lx\r\n",
-        ProcessorNumber,
+        "Processor: %04d: Index %04d, CR   : %08x, Bit Start: %02d, Bit Length: %02d, Value: %016lx\r\n",
+        (UINT32) ProcessorNumber,
+        (UINT32) FeatureIndex,
         RegisterTableEntry->Index,
         RegisterTableEntry->ValidBitStart,
         RegisterTableEntry->ValidBitLength,
@@ -495,8 +527,9 @@ DumpRegisterTableOnProcessor (
     case MemoryMapped:
       DEBUG ((
         DebugPrintErrorLevel,
-        "Processor: %d:  MMIO: %lx, Bit Start: %d, Bit Length: %d, Value: %lx\r\n",
-        ProcessorNumber,
+        "Processor: %04d: Index %04d, MMIO : %016lx, Bit Start: %02d, Bit Length: %02d, Value: %016lx\r\n",
+        (UINT32) ProcessorNumber,
+        (UINT32) FeatureIndex,
         RegisterTableEntry->Index | LShiftU64 (RegisterTableEntry->HighIndex, 32),
         RegisterTableEntry->ValidBitStart,
         RegisterTableEntry->ValidBitLength,
@@ -506,8 +539,9 @@ DumpRegisterTableOnProcessor (
     case CacheControl:
       DEBUG ((
         DebugPrintErrorLevel,
-        "Processor: %d: CACHE: %x, Bit Start: %d, Bit Length: %d, Value: %lx\r\n",
-        ProcessorNumber,
+        "Processor: %04d: Index %04d, CACHE: %08x, Bit Start: %02d, Bit Length: %02d, Value: %016lx\r\n",
+        (UINT32) ProcessorNumber,
+        (UINT32) FeatureIndex,
         RegisterTableEntry->Index,
         RegisterTableEntry->ValidBitStart,
         RegisterTableEntry->ValidBitLength,
@@ -517,8 +551,9 @@ DumpRegisterTableOnProcessor (
     case Semaphore:
       DEBUG ((
         DebugPrintErrorLevel,
-        "Processor: %d: Semaphore: Scope Value: %s\r\n",
-        ProcessorNumber,
+        "Processor: %04d: Index %04d, SEMAP: %s\r\n",
+        (UINT32) ProcessorNumber,
+        (UINT32) FeatureIndex,
         mDependTypeStr[MIN ((UINT32)RegisterTableEntry->Value, InvalidDepType)]
         ));
       break;
@@ -591,21 +626,14 @@ AnalysisProcessorFeatures (
     //
     // Calculate the last capability on all processors
     //
-    SupportedMaskAnd (CpuFeaturesData->CapabilityPcd, CpuInitOrder->FeaturesSupportedMask);
+    SupportedMaskAnd (CpuFeaturesData->CapabilityPcd, CpuInitOrder->FeaturesSupportedMask, CpuFeaturesData->BitMaskSize);
   }
   //
   // Calculate the last setting
   //
-
   CpuFeaturesData->SettingPcd = AllocateCopyPool (CpuFeaturesData->BitMaskSize, CpuFeaturesData->CapabilityPcd);
   ASSERT (CpuFeaturesData->SettingPcd != NULL);
-  SupportedMaskAnd (CpuFeaturesData->SettingPcd, CpuFeaturesData->ConfigurationPcd);
-
-  //
-  // Save PCDs and display CPU PCDs
-  //
-  SetCapabilityPcd (CpuFeaturesData->CapabilityPcd);
-  SetSettingPcd (CpuFeaturesData->SettingPcd);
+  SupportedMaskAnd (CpuFeaturesData->SettingPcd, PcdGetPtr (PcdCpuFeaturesSetting), CpuFeaturesData->BitMaskSize);
 
   //
   // Dump the last CPU feature list
@@ -615,8 +643,8 @@ AnalysisProcessorFeatures (
     Entry = GetFirstNode (&CpuFeaturesData->FeatureList);
     while (!IsNull (&CpuFeaturesData->FeatureList, Entry)) {
       CpuFeature = CPU_FEATURE_ENTRY_FROM_LINK (Entry);
-      if (IsBitMaskMatch (CpuFeature->FeatureMask, CpuFeaturesData->CapabilityPcd)) {
-        if (IsBitMaskMatch (CpuFeature->FeatureMask, CpuFeaturesData->SettingPcd)) {
+      if (IsBitMaskMatch (CpuFeature->FeatureMask, CpuFeaturesData->CapabilityPcd, CpuFeaturesData->BitMaskSize)) {
+        if (IsBitMaskMatch (CpuFeature->FeatureMask, CpuFeaturesData->SettingPcd, CpuFeaturesData->BitMaskSize)) {
           DEBUG ((DEBUG_INFO, "[Enable   ] "));
         } else {
           DEBUG ((DEBUG_INFO, "[Disable  ] "));
@@ -624,18 +652,22 @@ AnalysisProcessorFeatures (
       } else {
         DEBUG ((DEBUG_INFO, "[Unsupport] "));
       }
-      DumpCpuFeature (CpuFeature);
+      DumpCpuFeature (CpuFeature, CpuFeaturesData->BitMaskSize);
       Entry = Entry->ForwardLink;
     }
-    DEBUG ((DEBUG_INFO, "PcdCpuFeaturesSupport:\n"));
-    DumpCpuFeatureMask (CpuFeaturesData->SupportPcd);
-    DEBUG ((DEBUG_INFO, "PcdCpuFeaturesUserConfiguration:\n"));
-    DumpCpuFeatureMask (CpuFeaturesData->ConfigurationPcd);
     DEBUG ((DEBUG_INFO, "PcdCpuFeaturesCapability:\n"));
-    DumpCpuFeatureMask (CpuFeaturesData->CapabilityPcd);
-    DEBUG ((DEBUG_INFO, "PcdCpuFeaturesSetting:\n"));
-    DumpCpuFeatureMask (CpuFeaturesData->SettingPcd);
+    DumpCpuFeatureMask (CpuFeaturesData->CapabilityPcd, CpuFeaturesData->BitMaskSize);
+    DEBUG ((DEBUG_INFO, "Origin PcdCpuFeaturesSetting:\n"));
+    DumpCpuFeatureMask (PcdGetPtr (PcdCpuFeaturesSetting), CpuFeaturesData->BitMaskSize);
+    DEBUG ((DEBUG_INFO, "Final PcdCpuFeaturesSetting:\n"));
+    DumpCpuFeatureMask (CpuFeaturesData->SettingPcd, CpuFeaturesData->BitMaskSize);
   );
+
+  //
+  // Save PCDs and display CPU PCDs
+  //
+  SetCapabilityPcd (CpuFeaturesData->CapabilityPcd, CpuFeaturesData->BitMaskSize);
+  SetSettingPcd (CpuFeaturesData->SettingPcd, CpuFeaturesData->BitMaskSize);
 
   for (ProcessorNumber = 0; ProcessorNumber < NumberOfCpus; ProcessorNumber++) {
     CpuInitOrder = &CpuFeaturesData->InitOrder[ProcessorNumber];
@@ -645,7 +677,7 @@ AnalysisProcessorFeatures (
       // Insert each feature into processor's order list
       //
       CpuFeature = CPU_FEATURE_ENTRY_FROM_LINK (Entry);
-      if (IsBitMaskMatch (CpuFeature->FeatureMask, CpuFeaturesData->CapabilityPcd)) {
+      if (IsBitMaskMatch (CpuFeature->FeatureMask, CpuFeaturesData->CapabilityPcd, CpuFeaturesData->BitMaskSize)) {
         CpuFeatureInOrder = AllocateCopyPool (sizeof (CPU_FEATURES_ENTRY), CpuFeature);
         ASSERT (CpuFeatureInOrder != NULL);
         InsertTailList (&CpuInitOrder->OrderList, &CpuFeatureInOrder->Link);
@@ -661,18 +693,18 @@ AnalysisProcessorFeatures (
       CpuFeatureInOrder = CPU_FEATURE_ENTRY_FROM_LINK (Entry);
 
       Success = FALSE;
-      if (IsBitMaskMatch (CpuFeatureInOrder->FeatureMask, CpuFeaturesData->SettingPcd)) {
+      if (IsBitMaskMatch (CpuFeatureInOrder->FeatureMask, CpuFeaturesData->SettingPcd, CpuFeaturesData->BitMaskSize)) {
         Status = CpuFeatureInOrder->InitializeFunc (ProcessorNumber, CpuInfo, CpuFeatureInOrder->ConfigData, TRUE);
         if (EFI_ERROR (Status)) {
           //
           // Clean the CpuFeatureInOrder->FeatureMask in setting PCD.
           //
-          SupportedMaskCleanBit (CpuFeaturesData->SettingPcd, CpuFeatureInOrder->FeatureMask);
+          SupportedMaskCleanBit (CpuFeaturesData->SettingPcd, CpuFeatureInOrder->FeatureMask, CpuFeaturesData->BitMaskSize);
           if (CpuFeatureInOrder->FeatureName != NULL) {
             DEBUG ((DEBUG_WARN, "Warning :: Failed to enable Feature: Name = %a.\n", CpuFeatureInOrder->FeatureName));
           } else {
             DEBUG ((DEBUG_WARN, "Warning :: Failed to enable Feature: Mask = "));
-            DumpCpuFeatureMask (CpuFeatureInOrder->FeatureMask);
+            DumpCpuFeatureMask (CpuFeatureInOrder->FeatureMask, CpuFeaturesData->BitMaskSize);
           }
         } else {
           Success = TRUE;
@@ -684,7 +716,7 @@ AnalysisProcessorFeatures (
             DEBUG ((DEBUG_WARN, "Warning :: Failed to disable Feature: Name = %a.\n", CpuFeatureInOrder->FeatureName));
           } else {
             DEBUG ((DEBUG_WARN, "Warning :: Failed to disable Feature: Mask = "));
-            DumpCpuFeatureMask (CpuFeatureInOrder->FeatureMask);
+            DumpCpuFeatureMask (CpuFeatureInOrder->FeatureMask, CpuFeaturesData->BitMaskSize);
           }
         } else {
           Success = TRUE;
@@ -736,7 +768,7 @@ AnalysisProcessorFeatures (
     // again during initialize the features.
     //
     DEBUG ((DEBUG_INFO, "Dump final value for PcdCpuFeaturesSetting:\n"));
-    DumpCpuFeatureMask (CpuFeaturesData->SettingPcd);
+    DumpCpuFeatureMask (CpuFeaturesData->SettingPcd, CpuFeaturesData->BitMaskSize);
 
     //
     // Dump the RegisterTable
@@ -787,6 +819,58 @@ LibWaitForSemaphore (
 }
 
 /**
+  Read / write CR value.
+
+  @param[in]      CrIndex         The CR index which need to read/write.
+  @param[in]      Read            Read or write. TRUE is read.
+  @param[in,out]  CrValue         CR value.
+
+  @retval    EFI_SUCCESS means read/write success, else return EFI_UNSUPPORTED.
+**/
+UINTN
+ReadWriteCr (
+  IN     UINT32       CrIndex,
+  IN     BOOLEAN      Read,
+  IN OUT UINTN        *CrValue
+  )
+{
+  switch (CrIndex) {
+  case 0:
+    if (Read) {
+      *CrValue = AsmReadCr0 ();
+    } else {
+      AsmWriteCr0 (*CrValue);
+    }
+    break;
+  case 2:
+    if (Read) {
+      *CrValue = AsmReadCr2 ();
+    } else {
+      AsmWriteCr2 (*CrValue);
+    }
+    break;
+  case 3:
+    if (Read) {
+      *CrValue = AsmReadCr3 ();
+    } else {
+      AsmWriteCr3 (*CrValue);
+    }
+    break;
+  case 4:
+    if (Read) {
+      *CrValue = AsmReadCr4 ();
+    } else {
+      AsmWriteCr4 (*CrValue);
+    }
+    break;
+  default:
+    return EFI_UNSUPPORTED;;
+  }
+
+  return EFI_SUCCESS;
+}
+
+/**
   Initialize the CPU registers from a register table.
 
   @param[in]  RegisterTable         The register table for this AP.
@@ -813,9 +897,10 @@ ProgramProcessorRegister (
   UINT32                    PackageThreadsCount;
   UINT32                    CurrentThread;
   UINTN                     ProcessorIndex;
-  UINTN                     ThreadIndex;
   UINTN                     ValidThreadCount;
   UINT32                    *ValidCoreCountPerPackage;
+  EFI_STATUS                Status;
+  UINT64                    CurrentValue;
 
   //
   // Traverse Register Table of this logical processor
@@ -826,21 +911,6 @@ ProgramProcessorRegister (
 
     RegisterTableEntry = &RegisterTableEntryHead[Index];
 
-    DEBUG_CODE_BEGIN ();
-      AcquireSpinLock (&CpuFlags->ConsoleLogLock);
-      ThreadIndex = ApLocation->Package * CpuStatus->MaxCoreCount * CpuStatus->MaxThreadCount +
-              ApLocation->Core * CpuStatus->MaxThreadCount +
-              ApLocation->Thread;
-      DEBUG ((
-        DEBUG_INFO,
-        "Processor = %lu, Entry Index %lu, Type = %s!\n",
-        (UINT64)ThreadIndex,
-        (UINT64)Index,
-        mRegisterTypeStr[MIN ((REGISTER_TYPE)RegisterTableEntry->RegisterType, InvalidReg)]
-        ));
-      ReleaseSpinLock (&CpuFlags->ConsoleLogLock);
-    DEBUG_CODE_END ();
-
     //
     // Check the type of specified register
     //
@@ -849,60 +919,51 @@ ProgramProcessorRegister (
     // The specified register is Control Register
     //
     case ControlRegister:
-      switch (RegisterTableEntry->Index) {
-      case 0:
-        Value = AsmReadCr0 ();
-        Value = (UINTN) BitFieldWrite64 (
-                          Value,
-                          RegisterTableEntry->ValidBitStart,
-                          RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1,
-                          RegisterTableEntry->Value
-                          );
-        AsmWriteCr0 (Value);
-        break;
-      case 2:
-        Value = AsmReadCr2 ();
-        Value = (UINTN) BitFieldWrite64 (
-                          Value,
-                          RegisterTableEntry->ValidBitStart,
-                          RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1,
-                          RegisterTableEntry->Value
-                          );
-        AsmWriteCr2 (Value);
-        break;
-      case 3:
-        Value = AsmReadCr3 ();
-        Value = (UINTN) BitFieldWrite64 (
-                          Value,
-                          RegisterTableEntry->ValidBitStart,
-                          RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1,
-                          RegisterTableEntry->Value
-                          );
-        AsmWriteCr3 (Value);
-        break;
-      case 4:
-        Value = AsmReadCr4 ();
-        Value = (UINTN) BitFieldWrite64 (
-                          Value,
-                          RegisterTableEntry->ValidBitStart,
-                          RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1,
-                          RegisterTableEntry->Value
-                          );
-        AsmWriteCr4 (Value);
-        break;
-      case 8:
-        //
-        //  Do we need to support CR8?
-        //
-        break;
-      default:
+      Status = ReadWriteCr (RegisterTableEntry->Index, TRUE, &Value);
+      if (EFI_ERROR (Status)) {
         break;
       }
+      if (RegisterTableEntry->TestThenWrite) {
+        CurrentValue = BitFieldRead64 (
+                         Value,
+                         RegisterTableEntry->ValidBitStart,
+                         RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1
+                         );
+        if (CurrentValue == RegisterTableEntry->Value) {
+          break;
+        }
+      }
+      Value = (UINTN) BitFieldWrite64 (
+                        Value,
+                        RegisterTableEntry->ValidBitStart,
+                        RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1,
+                        RegisterTableEntry->Value
+                        );
+      ReadWriteCr (RegisterTableEntry->Index, FALSE, &Value);
       break;
+
     //
     // The specified register is Model Specific Register
     //
     case Msr:
+      if (RegisterTableEntry->TestThenWrite) {
+        Value = (UINTN)AsmReadMsr64 (RegisterTableEntry->Index);
+        if (RegisterTableEntry->ValidBitLength >= 64) {
+          if (Value == RegisterTableEntry->Value) {
+            break;
+          }
+        } else {
+          CurrentValue = BitFieldRead64 (
+                           Value,
+                           RegisterTableEntry->ValidBitStart,
+                           RegisterTableEntry->ValidBitStart + RegisterTableEntry->ValidBitLength - 1
+                           );
+          if (CurrentValue == RegisterTableEntry->Value) {
+            break;
+          }
+        }
+      }
+
       if (RegisterTableEntry->ValidBitLength >= 64) {
         //
         // If length is not less than 64 bits, then directly write without reading
@@ -1100,26 +1161,24 @@ CpuFeaturesDetect (
   VOID
   )
 {
-  UINTN                  NumberOfCpus;
-  UINTN                  NumberOfEnabledProcessors;
   CPU_FEATURES_DATA      *CpuFeaturesData;
 
   CpuFeaturesData = GetCpuFeaturesData();
 
-  GetNumberOfProcessor (&NumberOfCpus, &NumberOfEnabledProcessors);
+  CpuInitDataInitialize ();
 
-  CpuInitDataInitialize (NumberOfCpus);
-
-  //
-  // Wakeup all APs for data collection.
-  //
-  StartupAPsWorker (CollectProcessorData, NULL);
+  if (CpuFeaturesData->NumberOfCpus > 1) {
+    //
+    // Wakeup all APs for data collection.
+    //
+    StartupAllAPsWorker (CollectProcessorData, NULL);
+  }
 
   //
   // Collect data on BSP
   //
   CollectProcessorData (CpuFeaturesData);
 
-  AnalysisProcessorFeatures (NumberOfCpus);
+  AnalysisProcessorFeatures (CpuFeaturesData->NumberOfCpus);
 }
 

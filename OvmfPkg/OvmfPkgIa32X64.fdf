@@ -1,23 +1,17 @@
 ## @file
 #  Open Virtual Machine Firmware: FDF
 #
-#  Copyright (c) 2006 - 2017, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
 #  (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution. The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 ##
 
 ################################################################################
 
 [Defines]
-!include OvmfPkg.fdf.inc
+!include OvmfPkgDefines.fdf.inc
 
 #
 # Build the variable store and the firmware code as one unified flash device
@@ -68,10 +62,10 @@ FV = SECFV
 
 [FD.MEMFD]
 BaseAddress   = $(MEMFD_BASE_ADDRESS)
-Size          = 0xC00000
+Size          = 0xD00000
 ErasePolarity = 1
 BlockSize     = 0x10000
-NumBlocks     = 0xC0
+NumBlocks     = 0xD0
 
 0x000000|0x006000
 gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecPageTablesBase|gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecPageTablesSize
@@ -89,7 +83,7 @@ gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecPeiTempRamBase|gUefiOvmfPkgTokenSpaceGuid.P
 gUefiOvmfPkgTokenSpaceGuid.PcdOvmfPeiMemFvBase|gUefiOvmfPkgTokenSpaceGuid.PcdOvmfPeiMemFvSize
 FV = PEIFV
 
-0x100000|0xB00000
+0x100000|0xC00000
 gUefiOvmfPkgTokenSpaceGuid.PcdOvmfDxeMemFvBase|gUefiOvmfPkgTokenSpaceGuid.PcdOvmfDxeMemFvSize
 FV = DXEFV
 
@@ -161,12 +155,15 @@ INF  OvmfPkg/PlatformPei/PlatformPei.inf
 INF  MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
 INF  UefiCpuPkg/Universal/Acpi/S3Resume2Pei/S3Resume2Pei.inf
 !if $(SMM_REQUIRE) == TRUE
+INF  MdeModulePkg/Universal/FaultTolerantWritePei/FaultTolerantWritePei.inf
+INF  MdeModulePkg/Universal/Variable/Pei/VariablePei.inf
 INF  OvmfPkg/SmmAccess/SmmAccessPei.inf
 !endif
 INF  UefiCpuPkg/CpuMpPei/CpuMpPei.inf
 
-!if $(TPM2_ENABLE) == TRUE
+!if $(TPM_ENABLE) == TRUE
 INF  OvmfPkg/Tcg/Tcg2Config/Tcg2ConfigPei.inf
+INF  SecurityPkg/Tcg/TcgPei/TcgPei.inf
 INF  SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf
 !endif
 
@@ -214,10 +211,10 @@ INF  MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
 INF  MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
 INF  MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
 INF  MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
-INF  PcAtChipsetPkg/8259InterruptControllerDxe/8259.inf
+INF  OvmfPkg/8259InterruptControllerDxe/8259.inf
 INF  UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
 INF  UefiCpuPkg/CpuDxe/CpuDxe.inf
-INF  PcAtChipsetPkg/8254TimerDxe/8254Timer.inf
+INF  OvmfPkg/8254TimerDxe/8254Timer.inf
 INF  OvmfPkg/IncompatiblePciDeviceSupportDxe/IncompatiblePciDeviceSupport.inf
 INF  OvmfPkg/PciHotPlugInitDxe/PciHotPlugInit.inf
 INF  MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf
@@ -234,6 +231,9 @@ INF  OvmfPkg/VirtioRngDxe/VirtioRng.inf
 INF  OvmfPkg/XenIoPciDxe/XenIoPciDxe.inf
 INF  OvmfPkg/XenBusDxe/XenBusDxe.inf
 INF  OvmfPkg/XenPvBlkDxe/XenPvBlkDxe.inf
+!if $(PVSCSI_ENABLE) == TRUE
+INF  OvmfPkg/PvScsiDxe/PvScsiDxe.inf
+!endif
 
 !if $(SECURE_BOOT_ENABLE) == TRUE
   INF  SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigDxe.inf
@@ -249,6 +249,7 @@ INF  MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
 INF  MdeModulePkg/Universal/DriverHealthManagerDxe/DriverHealthManagerDxe.inf
 INF  MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
 INF  MdeModulePkg/Application/UiApp/UiApp.inf
+INF  OvmfPkg/QemuKernelLoaderFsDxe/QemuKernelLoaderFsDxe.inf
 INF  MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
 INF  MdeModulePkg/Universal/PrintDxe/PrintDxe.inf
 INF  MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIoDxe.inf
@@ -266,15 +267,11 @@ INF  MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
 INF  MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
 INF  MdeModulePkg/Universal/MemoryTest/NullMemoryTestDxe/NullMemoryTestDxe.inf
 
-INF  PcAtChipsetPkg/IsaAcpiDxe/IsaAcpi.inf
-INF  IntelFrameworkModulePkg/Bus/Isa/IsaBusDxe/IsaBusDxe.inf
-
-!ifndef $(SOURCE_DEBUG_ENABLE)
-INF  IntelFrameworkModulePkg/Bus/Isa/IsaSerialDxe/IsaSerialDxe.inf
+INF  OvmfPkg/SioBusDxe/SioBusDxe.inf
+!if $(SOURCE_DEBUG_ENABLE) == FALSE
+INF  MdeModulePkg/Bus/Pci/PciSioSerialDxe/PciSioSerialDxe.inf
 !endif
-
-INF  IntelFrameworkModulePkg/Bus/Isa/Ps2KeyboardDxe/Ps2keyboardDxe.inf
-INF  IntelFrameworkModulePkg/Bus/Isa/IsaFloppyDxe/IsaFloppyDxe.inf
+INF  MdeModulePkg/Bus/Isa/Ps2KeyboardDxe/Ps2KeyboardDxe.inf
 
 INF  MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
 INF  OvmfPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
@@ -292,6 +289,7 @@ INF  MdeModulePkg/Universal/Disk/UdfDxe/UdfDxe.inf
 !if $(TOOL_CHAIN_TAG) != "XCODE5"
 INF  ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf
 !endif
+INF  OvmfPkg/LinuxInitrdDynamicShellCommand/LinuxInitrdDynamicShellCommand.inf
 INF  ShellPkg/Application/Shell/Shell.inf
 
 INF MdeModulePkg/Logo/LogoDxe.inf
@@ -304,34 +302,7 @@ INF MdeModulePkg/Logo/LogoDxe.inf
     SECTION PE32 = Intel3.5/EFIX64/E3522X2.EFI
   }
 !endif
-  INF  MdeModulePkg/Universal/Network/SnpDxe/SnpDxe.inf
-  INF  MdeModulePkg/Universal/Network/DpcDxe/DpcDxe.inf
-  INF  MdeModulePkg/Universal/Network/MnpDxe/MnpDxe.inf
-  INF  MdeModulePkg/Universal/Network/VlanConfigDxe/VlanConfigDxe.inf
-  INF  MdeModulePkg/Universal/Network/ArpDxe/ArpDxe.inf
-  INF  MdeModulePkg/Universal/Network/Dhcp4Dxe/Dhcp4Dxe.inf
-  INF  MdeModulePkg/Universal/Network/Ip4Dxe/Ip4Dxe.inf
-  INF  MdeModulePkg/Universal/Network/Mtftp4Dxe/Mtftp4Dxe.inf
-  INF  MdeModulePkg/Universal/Network/Udp4Dxe/Udp4Dxe.inf
-  INF  NetworkPkg/UefiPxeBcDxe/UefiPxeBcDxe.inf
-  INF  NetworkPkg/TcpDxe/TcpDxe.inf
-  INF  NetworkPkg/IScsiDxe/IScsiDxe.inf
-!if $(NETWORK_IP6_ENABLE) == TRUE
-  INF  NetworkPkg/Ip6Dxe/Ip6Dxe.inf
-  INF  NetworkPkg/Udp6Dxe/Udp6Dxe.inf
-  INF  NetworkPkg/Dhcp6Dxe/Dhcp6Dxe.inf
-  INF  NetworkPkg/Mtftp6Dxe/Mtftp6Dxe.inf
-!endif
-!if $(HTTP_BOOT_ENABLE) == TRUE
-  INF  NetworkPkg/DnsDxe/DnsDxe.inf
-  INF  NetworkPkg/HttpUtilitiesDxe/HttpUtilitiesDxe.inf
-  INF  NetworkPkg/HttpDxe/HttpDxe.inf
-  INF  NetworkPkg/HttpBootDxe/HttpBootDxe.inf
-!endif
-!if $(TLS_ENABLE) == TRUE
-  INF  NetworkPkg/TlsDxe/TlsDxe.inf
-  INF  NetworkPkg/TlsAuthConfigDxe/TlsAuthConfigDxe.inf
-!endif
+!include NetworkPkg/Network.fdf.inc
   INF  OvmfPkg/VirtioNetDxe/VirtioNet.inf
 
 #
@@ -345,12 +316,13 @@ INF  MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
 INF  MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
 
 !ifdef $(CSM_ENABLE)
-INF  IntelFrameworkModulePkg/Csm/BiosThunk/VideoDxe/VideoDxe.inf
-INF  IntelFrameworkModulePkg/Csm/LegacyBiosDxe/LegacyBiosDxe.inf
+INF  OvmfPkg/Csm/BiosThunk/VideoDxe/VideoDxe.inf
+INF  OvmfPkg/Csm/LegacyBiosDxe/LegacyBiosDxe.inf
 INF  RuleOverride=CSM OvmfPkg/Csm/Csm16/Csm16.inf
+!else
+INF  OvmfPkg/QemuVideoDxe/QemuVideoDxe.inf
 !endif
 
-INF  OvmfPkg/QemuVideoDxe/QemuVideoDxe.inf
 INF  OvmfPkg/QemuRamfbDxe/QemuRamfbDxe.inf
 INF  OvmfPkg/VirtioGpuDxe/VirtioGpu.inf
 INF  OvmfPkg/PlatformDxe/Platform.inf
@@ -360,9 +332,10 @@ INF  OvmfPkg/IoMmuDxe/IoMmuDxe.inf
 !if $(SMM_REQUIRE) == TRUE
 INF  OvmfPkg/SmmAccess/SmmAccess2Dxe.inf
 INF  OvmfPkg/SmmControl2Dxe/SmmControl2Dxe.inf
-INF  UefiCpuPkg/CpuS3DataDxe/CpuS3DataDxe.inf
+INF  OvmfPkg/CpuS3DataDxe/CpuS3DataDxe.inf
 INF  MdeModulePkg/Core/PiSmmCore/PiSmmIpl.inf
 INF  MdeModulePkg/Core/PiSmmCore/PiSmmCore.inf
+INF  OvmfPkg/CpuHotplugSmm/CpuHotplugSmm.inf
 INF  UefiCpuPkg/CpuIo2Smm/CpuIo2Smm.inf
 INF  MdeModulePkg/Universal/LockBox/SmmLockBox/SmmLockBox.inf
 INF  UefiCpuPkg/PiSmmCpuDxeSmm/PiSmmCpuDxeSmm.inf
@@ -386,8 +359,15 @@ INF  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
 INF  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
 !endif
 
-!if $(TPM2_ENABLE) == TRUE
+#
+# TPM support
+#
+!if $(TPM_ENABLE) == TRUE
+INF  SecurityPkg/Tcg/TcgDxe/TcgDxe.inf
 INF  SecurityPkg/Tcg/Tcg2Dxe/Tcg2Dxe.inf
+!if $(TPM_CONFIG_ENABLE) == TRUE
+INF  SecurityPkg/Tcg/Tcg2Config/Tcg2ConfigDxe.inf
+!endif
 !endif
 
 ################################################################################
@@ -423,7 +403,7 @@ FILE FV_IMAGE = 9E21FD93-9C72-4c15-8C4B-E77F1DB2D792 {
    }
  }
 
-!include DecomprScratchEnd.fdf.inc
+!include FvmainCompactScratchEnd.fdf.inc
 
 ################################################################################
 

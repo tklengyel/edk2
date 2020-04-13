@@ -4,14 +4,9 @@
 # Copyright (c) 2009 - 2010, Apple Inc. All rights reserved.<BR>
 # Copyright (c) 2011 - 2018, ARM Ltd. All rights reserved.<BR>
 # Copyright (c) 2016, Linaro Ltd. All rights reserved.<BR>
+# Copyright (c) Microsoft Corporation.<BR>
 #
-#    This program and the accompanying materials
-#    are licensed and made available under the terms and conditions of the BSD License
-#    which accompanies this distribution. The full text of the license may be found at
-#    http://opensource.org/licenses/bsd-license.php
-#
-#    THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#    SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #**/
 
@@ -53,7 +48,6 @@
   PeCoffLib|MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
   PeCoffGetEntryPointLib|MdePkg/Library/BasePeCoffGetEntryPointLib/BasePeCoffGetEntryPointLib.inf
 
-  NetLib|MdeModulePkg/Library/DxeNetLib/DxeNetLib.inf
   UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
   HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
 
@@ -140,12 +134,15 @@
   ArmPkg/Library/ArmGicArchLib/ArmGicArchLib.inf
   ArmPkg/Library/ArmGicArchSecLib/ArmGicArchSecLib.inf
   ArmPkg/Library/ArmLib/ArmBaseLib.inf
+  ArmPkg/Library/ArmMtlNullLib/ArmMtlNullLib.inf
   ArmPkg/Library/ArmSoftFloatLib/ArmSoftFloatLib.inf
-  ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLibBase.inf
+  ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
   ArmPkg/Library/PeiServicesTablePointerLib/PeiServicesTablePointerLib.inf
   ArmPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
 
+  ArmPkg/Drivers/ArmCrashDumpDxe/ArmCrashDumpDxe.inf
   ArmPkg/Drivers/ArmScmiDxe/ArmScmiDxe.inf
+  ArmPkg/Drivers/MmCommunicationDxe/MmCommunication.inf
 
 [Components.AARCH64]
   ArmPkg/Library/ArmMmuLib/ArmMmuPeiLib.inf

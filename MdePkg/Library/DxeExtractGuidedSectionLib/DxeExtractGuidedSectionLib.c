@@ -2,13 +2,7 @@
   Provide generic extract guided section functions for Dxe phase.
 
   Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -156,7 +150,7 @@ ExtractGuidedSectionGetGuidList (
   If GetInfoHandler is NULL, then ASSERT().
   If DecodeHandler is NULL, then ASSERT().
 
-  @param[in]  SectionGuid    A pointer to the GUID associated with the the handlers
+  @param[in]  SectionGuid    A pointer to the GUID associated with the handlers
                              of the GUIDed section type being registered.
   @param[in]  GetInfoHandler The pointer to a function that examines a GUIDed section and returns the
                              size of the decoded buffer and the size of an optional scratch buffer
@@ -237,9 +231,9 @@ ExtractGuidedSectionRegisterHandlers (
   Examines a GUIDed section specified by InputSection.
   If GUID for InputSection does not match any of the GUIDs registered through ExtractGuidedSectionRegisterHandlers(),
   then RETURN_UNSUPPORTED is returned.
-  If the GUID of InputSection does match the GUID that this handler supports, then the the associated handler
+  If the GUID of InputSection does match the GUID that this handler supports, then the associated handler
   of type EXTRACT_GUIDED_SECTION_GET_INFO_HANDLER that was registered with ExtractGuidedSectionRegisterHandlers()
-  is used to retrieve the OututBufferSize, ScratchSize, and Attributes values. The return status from the handler of
+  is used to retrieve the OutputBufferSize, ScratchSize, and Attributes values. The return status from the handler of
   type EXTRACT_GUIDED_SECTION_GET_INFO_HANDLER is returned.
 
   If InputSection is NULL, then ASSERT().
@@ -317,7 +311,7 @@ ExtractGuidedSectionGetInfo (
   Decodes the GUIDed section specified by InputSection.
   If GUID for InputSection does not match any of the GUIDs registered through ExtractGuidedSectionRegisterHandlers(),
   then RETURN_UNSUPPORTED is returned.
-  If the GUID of InputSection does match the GUID that this handler supports, then the the associated handler
+  If the GUID of InputSection does match the GUID that this handler supports, then the associated handler
   of type EXTRACT_GUIDED_SECTION_DECODE_HANDLER that was registered with ExtractGuidedSectionRegisterHandlers()
   is used to decode InputSection into the buffer specified by OutputBuffer and the authentication status of this
   decode operation is returned in AuthenticationStatus.  If the decoded buffer is identical to the data in InputSection,
@@ -403,7 +397,7 @@ ExtractGuidedSectionDecode (
 
   If SectionGuid is NULL, then ASSERT().
 
-  @param[in]  SectionGuid    A pointer to the GUID associated with the handlersof the GUIDed
+  @param[in]  SectionGuid    A pointer to the GUID associated with the handlers of the GUIDed
                              section type being retrieved.
   @param[out] GetInfoHandler Pointer to a function that examines a GUIDed section and returns
                              the size of the decoded buffer and the size of an optional scratch

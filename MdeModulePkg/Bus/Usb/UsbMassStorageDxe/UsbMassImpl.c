@@ -2,13 +2,7 @@
   USB Mass Storage Driver that manages USB Mass Storage Device and produces Block I/O Protocol.
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -373,7 +367,7 @@ UsbMassInitMedia (
 }
 
 /**
-  Initilize the USB Mass Storage transport.
+  Initialize the USB Mass Storage transport.
 
   This function tries to find the matching USB Mass Storage transport
   protocol for USB device. If found, initializes the matching transport.
@@ -581,7 +575,7 @@ UsbMassInitMultiLun (
     if (EFI_ERROR (Status)) {
       DEBUG ((EFI_D_ERROR, "UsbMassInitMultiLun: OpenUsbIoProtocol By Child (%r)\n", Status));
       gBS->UninstallMultipleProtocolInterfaces (
-             &UsbMass->Controller,
+             UsbMass->Controller,
              &gEfiDevicePathProtocolGuid,
              UsbMass->DevicePath,
              &gEfiBlockIoProtocolGuid,
@@ -776,7 +770,7 @@ ON_EXIT:
 /**
   Starts the USB mass storage device with this driver.
 
-  This function consumes USB I/O Portocol, intializes USB mass storage device,
+  This function consumes USB I/O Protocol, initializes USB mass storage device,
   installs Block I/O Protocol, and submits Asynchronous Interrupt
   Transfer to manage the USB mass storage device.
 

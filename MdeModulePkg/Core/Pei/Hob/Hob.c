@@ -1,14 +1,8 @@
 /** @file
-  This module provide Hand-Off Block manupulation.
+  This module provide Hand-Off Block manipulation.
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -61,7 +55,7 @@ PeiGetHobList (
   @param Length           Length of the new HOB to allocate.
   @param Hob              Pointer to the new HOB.
 
-  @return  EFI_SUCCESS           Success to create hob.
+  @return  EFI_SUCCESS           Success to create HOB.
   @retval  EFI_INVALID_PARAMETER if Hob is NULL
   @retval  EFI_NOT_AVAILABLE_YET if HobList is still not available.
   @retval  EFI_OUT_OF_RESOURCES  if there is no more memory to grow the Hoblist.

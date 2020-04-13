@@ -2,13 +2,7 @@
   This library is used by other modules to send TPM2 command.
 
 Copyright (c) 2013 - 2018, Intel Corporation. All rights reserved. <BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -591,7 +585,7 @@ Tpm2PcrAllocateBanks (
   NOTE:
   To simplify this function, leave returned CapabilityData for caller to unpack since there are
   many capability categories and only few categories will be used in firmware. It means the caller
-  need swap the byte order for the feilds in CapabilityData.
+  need swap the byte order for the fields in CapabilityData.
 
   @param[in]  Capability         Group selection; determines the format of the response.
   @param[in]  Property           Further definition of information.

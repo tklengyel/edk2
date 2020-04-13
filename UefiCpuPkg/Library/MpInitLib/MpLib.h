@@ -1,14 +1,10 @@
 /** @file
   Common header file for MP Initialize Library.
 
-  Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
+  Copyright (c) 2016 - 2020, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2020, AMD Inc. All rights reserved.<BR>
 
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -17,10 +13,11 @@
 
 #include <PiPei.h>
 
-#include <Register/Cpuid.h>
-#include <Register/Msr.h>
-#include <Register/LocalApic.h>
-#include <Register/Microcode.h>
+#include <Register/Intel/Cpuid.h>
+#include <Register/Amd/Cpuid.h>
+#include <Register/Intel/Msr.h>
+#include <Register/Intel/LocalApic.h>
+#include <Register/Intel/Microcode.h>
 
 #include <Library/MpInitLib.h>
 #include <Library/BaseLib.h>
@@ -35,6 +32,8 @@
 #include <Library/MtrrLib.h>
 #include <Library/HobLib.h>
 
+#include <Guid/MicrocodePatchHob.h>
+
 #define WAKEUP_AP_SIGNAL SIGNATURE_32 ('S', 'T', 'A', 'P')
 
 #define CPU_INIT_MP_LIB_HOB_GUID \
@@ -48,6 +47,19 @@
 #define CPU_SWITCH_STATE_IDLE   0
 #define CPU_SWITCH_STATE_STORED 1
 #define CPU_SWITCH_STATE_LOADED 2
+
+//
+// Default maximum number of entries to store the microcode patches information
+//
+#define DEFAULT_MAX_MICROCODE_PATCH_NUM 8
+
+//
+// Data structure for microcode patch information
+//
+typedef struct {
+  UINTN    Address;
+  UINTN    Size;
+} MICROCODE_PATCH_INFO;
 
 //
 // CPU exchange information for switch BSP
@@ -128,6 +140,9 @@ typedef struct {
   UINT64                         CurrentTime;
   UINT64                         TotalTime;
   EFI_EVENT                      WaitEvent;
+  UINT32                         ProcessorSignature;
+  UINT8                          PlatformId;
+  UINT64                         MicrocodeEntryAddr;
 } CPU_AP_DATA;
 
 //
@@ -191,6 +206,10 @@ typedef struct {
   UINT16                ModeTransitionSegment;
   UINT32                ModeHighMemory;
   UINT16                ModeHighSegment;
+  //
+  // Enable5LevelPaging indicates whether 5-level paging is enabled in long mode.
+  //
+  BOOLEAN               Enable5LevelPaging;
 } MP_CPU_EXCHANGE_INFO;
 
 #pragma pack()
@@ -229,7 +248,6 @@ struct _CPU_MP_DATA {
   UINTN                          **FailedCpuList;
 
   AP_INIT_STATE                  InitFlag;
-  BOOLEAN                        X2ApicEnable;
   BOOLEAN                        SwitchBspFlag;
   UINTN                          NewBspNumber;
   CPU_EXCHANGE_ROLE_INFO         BSPInfo;
@@ -248,11 +266,6 @@ struct _CPU_MP_DATA {
   BOOLEAN                        TimerInterruptState;
   UINT64                         MicrocodePatchAddress;
   UINT64                         MicrocodePatchRegionSize;
-
-  UINT32                         ProcessorSignature;
-  UINT32                         ProcessorFlags;
-  UINT64                         MicrocodeDataAddress;
-  UINT32                         MicrocodeRevision;
 
   //
   // Whether need to use Init-Sipi-Sipi to wake up the APs.
@@ -411,6 +424,7 @@ InitMpGlobalData (
                                       number.  If FALSE, then all the enabled APs
                                       execute the function specified by Procedure
                                       simultaneously.
+  @param[in]  ExcludeBsp              Whether let BSP also trig this task.
   @param[in]  WaitEvent               The event created by the caller with CreateEvent()
                                       service.
   @param[in]  TimeoutInMicroseconds   Indicates the time limit in microseconds for
@@ -432,9 +446,10 @@ InitMpGlobalData (
 
 **/
 EFI_STATUS
-StartupAllAPsWorker (
+StartupAllCPUsWorker (
   IN  EFI_AP_PROCEDURE          Procedure,
   IN  BOOLEAN                   SingleThread,
+  IN  BOOLEAN                   ExcludeBsp,
   IN  EFI_EVENT                 WaitEvent               OPTIONAL,
   IN  UINTN                     TimeoutInMicroseconds,
   IN  VOID                      *ProcedureArgument      OPTIONAL,
@@ -565,13 +580,46 @@ CheckAndUpdateApsStatus (
 /**
   Detect whether specified processor can find matching microcode patch and load it.
 
-  @param[in]  CpuMpData    The pointer to CPU MP Data structure.
-  @param[in]  IsBspCallIn  Indicate whether the caller is BSP or not.
+  @param[in]  CpuMpData        The pointer to CPU MP Data structure.
+  @param[in]  ProcessorNumber  The handle number of the processor. The range is
+                               from 0 to the total number of logical processors
+                               minus 1.
 **/
 VOID
 MicrocodeDetect (
   IN CPU_MP_DATA             *CpuMpData,
-  IN BOOLEAN                 IsBspCallIn
+  IN UINTN                   ProcessorNumber
+  );
+
+/**
+  Shadow the required microcode patches data into memory.
+
+  @param[in, out]  CpuMpData    The pointer to CPU MP Data structure.
+**/
+VOID
+ShadowMicrocodeUpdatePatch (
+  IN OUT CPU_MP_DATA             *CpuMpData
+  );
+
+/**
+  Get the cached microcode patch base address and size from the microcode patch
+  information cache HOB.
+
+  @param[out] Address       Base address of the microcode patches data.
+                            It will be updated if the microcode patch
+                            information cache HOB is found.
+  @param[out] RegionSize    Size of the microcode patches data.
+                            It will be updated if the microcode patch
+                            information cache HOB is found.
+
+  @retval  TRUE     The microcode patch information cache HOB is found.
+  @retval  FALSE    The microcode patch information cache HOB is not found.
+
+**/
+BOOLEAN
+GetMicrocodePatchInfoFromHob (
+  UINT64                         *Address,
+  UINT64                         *RegionSize
   );
 
 /**
@@ -592,6 +640,37 @@ IsMwaitSupport (
 VOID
 EnableDebugAgent (
   VOID
+  );
+
+/**
+  Find the current Processor number by APIC ID.
+
+  @param[in]  CpuMpData         Pointer to PEI CPU MP Data
+  @param[out] ProcessorNumber   Return the pocessor number found
+
+  @retval EFI_SUCCESS          ProcessorNumber is found and returned.
+  @retval EFI_NOT_FOUND        ProcessorNumber is not found.
+**/
+EFI_STATUS
+GetProcessorNumber (
+  IN CPU_MP_DATA               *CpuMpData,
+  OUT UINTN                    *ProcessorNumber
+  );
+
+/**
+  This funtion will try to invoke platform specific microcode shadow logic to
+  relocate microcode update patches into memory.
+
+  @param[in, out] CpuMpData  The pointer to CPU MP Data structure.
+
+  @retval EFI_SUCCESS              Shadow microcode success.
+  @retval EFI_OUT_OF_RESOURCES     No enough resource to complete the operation.
+  @retval EFI_UNSUPPORTED          Can't find platform specific microcode shadow
+                                   PPI/Protocol.
+**/
+EFI_STATUS
+PlatformShadowMicrocode (
+  IN OUT CPU_MP_DATA             *CpuMpData
   );
 
 #endif

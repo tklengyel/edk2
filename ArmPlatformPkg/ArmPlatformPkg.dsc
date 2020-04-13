@@ -4,14 +4,9 @@
 # Copyright (c) 2009 - 2010, Apple Inc. All rights reserved.<BR>
 # Copyright (c) 2011 - 2018, ARM Ltd. All rights reserved.<BR>
 # Copyright (c) 2016 - 2017, Linaro Ltd. All rights reserved.<BR>
+# Copyright (c) Microsoft Corporation.<BR>
 #
-#    This program and the accompanying materials
-#    are licensed and made available under the terms and conditions of the BSD License
-#    which accompanies this distribution. The full text of the license may be found at
-#    http://opensource.org/licenses/bsd-license.php
-#
-#    THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#    SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #**/
 
@@ -101,6 +96,7 @@
 
   ArmPlatformPkg/Library/ArmPlatformLibNull/ArmPlatformLibNull.inf
   ArmPlatformPkg/Library/ArmPlatformStackLib/ArmPlatformStackLib.inf
+  ArmPlatformPkg/Library/HdLcd/HdLcd.inf
   ArmPlatformPkg/Library/LcdHwNullLib/LcdHwNullLib.inf
   ArmPlatformPkg/Library/LcdPlatformNullLib/LcdPlatformNullLib.inf
   ArmPlatformPkg/Library/NorFlashPlatformNullLib/NorFlashPlatformNullLib.inf
@@ -108,6 +104,7 @@
   ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
   ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
   ArmPlatformPkg/Library/PL031RealTimeClockLib/PL031RealTimeClockLib.inf
+  ArmPlatformPkg/Library/PL111Lcd/PL111Lcd.inf
   ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
 
   ArmPlatformPkg/MemoryInitPei/MemoryInitPeiLib.inf

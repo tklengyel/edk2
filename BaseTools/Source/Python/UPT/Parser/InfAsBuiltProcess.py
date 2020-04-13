@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 '''
 InfAsBuiltProcess
 '''
@@ -46,7 +40,7 @@ def GetLibInstanceInfo(String, WorkSpace, LineNo, CurrentInfFileName):
     FileGuidString = ""
     VerString = ""
 
-    OrignalString = String
+    OriginalString = String
     String = String.strip()
     if not String:
         return None, None
@@ -78,7 +72,7 @@ def GetLibInstanceInfo(String, WorkSpace, LineNo, CurrentInfFileName):
     #
     # To deal with library instance specified by file name
     #
-    FileLinesList = GetFileLineContent(String, WorkSpace, LineNo, OrignalString)
+    FileLinesList = GetFileLineContent(String, WorkSpace, LineNo, OriginalString)
 
 
     ReFindFileGuidPattern = re.compile("^\s*FILE_GUID\s*=.*$")
@@ -205,7 +199,7 @@ def GetFileLineContent(FileName, WorkSpace, LineNo, OriginalString):
 
     try:
         FullFileName = FullFileName.replace('\\', '/')
-        Inputfile = open(FullFileName, "rb", 0)
+        Inputfile = open(FullFileName, "r")
         try:
             FileLinesList = Inputfile.readlines()
         except BaseException:
@@ -247,7 +241,7 @@ def GetGuidVerFormLibInstance(Guid, Version, WorkSpace, CurrentInfFileName):
                 continue
             InfFile = InfFile.replace('\\', '/')
             if InfFile not in GlobalData.gLIBINSTANCEDICT:
-                InfFileObj = open(InfFile, "rb", 0)
+                InfFileObj = open(InfFile, "r")
                 GlobalData.gLIBINSTANCEDICT[InfFile] = InfFileObj
             else:
                 InfFileObj = GlobalData.gLIBINSTANCEDICT[InfFile]

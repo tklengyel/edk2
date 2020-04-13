@@ -1,14 +1,9 @@
 ##  @file
 # Provides Shell 'acpiview' command functions
 #
-# Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.<BR>
+# Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution. The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #
 ##
@@ -36,17 +31,21 @@
   Parsers/Bgrt/BgrtParser.c
   Parsers/Dbg2/Dbg2Parser.c
   Parsers/Dsdt/DsdtParser.c
+  Parsers/Facs/FacsParser.c
   Parsers/Fadt/FadtParser.c
   Parsers/Gtdt/GtdtParser.c
   Parsers/Iort/IortParser.c
   Parsers/Madt/MadtParser.c
   Parsers/Mcfg/McfgParser.c
+  Parsers/Pptt/PpttParser.c
   Parsers/Rsdp/RsdpParser.c
   Parsers/Slit/SlitParser.c
   Parsers/Spcr/SpcrParser.c
   Parsers/Srat/SratParser.c
   Parsers/Ssdt/SsdtParser.c
   Parsers/Xsdt/XsdtParser.c
+  Parsers/Madt/MadtParser.h
+  Parsers/Pptt/PpttParser.h
 
 [Packages]
   MdePkg/MdePkg.dec

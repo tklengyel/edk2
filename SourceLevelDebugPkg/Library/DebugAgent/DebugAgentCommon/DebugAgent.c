@@ -1,17 +1,11 @@
 /** @file
-  Commond Debug Agent library implementition. It mainly includes
+  Commond Debug Agent library implementation. It mainly includes
   the first C function called by exception/interrupt handlers,
   read/write debug packet to communication with HOST based on transfer
   protocol.
 
   Copyright (c) 2010 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -600,7 +594,7 @@ DebugAgentDataMsgPrint (
     Index ++;
     if (Index >= Length) {
       //
-      // The last character of debug message has been foramtted in buffer
+      // The last character of debug message has been formatted in buffer
       //
       DestBuffer += AsciiSPrint(DestBuffer, DEBUG_DATA_MAXIMUM_REAL_DATA - (DestBuffer - Buffer), "]\n");
       SendDebugMsgPacket (Buffer, DestBuffer - Buffer);
@@ -729,7 +723,7 @@ SetDebugSetting (
 }
 
 /**
-  Exectue GO command.
+  Execute GO command.
 
   @param[in] CpuContext        Pointer to saved CPU context.
 
@@ -1087,12 +1081,12 @@ DecompressDataInPlace (
   @param[out] IncompatibilityFlag If IncompatibilityFlag is not NULL, return
                                   TRUE:  Compatible packet received.
                                   FALSE: Incompatible packet received.
-  @param[in]  Timeout             Time out value to wait for acknowlege from HOST.
+  @param[in]  Timeout             Time out value to wait for acknowledge from HOST.
                                   The unit is microsecond.
   @param[in]  SkipStartSymbol     TRUE:  Skip time out when reading start symbol.
                                   FALSE: Does not Skip time out when reading start symbol.
 
-  @retval RETURN_SUCCESS   A valid package was reveived in InputPacket.
+  @retval RETURN_SUCCESS   A valid package was received in InputPacket.
   @retval RETURN_TIMEOUT   Timeout occurs.
 
 **/
@@ -1196,17 +1190,17 @@ ReceivePacket (
   Receive acknowledge packet OK from HOST in specified time.
 
   @param[in]  Command             The command type issued by TARGET.
-  @param[in]  Timeout             Time out value to wait for acknowlege from HOST.
+  @param[in]  Timeout             Time out value to wait for acknowledge from HOST.
                                   The unit is microsecond.
   @param[out] BreakReceived       If BreakReceived is not NULL,
-                                  TRUE is retured if break-in symbol received.
-                                  FALSE is retured if break-in symbol not received.
+                                  TRUE is returned if break-in symbol received.
+                                  FALSE is returned if break-in symbol not received.
   @param[out] IncompatibilityFlag If IncompatibilityFlag is not NULL, return
                                   TRUE:  Compatible packet received.
                                   FALSE: Incompatible packet received.
 
-  @retval  RETRUEN_SUCCESS  Succeed to receive acknowlege packet from HOST,
-                            the type of acknowlege packet saved in Ack.
+  @retval  RETURN_SUCCESS   Succeed to receive acknowledge packet from HOST,
+                            the type of acknowledge packet saved in Ack.
   @retval  RETURN_TIMEOUT   Specified timeout value was up.
 
 **/
@@ -1503,7 +1497,7 @@ CompressData (
 }
 
 /**
-  Read memory with speicifed width and send packet with response data to HOST.
+  Read memory with specified width and send packet with response data to HOST.
 
   @param[in] Data        Pointer to response data buffer.
   @param[in] Count       The number of data with specified Width.
@@ -1675,16 +1669,16 @@ SendDataResponsePacket (
   Try to attach the HOST.
 
   Send init break packet to HOST:
-  If no acknowlege received in specified Timeout, return RETURN_TIMEOUT.
-  If received acknowlege, check the revision of HOST.
+  If no acknowledge received in specified Timeout, return RETURN_TIMEOUT.
+  If received acknowledge, check the revision of HOST.
   Set Attach Flag if attach successfully.
 
   @param[in]  BreakCause     Break cause of this break event.
-  @param[in]  Timeout        Time out value to wait for acknowlege from HOST.
+  @param[in]  Timeout        Time out value to wait for acknowledge from HOST.
                              The unit is microsecond.
   @param[out] BreakReceived  If BreakReceived is not NULL,
-                             TRUE is retured if break-in symbol received.
-                             FALSE is retured if break-in symbol not received.
+                             TRUE is returned if break-in symbol received.
+                             FALSE is returned if break-in symbol not received.
 **/
 RETURN_STATUS
 AttachHost (
@@ -1738,8 +1732,8 @@ AttachHost (
   @param[in]  BreakCause     Break cause of this break event.
   @param[in]  ProcessorIndex Processor index value.
   @param[out] BreakReceived  If BreakReceived is not NULL,
-                             TRUE is retured if break-in symbol received.
-                             FALSE is retured if break-in symbol not received.
+                             TRUE is returned if break-in symbol received.
+                             FALSE is returned if break-in symbol not received.
 
 **/
 VOID
@@ -1783,7 +1777,7 @@ SendBreakPacketToHost (
 
   It received the command packet from HOST, and sent response data packet to HOST.
 
-  @param[in]      Vector         Vector value of exception or interrutp.
+  @param[in]      Vector         Vector value of exception or interrupt.
   @param[in, out] CpuContext     Pointer to saved CPU context.
   @param[in]      BreakReceived  TRUE means break-in symbol received.
                                  FALSE means break-in symbol not received.
@@ -1887,20 +1881,20 @@ CommandCommunication (
 
     Mailbox = GetMailboxPointer ();
     if (DebugHeader->SequenceNo == Mailbox->HostSequenceNo) {
-      DebugAgentMsgPrint (DEBUG_AGENT_WARNING, "TARGET: Receive one old command[%x] agaist command[%x]\n", DebugHeader->SequenceNo, Mailbox->HostSequenceNo);
+      DebugAgentMsgPrint (DEBUG_AGENT_WARNING, "TARGET: Receive one old command[%x] against command[%x]\n", DebugHeader->SequenceNo, Mailbox->HostSequenceNo);
       SendAckPacket (Mailbox->LastAck);
       ReleaseMpSpinLock (&mDebugMpContext.DebugPortSpinLock);
       continue;
     } else if (DebugHeader->SequenceNo == (UINT8) (Mailbox->HostSequenceNo + 1)) {
       UpdateMailboxContent (Mailbox, DEBUG_MAILBOX_HOST_SEQUENCE_NO_INDEX, (UINT8) DebugHeader->SequenceNo);
     } else {
-      DebugAgentMsgPrint (DEBUG_AGENT_WARNING, "Receive one invalid comamnd[%x] agaist command[%x]\n", DebugHeader->SequenceNo, Mailbox->HostSequenceNo);
+      DebugAgentMsgPrint (DEBUG_AGENT_WARNING, "Receive one invalid command[%x] against command[%x]\n", DebugHeader->SequenceNo, Mailbox->HostSequenceNo);
       ReleaseMpSpinLock (&mDebugMpContext.DebugPortSpinLock);
       continue;
     }
 
     //
-    // Save CPU content before executing HOST commond
+    // Save CPU content before executing HOST command
     //
     UpdateMailboxContent (Mailbox, DEBUG_MAILBOX_EXCEPTION_BUFFER_POINTER_INDEX, (UINT64)(UINTN) &AgentExceptionBuffer.JumpBuffer);
     if (SetJump (&AgentExceptionBuffer.JumpBuffer) != 0) {
@@ -2025,7 +2019,7 @@ CommandCommunication (
 
       } else {
         //
-        // If reveived HALT command, need to defer the GO command
+        // If received HALT command, need to defer the GO command
         //
         SendAckPacket (DEBUG_COMMAND_HALT_PROCESSED);
         HaltDeferred = FALSE;
@@ -2306,7 +2300,7 @@ CommandCommunication (
 /**
   C function called in interrupt handler.
 
-  @param[in] Vector      Vector value of exception or interrutp.
+  @param[in] Vector      Vector value of exception or interrupt.
   @param[in] CpuContext  Pointer to save CPU context.
 
 **/
@@ -2347,7 +2341,7 @@ InterruptProcess (
   if (MultiProcessorDebugSupport()) {
     ProcessorIndex = GetProcessorIndex ();
     //
-    // If this processor has alreay halted before, need to check it later
+    // If this processor has already halted before, need to check it later
     //
     if (IsCpuStopped (ProcessorIndex)) {
       IssuedViewPoint = ProcessorIndex;
@@ -2378,7 +2372,7 @@ InterruptProcess (
 
   if (MultiProcessorDebugSupport()) {
     //
-    // If RUN commmand is executing, wait for it done.
+    // If RUN command is executing, wait for it done.
     //
     while (mDebugMpContext.RunCommandSet) {
       CpuPause ();

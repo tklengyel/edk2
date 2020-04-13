@@ -1,15 +1,9 @@
 /** @file
   This module implements Tcg2 Protocol.
 
-Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -81,6 +75,7 @@ typedef struct {
   UINT8                             *LastEvent;
   BOOLEAN                           EventLogStarted;
   BOOLEAN                           EventLogTruncated;
+  UINTN                             Next800155EventOffset;
 } TCG_EVENT_LOG_AREA_STRUCT;
 
 typedef struct _TCG_DXE_DATA {
@@ -133,7 +128,7 @@ EFI_HANDLE mImageHandle;
   @param[in]  PCRIndex       TPM PCR index
   @param[in]  ImageAddress   Start address of image buffer.
   @param[in]  ImageSize      Image size
-  @param[out] DigestList     Digeest list of this image.
+  @param[out] DigestList     Digest list of this image.
 
   @retval EFI_SUCCESS            Successfully measure image.
   @retval EFI_OUT_OF_RESOURCES   No enough resource to measure image.
@@ -778,15 +773,42 @@ Tcg2GetEventLog (
 }
 
 /**
+  Return if this is a Tcg800155PlatformIdEvent.
+
+  @param[in]      NewEventHdr         Pointer to a TCG_PCR_EVENT_HDR/TCG_PCR_EVENT_EX data structure.
+  @param[in]      NewEventHdrSize     New event header size.
+  @param[in]      NewEventData        Pointer to the new event data.
+  @param[in]      NewEventSize        New event data size.
+
+  @retval TRUE   This is a Tcg800155PlatformIdEvent.
+  @retval FALSE  This is NOT a Tcg800155PlatformIdEvent.
+
+**/
+BOOLEAN
+Is800155Event (
+  IN      VOID                      *NewEventHdr,
+  IN      UINT32                    NewEventHdrSize,
+  IN      UINT8                     *NewEventData,
+  IN      UINT32                    NewEventSize
+  )
+{
+  if ((((TCG_PCR_EVENT2_HDR *)NewEventHdr)->EventType == EV_NO_ACTION) &&
+      (NewEventSize >= sizeof(TCG_Sp800_155_PlatformId_Event2)) &&
+      (CompareMem (NewEventData, TCG_Sp800_155_PlatformId_Event2_SIGNATURE,
+        sizeof(TCG_Sp800_155_PlatformId_Event2_SIGNATURE) - 1) == 0)) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
   Add a new entry to the Event Log.
 
-  @param[in, out] EventLogPtr     Pointer to the Event Log data.
-  @param[in, out] LogSize         Size of the Event Log.
-  @param[in]      MaxSize         Maximum size of the Event Log.
-  @param[in]      NewEventHdr     Pointer to a TCG_PCR_EVENT_HDR/TCG_PCR_EVENT_EX data structure.
-  @param[in]      NewEventHdrSize New event header size.
-  @param[in]      NewEventData    Pointer to the new event data.
-  @param[in]      NewEventSize    New event data size.
+  @param[in, out] EventLogAreaStruct  The event log area data structure
+  @param[in]      NewEventHdr         Pointer to a TCG_PCR_EVENT_HDR/TCG_PCR_EVENT_EX data structure.
+  @param[in]      NewEventHdrSize     New event header size.
+  @param[in]      NewEventData        Pointer to the new event data.
+  @param[in]      NewEventSize        New event data size.
 
   @retval EFI_SUCCESS           The new event log entry was added.
   @retval EFI_OUT_OF_RESOURCES  No enough memory to log the new event.
@@ -794,9 +816,7 @@ Tcg2GetEventLog (
 **/
 EFI_STATUS
 TcgCommLogEvent (
-  IN OUT  UINT8                     **EventLogPtr,
-  IN OUT  UINTN                     *LogSize,
-  IN      UINTN                     MaxSize,
+  IN OUT  TCG_EVENT_LOG_AREA_STRUCT *EventLogAreaStruct,
   IN      VOID                      *NewEventHdr,
   IN      UINT32                    NewEventHdrSize,
   IN      UINT8                     *NewEventData,
@@ -804,6 +824,7 @@ TcgCommLogEvent (
   )
 {
   UINTN                            NewLogSize;
+  BOOLEAN                          Record800155Event;
 
   if (NewEventSize > MAX_ADDRESS -  NewEventHdrSize) {
     return EFI_OUT_OF_RESOURCES;
@@ -811,23 +832,55 @@ TcgCommLogEvent (
 
   NewLogSize = NewEventHdrSize + NewEventSize;
 
-  if (NewLogSize > MAX_ADDRESS -  *LogSize) {
+  if (NewLogSize > MAX_ADDRESS -  EventLogAreaStruct->EventLogSize) {
     return EFI_OUT_OF_RESOURCES;
   }
 
-  if (NewLogSize + *LogSize > MaxSize) {
-    DEBUG ((EFI_D_INFO, "  MaxSize    - 0x%x\n", MaxSize));
-    DEBUG ((EFI_D_INFO, "  NewLogSize - 0x%x\n", NewLogSize));
-    DEBUG ((EFI_D_INFO, "  LogSize    - 0x%x\n", *LogSize));
-    DEBUG ((EFI_D_INFO, "TcgCommLogEvent - %r\n", EFI_OUT_OF_RESOURCES));
+  if (NewLogSize + EventLogAreaStruct->EventLogSize > EventLogAreaStruct->Laml) {
+    DEBUG ((DEBUG_INFO, "  Laml       - 0x%x\n", EventLogAreaStruct->Laml));
+    DEBUG ((DEBUG_INFO, "  NewLogSize - 0x%x\n", NewLogSize));
+    DEBUG ((DEBUG_INFO, "  LogSize    - 0x%x\n", EventLogAreaStruct->EventLogSize));
+    DEBUG ((DEBUG_INFO, "TcgCommLogEvent - %r\n", EFI_OUT_OF_RESOURCES));
     return EFI_OUT_OF_RESOURCES;
   }
 
-  *EventLogPtr += *LogSize;
-  *LogSize += NewLogSize;
-  CopyMem (*EventLogPtr, NewEventHdr, NewEventHdrSize);
+  //
+  // Check 800-155 event
+  // Record to 800-155 event offset only.
+  // If the offset is 0, no need to record.
+  //
+  Record800155Event = Is800155Event (NewEventHdr, NewEventHdrSize, NewEventData, NewEventSize);
+  if (Record800155Event) {
+    if (EventLogAreaStruct->Next800155EventOffset != 0) {
+      CopyMem (
+        (UINT8 *)(UINTN)EventLogAreaStruct->Lasa + EventLogAreaStruct->Next800155EventOffset + NewLogSize,
+        (UINT8 *)(UINTN)EventLogAreaStruct->Lasa + EventLogAreaStruct->Next800155EventOffset,
+        EventLogAreaStruct->EventLogSize - EventLogAreaStruct->Next800155EventOffset
+        );
+
+      CopyMem (
+        (UINT8 *)(UINTN)EventLogAreaStruct->Lasa + EventLogAreaStruct->Next800155EventOffset,
+        NewEventHdr,
+        NewEventHdrSize
+        );
+      CopyMem (
+        (UINT8 *)(UINTN)EventLogAreaStruct->Lasa + EventLogAreaStruct->Next800155EventOffset + NewEventHdrSize,
+        NewEventData,
+        NewEventSize
+        );
+
+      EventLogAreaStruct->Next800155EventOffset += NewLogSize;
+      EventLogAreaStruct->LastEvent += NewLogSize;
+      EventLogAreaStruct->EventLogSize += NewLogSize;
+    }
+    return EFI_SUCCESS;
+  }
+
+  EventLogAreaStruct->LastEvent = (UINT8 *)(UINTN)EventLogAreaStruct->Lasa + EventLogAreaStruct->EventLogSize;
+  EventLogAreaStruct->EventLogSize += NewLogSize;
+  CopyMem (EventLogAreaStruct->LastEvent, NewEventHdr, NewEventHdrSize);
   CopyMem (
-    *EventLogPtr + NewEventHdrSize,
+    EventLogAreaStruct->LastEvent + NewEventHdrSize,
     NewEventData,
     NewEventSize
     );
@@ -879,11 +932,8 @@ TcgDxeLogEvent (
     return EFI_VOLUME_FULL;
   }
 
-  EventLogAreaStruct->LastEvent = (UINT8*)(UINTN)EventLogAreaStruct->Lasa;
   Status = TcgCommLogEvent (
-             &EventLogAreaStruct->LastEvent,
-             &EventLogAreaStruct->EventLogSize,
-             (UINTN)EventLogAreaStruct->Laml,
+             EventLogAreaStruct,
              NewEventHdr,
              NewEventHdrSize,
              NewEventData,
@@ -913,11 +963,8 @@ TcgDxeLogEvent (
       return EFI_VOLUME_FULL;
     }
 
-    EventLogAreaStruct->LastEvent = (UINT8*)(UINTN)EventLogAreaStruct->Lasa;
     Status = TcgCommLogEvent (
-               &EventLogAreaStruct->LastEvent,
-               &EventLogAreaStruct->EventLogSize,
-               (UINTN)EventLogAreaStruct->Laml,
+               EventLogAreaStruct,
                NewEventHdr,
                NewEventHdrSize,
                NewEventData,
@@ -1144,9 +1191,23 @@ TcgDxeHashLogExtendEvent (
 {
   EFI_STATUS                        Status;
   TPML_DIGEST_VALUES                DigestList;
+  TCG_PCR_EVENT2_HDR                NoActionEvent;
 
   if (!mTcgDxeData.BsCap.TPMPresentFlag) {
     return EFI_DEVICE_ERROR;
+  }
+
+  if (NewEventHdr->EventType == EV_NO_ACTION) {
+    //
+    // Do not do TPM extend for EV_NO_ACTION
+    //
+    Status = EFI_SUCCESS;
+    InitNoActionEvent (&NoActionEvent, NewEventHdr->EventSize);
+    if ((Flags & EFI_TCG2_EXTEND_ONLY) == 0) {
+      Status = TcgDxeLogHashEvent (&(NoActionEvent.Digests), NewEventHdr, NewEventData);
+    }
+
+    return Status;
   }
 
   Status = HashAndExtend (
@@ -1208,7 +1269,13 @@ Tcg2HashLogExtendEvent (
 
   DEBUG ((DEBUG_VERBOSE, "Tcg2HashLogExtendEvent ...\n"));
 
-  if ((This == NULL) || (DataToHash == 0) || (Event == NULL)) {
+  if ((This == NULL) || (Event == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+  //
+  // Do not check hash data size for EV_NO_ACTION event.
+  //
+  if ((Event->Header.EventType != EV_NO_ACTION) && (DataToHash == 0)) {
     return EFI_INVALID_PARAMETER;
   }
 
@@ -1473,17 +1540,38 @@ SetupEventLog (
   for (Index = 0; Index < sizeof(mTcg2EventInfo)/sizeof(mTcg2EventInfo[0]); Index++) {
     if ((mTcgDxeData.BsCap.SupportedEventLogs & mTcg2EventInfo[Index].LogFormat) != 0) {
       mTcgDxeData.EventLogAreaStruct[Index].EventLogFormat = mTcg2EventInfo[Index].LogFormat;
-      Status = gBS->AllocatePages (
-                      AllocateAnyPages,
-                      EfiBootServicesData,
-                      EFI_SIZE_TO_PAGES (PcdGet32 (PcdTcgLogAreaMinLen)),
-                      &Lasa
-                      );
+      if (PcdGet8(PcdTpm2AcpiTableRev) >= 4) {
+        Status = gBS->AllocatePages (
+                        AllocateAnyPages,
+                        EfiACPIMemoryNVS,
+                        EFI_SIZE_TO_PAGES (PcdGet32 (PcdTcgLogAreaMinLen)),
+                        &Lasa
+                        );
+      } else {
+        Status = gBS->AllocatePages (
+                        AllocateAnyPages,
+                        EfiBootServicesData,
+                        EFI_SIZE_TO_PAGES (PcdGet32 (PcdTcgLogAreaMinLen)),
+                        &Lasa
+                        );
+      }
       if (EFI_ERROR (Status)) {
         return Status;
       }
       mTcgDxeData.EventLogAreaStruct[Index].Lasa = Lasa;
       mTcgDxeData.EventLogAreaStruct[Index].Laml = PcdGet32 (PcdTcgLogAreaMinLen);
+      mTcgDxeData.EventLogAreaStruct[Index].Next800155EventOffset = 0;
+
+      if ((PcdGet8(PcdTpm2AcpiTableRev) >= 4) ||
+          (mTcg2EventInfo[Index].LogFormat == EFI_TCG2_EVENT_LOG_FORMAT_TCG_2)) {
+        //
+        // Report TCG2 event log address and length, so that they can be reported in TPM2 ACPI table.
+        // Ignore the return status, because those fields are optional.
+        //
+        PcdSet32S(PcdTpm2AcpiTableLaml, (UINT32)mTcgDxeData.EventLogAreaStruct[Index].Laml);
+        PcdSet64S(PcdTpm2AcpiTableLasa, mTcgDxeData.EventLogAreaStruct[Index].Lasa);
+      }
+
       //
       // To initialize them as 0xFF is recommended
       // because the OS can know the last entry for that.
@@ -1563,6 +1651,31 @@ SetupEventLog (
                    (UINT8 *)TcgEfiSpecIdEventStruct,
                    SpecIdEvent.EventSize
                    );
+        //
+        // record the offset at the end of 800-155 event.
+        // the future 800-155 event can be inserted here.
+        //
+        mTcgDxeData.EventLogAreaStruct[Index].Next800155EventOffset = \
+          mTcgDxeData.EventLogAreaStruct[Index].EventLogSize;
+
+        //
+        // Tcg800155PlatformIdEvent. Event format is TCG_PCR_EVENT2
+        //
+        GuidHob.Guid = GetFirstGuidHob (&gTcg800155PlatformIdEventHobGuid);
+        while (GuidHob.Guid != NULL) {
+          InitNoActionEvent(&NoActionEvent, GET_GUID_HOB_DATA_SIZE (GuidHob.Guid));
+
+          Status = TcgDxeLogEvent (
+                     mTcg2EventInfo[Index].LogFormat,
+                     &NoActionEvent,
+                     sizeof(NoActionEvent.PCRIndex) + sizeof(NoActionEvent.EventType) + GetDigestListBinSize (&NoActionEvent.Digests) + sizeof(NoActionEvent.EventSize),
+                     GET_GUID_HOB_DATA (GuidHob.Guid),
+                     GET_GUID_HOB_DATA_SIZE (GuidHob.Guid)
+                     );
+
+          GuidHob.Guid = GET_NEXT_HOB (GuidHob);
+          GuidHob.Guid = GetNextGuidHob (&gTcg800155PlatformIdEventHobGuid, GuidHob.Guid);
+        }
 
         //
         // EfiStartupLocalityEvent. Event format is TCG_PCR_EVENT2
@@ -1629,6 +1742,7 @@ SetupEventLog (
         mTcgDxeData.FinalEventLogAreaStruct[Index].LastEvent = (VOID *)(UINTN)mTcgDxeData.FinalEventLogAreaStruct[Index].Lasa;
         mTcgDxeData.FinalEventLogAreaStruct[Index].EventLogStarted = FALSE;
         mTcgDxeData.FinalEventLogAreaStruct[Index].EventLogTruncated = FALSE;
+        mTcgDxeData.FinalEventLogAreaStruct[Index].Next800155EventOffset = 0;
 
         //
         // Install to configuration table for EFI_TCG2_EVENT_LOG_FORMAT_TCG_2
@@ -1649,6 +1763,7 @@ SetupEventLog (
         mTcgDxeData.FinalEventLogAreaStruct[Index].LastEvent = 0;
         mTcgDxeData.FinalEventLogAreaStruct[Index].EventLogStarted = FALSE;
         mTcgDxeData.FinalEventLogAreaStruct[Index].EventLogTruncated = FALSE;
+        mTcgDxeData.FinalEventLogAreaStruct[Index].Next800155EventOffset = 0;
       }
     }
   }
@@ -2314,10 +2429,10 @@ OnReadyToBoot (
     //
     Status = TcgMeasureAction (
                4,
-               EFI_RETURNING_FROM_EFI_APPLICATOIN
+               EFI_RETURNING_FROM_EFI_APPLICATION
                );
     if (EFI_ERROR (Status)) {
-      DEBUG ((EFI_D_ERROR, "%a not Measured. Error!\n", EFI_RETURNING_FROM_EFI_APPLICATOIN));
+      DEBUG ((EFI_D_ERROR, "%a not Measured. Error!\n", EFI_RETURNING_FROM_EFI_APPLICATION));
     }
 
     //
@@ -2425,10 +2540,7 @@ OnExitBootServicesFailed (
                                 EfiResetShutdown the data buffer starts with a Null-terminated
                                 string, optionally followed by additional binary data.
                                 The string is a description that the caller may use to further
-                                indicate the reason for the system reset. ResetData is only
-                                valid if ResetStatus is something other than EFI_SUCCESS
-                                unless the ResetType is EfiResetPlatformSpecific
-                                where a minimum amount of ResetData is always required.
+                                indicate the reason for the system reset.
                                 For a ResetType of EfiResetPlatformSpecific the data buffer
                                 also starts with a Null-terminated string that is followed
                                 by an EFI_GUID that describes the specific type of reset to perform.

@@ -1,14 +1,8 @@
 /** @file
   Register CPU Features Library to register and manage CPU features.
 
-  Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2017 - 2020, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -16,7 +10,7 @@
 #define __REGISTER_CPU_FEATURES_LIB_H__
 
 #include <AcpiCpuData.h>
-#include <Register/Cpuid.h>
+#include <Register/Intel/Cpuid.h>
 #include <Protocol/MpService.h>
 
 ///
@@ -31,7 +25,7 @@
 #define CPU_FEATURE_MWAIT                           2
 #define CPU_FEATURE_ACPI                            3
 #define CPU_FEATURE_EIST                            4
-#define CPU_FEATURE_XD                              5
+#define CPU_FEATURE_RESERVED_5                      5
 #define CPU_FEATURE_FASTSTRINGS                     6
 #define CPU_FEATURE_VMX                             7
 #define CPU_FEATURE_SMX                             8
@@ -67,7 +61,7 @@
 #define CPU_FEATURE_IP_PREFETCHER                   (32+5)
 #define CPU_FEATURE_MLC_STREAMER_PREFETCHER         (32+6)
 #define CPU_FEATURE_MLC_SPATIAL_PREFETCHER          (32+7)
-#define CPU_FEATURE_THREE_STRICK_COUNTER            (32+8)
+#define CPU_FEATURE_THREE_STRIKE_COUNTER            (32+8)
 #define CPU_FEATURE_APIC_TPR_UPDATE_MESSAGE         (32+9)
 #define CPU_FEATURE_ENERGY_PERFORMANCE_BIAS         (32+10)
 #define CPU_FEATURE_PPIN                            (32+11)
@@ -75,23 +69,45 @@
 
 #define CPU_FEATURE_BEFORE_ALL                      BIT23
 #define CPU_FEATURE_AFTER_ALL                       BIT24
-//
-// CPU_FEATURE_BEFORE and CPU_FEATURE_AFTER only mean Thread scope
-// before and Thread scope after.
-// It will be replace with CPU_FEATURE_THREAD_BEFORE and
-// CPU_FEATURE_THREAD_AFTER, and should not be used anymore.
-//
-#define CPU_FEATURE_BEFORE                          BIT25
-#define CPU_FEATURE_AFTER                           BIT26
-
-#define CPU_FEATURE_THREAD_BEFORE                   CPU_FEATURE_BEFORE
-#define CPU_FEATURE_THREAD_AFTER                    CPU_FEATURE_AFTER
+#define CPU_FEATURE_THREAD_BEFORE                   BIT25
+#define CPU_FEATURE_THREAD_AFTER                    BIT26
 #define CPU_FEATURE_CORE_BEFORE                     BIT27
 #define CPU_FEATURE_CORE_AFTER                      BIT28
 #define CPU_FEATURE_PACKAGE_BEFORE                  BIT29
 #define CPU_FEATURE_PACKAGE_AFTER                   BIT30
 #define CPU_FEATURE_END                             MAX_UINT32
 /// @}
+
+///
+/// The bit field to indicate whether the processor is the first in its parent scope.
+///
+typedef struct {
+  //
+  // Set to 1 when current processor is the first thread in the core it resides in.
+  //
+  UINT32 Thread   : 1;
+  //
+  // Set to 1 when current processor is a thread of the first core in the module it resides in.
+  //
+  UINT32 Core     : 1;
+  //
+  // Set to 1 when current processor is a thread of the first module in the tile it resides in.
+  //
+  UINT32 Module   : 1;
+  //
+  // Set to 1 when current processor is a thread of the first tile in the die it resides in.
+  //
+  UINT32 Tile     : 1;
+  //
+  // Set to 1 when current processor is a thread of the first die in the package it resides in.
+  //
+  UINT32 Die      : 1;
+  //
+  // Set to 1 when current processor is a thread of the first package in the system.
+  //
+  UINT32 Package  : 1;
+  UINT32 Reserved : 26;
+} REGISTER_CPU_FEATURE_FIRST_PROCESSOR;
 
 ///
 /// CPU Information passed into the SupportFunc and InitializeFunc of the
@@ -103,6 +119,11 @@ typedef struct {
   /// The package that the CPU resides
   ///
   EFI_PROCESSOR_INFORMATION            ProcessorInfo;
+
+  ///
+  /// The bit flag indicating whether the CPU is the first Thread/Core/Module/Tile/Die/Package in its parent scope.
+  ///
+  REGISTER_CPU_FEATURE_FIRST_PROCESSOR First;
   ///
   /// The Display Family of the CPU computed from CPUID leaf CPUID_VERSION_INFO
   ///
@@ -163,40 +184,6 @@ IsCpuFeatureSupported (
 BOOLEAN
 EFIAPI
 IsCpuFeatureInSetting (
-  IN UINT32              Feature
-  );
-
-/**
-  Determines if a CPU feature is set in PcdCpuFeaturesCapability bit mask.
-
-  @param[in]  Feature  The bit number of the CPU feature to check in the PCD
-                       PcdCpuFeaturesCapability.
-
-  @retval  TRUE   The CPU feature is set in PcdCpuFeaturesCapability.
-  @retval  FALSE  The CPU feature is not set in PcdCpuFeaturesCapability.
-
-  @note This service could be called by BSP only.
-**/
-BOOLEAN
-EFIAPI
-IsCpuFeatureCapability (
-  IN UINT32              Feature
-  );
-
-/**
-  Determines if a CPU feature is set in PcdCpuFeaturesUserConfiguration bit mask.
-
-  @param[in]  Feature  The bit number of the CPU feature to check in the PCD
-                       PcdCpuFeaturesUserConfiguration.
-
-  @retval  TRUE   The CPU feature is set in PcdCpuFeaturesUserConfiguration.
-  @retval  FALSE  The CPU feature is not set in PcdCpuFeaturesUserConfiguration.
-
-  @note This service could be called by BSP only.
-**/
-BOOLEAN
-EFIAPI
-IsCpuFeatureUserConfiguration (
   IN UINT32              Feature
   );
 
@@ -389,6 +376,32 @@ CpuRegisterTableWrite (
   );
 
 /**
+  Adds an entry in specified register table.
+
+  This function adds an entry in specified register table, with given register type,
+  register index, bit section and value.
+
+  Driver will  test the current value before setting new value.
+
+  @param[in]  ProcessorNumber  The index of the CPU to add a register table entry
+  @param[in]  RegisterType     Type of the register to program
+  @param[in]  Index            Index of the register to program
+  @param[in]  ValueMask        Mask of bits in register to write
+  @param[in]  Value            Value to write
+
+  @note This service could be called by BSP only.
+**/
+VOID
+EFIAPI
+CpuRegisterTableTestThenWrite (
+  IN UINTN               ProcessorNumber,
+  IN REGISTER_TYPE       RegisterType,
+  IN UINT64              Index,
+  IN UINT64              ValueMask,
+  IN UINT64              Value
+  );
+
+/**
   Adds an entry in specified Pre-SMM register table.
 
   This function adds an entry in specified register table, with given register type,
@@ -431,6 +444,26 @@ PreSmmCpuRegisterTableWrite (
   } while(FALSE);
 
 /**
+  Adds a 32-bit register write entry in specified register table.
+
+  This macro adds an entry in specified register table, with given register type,
+  register index, and value.
+
+  Driver will  test the current value before setting new value.
+
+  @param[in]  ProcessorNumber  The index of the CPU to add a register table entry.
+  @param[in]  RegisterType     Type of the register to program
+  @param[in]  Index            Index of the register to program
+  @param[in]  Value            Value to write
+
+  @note This service could be called by BSP only.
+**/
+#define CPU_REGISTER_TABLE_TEST_THEN_WRITE32(ProcessorNumber, RegisterType, Index, Value)     \
+  do {                                                                                        \
+    CpuRegisterTableTestThenWrite (ProcessorNumber, RegisterType, Index, MAX_UINT32, Value);  \
+  } while(FALSE);
+
+/**
   Adds a 64-bit register write entry in specified register table.
 
   This macro adds an entry in specified register table, with given register type,
@@ -446,6 +479,26 @@ PreSmmCpuRegisterTableWrite (
 #define CPU_REGISTER_TABLE_WRITE64(ProcessorNumber, RegisterType, Index, Value)       \
   do {                                                                                \
     CpuRegisterTableWrite (ProcessorNumber, RegisterType, Index, MAX_UINT64, Value);  \
+  } while(FALSE);
+
+/**
+  Adds a 64-bit register write entry in specified register table.
+
+  This macro adds an entry in specified register table, with given register type,
+  register index, and value.
+
+  Driver will  test the current value before setting new value.
+
+  @param[in]  ProcessorNumber  The index of the CPU to add a register table entry.
+  @param[in]  RegisterType     Type of the register to program
+  @param[in]  Index            Index of the register to program
+  @param[in]  Value            Value to write
+
+  @note This service could be called by BSP only.
+**/
+#define CPU_REGISTER_TABLE_TEST_THEN_WRITE64(ProcessorNumber, RegisterType, Index, Value)     \
+  do {                                                                                        \
+    CpuRegisterTableTestThenWrite (ProcessorNumber, RegisterType, Index, MAX_UINT64, Value);  \
   } while(FALSE);
 
 /**
@@ -469,6 +522,31 @@ PreSmmCpuRegisterTableWrite (
     ValueMask = MAX_UINT64;                                                                      \
     ((Type *)(&ValueMask))->Field = 0;                                                           \
     CpuRegisterTableWrite (ProcessorNumber, RegisterType, Index, ~ValueMask, Value);             \
+  } while(FALSE);
+
+/**
+  Adds a bit field write entry in specified register table.
+
+  This macro adds an entry in specified register table, with given register type,
+  register index, bit field section, and value.
+
+  Driver will  test the current value before setting new value.
+
+  @param[in]  ProcessorNumber  The index of the CPU to add a register table entry.
+  @param[in]  RegisterType     Type of the register to program.
+  @param[in]  Index            Index of the register to program.
+  @param[in]  Type             The data type name of a register structure.
+  @param[in]  Field            The bit fiel name in register structure to write.
+  @param[in]  Value            Value to write to the bit field.
+
+  @note This service could be called by BSP only.
+**/
+#define CPU_REGISTER_TABLE_TEST_THEN_WRITE_FIELD(ProcessorNumber, RegisterType, Index, Type, Field, Value) \
+  do {                                                                                                     \
+    UINT64  ValueMask;                                                                                     \
+    ValueMask = MAX_UINT64;                                                                                \
+    ((Type *)(&ValueMask))->Field = 0;                                                                     \
+    CpuRegisterTableTestThenWrite (ProcessorNumber, RegisterType, Index, ~ValueMask, Value);               \
   } while(FALSE);
 
 /**

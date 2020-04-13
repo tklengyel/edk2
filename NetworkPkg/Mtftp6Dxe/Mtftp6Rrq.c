@@ -3,13 +3,7 @@
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -523,7 +517,7 @@ Mtftp6RrqHandleOack (
       Mtftp6SendError (
         Instance,
         EFI_MTFTP6_ERRORCODE_ILLEGAL_OPERATION,
-        (UINT8 *) "Mal-formated OACK packet"
+        (UINT8 *) "Malformatted OACK packet"
         );
     }
 
@@ -748,7 +742,7 @@ Mtftp6RrqInput (
       //
       // For the subsequent exchange of requests, reconfigure the udpio as
       // (serverip, serverport, localip, localport).
-      // Ususally, the client set serverport as 0 to receive and reset it
+      // Usually, the client set serverport as 0 to receive and reset it
       // once the first packet arrives to send ack.
       //
       Instance->ServerDataPort = UdpEpt->RemotePort;
@@ -857,7 +851,7 @@ Mtftp6RrqInput (
 
   default:
     //
-    // Drop and return eror if received error message.
+    // Drop and return error if received error message.
     //
     Status = EFI_TFTP_ERROR;
     break;
@@ -902,7 +896,7 @@ ON_EXIT:
 
 /**
   Start the Mtftp6 instance to download. It first initializes some
-  of the internal states, then builds and sends an RRQ reqeuest packet.
+  of the internal states, then builds and sends an RRQ request packet.
   Finally, it starts receive for the downloading.
 
   @param[in]  Instance              The pointer to the Mtftp6 instance.
@@ -923,7 +917,7 @@ Mtftp6RrqStart (
   //
   // The valid block number range are [1, 0xffff]. For example:
   // the client sends an RRQ request to the server, the server
-  // transfers the DATA1 block. If option negoitation is ongoing,
+  // transfers the DATA1 block. If option negotiation is ongoing,
   // the server will send back an OACK, then client will send ACK0.
   //
   Status = Mtftp6InitBlockRange (&Instance->BlkList, 1, 0xffff);

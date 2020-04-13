@@ -3,13 +3,7 @@
 
   Copyright (c) 2009 - 2014, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -180,7 +174,7 @@ Mtftp6WrqHandleAck (
 
   if (Expected < 0) {
     //
-    // The block range is empty. It may either because the the last
+    // The block range is empty. It may either because the last
     // block has been ACKed, or the sequence number just looped back,
     // that is, there is more than 0xffff blocks.
     //
@@ -338,7 +332,7 @@ Mtftp6WrqHandleOack (
       Mtftp6SendError (
         Instance,
         EFI_MTFTP6_ERRORCODE_ILLEGAL_OPERATION,
-        (UINT8 *) "Mal-formated OACK packet"
+        (UINT8 *) "Malformatted OACK packet"
         );
     }
 

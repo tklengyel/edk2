@@ -2,13 +2,7 @@
   ACPI 1.0b definitions from the ACPI Specification, revision 1.0b
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials are licensed and made available under
-the terms and conditions of the BSD License that accompanies this distribution.
-The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php.
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #ifndef _ACPI_1_0_H_
@@ -43,7 +37,7 @@ typedef struct {
 #pragma pack()
 
 //
-// Define for Desriptor
+// Define for Descriptor
 //
 #define ACPI_SMALL_ITEM_FLAG                   0x00
 #define ACPI_LARGE_ITEM_FLAG                   0x01
@@ -115,7 +109,7 @@ typedef struct {
 #pragma pack(1)
 
 ///
-/// The commond definition of QWORD, DWORD, and WORD
+/// The common definition of QWORD, DWORD, and WORD
 /// Address Space Descriptors.
 ///
 typedef PACKED struct {

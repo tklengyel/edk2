@@ -4,13 +4,7 @@
 # Copyright (c) 2011 - 2016, ARM Limited. All rights reserved.
 # Copyright (c) 2016, Linaro Limited. All rights reserved.
 #
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #------------------------------------------------------------------------------
 
@@ -18,6 +12,8 @@
 
 .set DAIF_RD_FIQ_BIT,   (1 << 6)
 .set DAIF_RD_IRQ_BIT,   (1 << 7)
+
+.set SCTLR_ELx_M_BIT_POS, (0)
 
 ASM_FUNC(ArmReadMidr)
   mrs     x0, midr_el1        // Read from Main ID Register (MIDR)
@@ -124,15 +120,20 @@ ASM_FUNC(ArmSetMAIR)
 //  IN VOID  *MVA                    // X1
 //  );
 ASM_FUNC(ArmUpdateTranslationTableEntry)
-   dc      civac, x0             // Clean and invalidate data line
-   dsb     sy
-   EL1_OR_EL2_OR_EL3(x0)
+   dsb     nshst
+   lsr     x1, x1, #12
+   EL1_OR_EL2_OR_EL3(x2)
 1: tlbi    vaae1, x1             // TLB Invalidate VA , EL1
+   mrs     x2, sctlr_el1
    b       4f
 2: tlbi    vae2, x1              // TLB Invalidate VA , EL2
+   mrs     x2, sctlr_el2
    b       4f
 3: tlbi    vae3, x1              // TLB Invalidate VA , EL3
-4: dsb     sy
+   mrs     x2, sctlr_el3
+4: tbnz    x2, SCTLR_ELx_M_BIT_POS, 5f
+   dc      ivac, x0              // invalidate in Dcache if MMU is still off
+5: dsb     nsh
    isb
    ret
 

@@ -2,13 +2,7 @@
   Routines dealing with disk spaces and FAT table entries.
 
 Copyright (c) 2005 - 2013, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials are licensed and made available
-under the terms and conditions of the BSD License which accompanies this
-distribution. The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 
 
@@ -135,7 +129,7 @@ FatGetFatEntry (
   @param  Index                 - The index of the FAT entry of the volume.
   @param  Value                 - The new value of the FAT entry.
 
-  @retval EFI_SUCCESS           - Set the new FAT entry value sucessfully.
+  @retval EFI_SUCCESS           - Set the new FAT entry value successfully.
   @retval EFI_VOLUME_CORRUPTED  - The FAT type of the volume is error.
   @return other                 - An error occurred when operation the FAT entries.
 
@@ -229,7 +223,7 @@ FatSetFatEntry (
 
 /**
 
-  Free the cluster clain.
+  Free the cluster chain.
 
   @param  Volume                - FAT file system volume.
   @param  Cluster               - The first cluster of cluster chain.
@@ -349,7 +343,7 @@ FatSizeToClusters (
 
   @param  OFile                 - The open file.
 
-  @retval EFI_SUCCESS           - Shrinked sucessfully.
+  @retval EFI_SUCCESS           - Shrinked successfully.
   @retval EFI_VOLUME_CORRUPTED  - There are errors in the file's clusters.
 
 **/
@@ -422,7 +416,7 @@ FatShrinkEof (
   @param  OFile                 - The open file.
   @param  NewSizeInBytes        - The new size in bytes of the open file.
 
-  @retval EFI_SUCCESS           - The file is grown sucessfully.
+  @retval EFI_SUCCESS           - The file is grown successfully.
   @retval EFI_UNSUPPORTED       - The file size is larger than 4GB.
   @retval EFI_VOLUME_CORRUPTED  - There are errors in the files' clusters.
   @retval EFI_VOLUME_FULL       - The volume is full and can not grow the file.
@@ -581,8 +575,8 @@ FatOFilePosition (
   ASSERT_VOLUME_LOCKED (Volume);
 
   //
-  // If this is the fixed root dir, then compute it's position
-  // from it's fixed info in the fat bpb
+  // If this is the fixed root dir, then compute its position
+  // from its fixed info in the fat bpb
   //
   if (OFile->IsFixedRootDir) {
     OFile->PosDisk  = Volume->RootPos + Position;

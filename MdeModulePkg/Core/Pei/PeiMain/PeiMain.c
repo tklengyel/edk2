@@ -1,14 +1,8 @@
 /** @file
   Pei Core Main Entry Point
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -80,22 +74,49 @@ ShadowPeiCore (
   IN PEI_CORE_INSTANCE  *PrivateData
   )
 {
-  EFI_PEI_FILE_HANDLE  PeiCoreFileHandle;
-  EFI_PHYSICAL_ADDRESS EntryPoint;
-  EFI_STATUS           Status;
-  UINT32               AuthenticationState;
+  EFI_PEI_FILE_HANDLE          PeiCoreFileHandle;
+  EFI_PHYSICAL_ADDRESS         EntryPoint;
+  EFI_STATUS                   Status;
+  UINT32                       AuthenticationState;
+  UINTN                        Index;
+  EFI_PEI_CORE_FV_LOCATION_PPI *PeiCoreFvLocationPpi;
+  UINTN                        PeiCoreFvIndex;
 
   PeiCoreFileHandle = NULL;
-
   //
-  // Find the PEI Core in the BFV
+  // Default PeiCore is in BFV
   //
-  Status = PrivateData->Fv[0].FvPpi->FindFileByType (
-                                       PrivateData->Fv[0].FvPpi,
-                                       EFI_FV_FILETYPE_PEI_CORE,
-                                       PrivateData->Fv[0].FvHandle,
-                                       &PeiCoreFileHandle
-                                       );
+  PeiCoreFvIndex = 0;
+  //
+  // Find the PEI Core either from EFI_PEI_CORE_FV_LOCATION_PPI indicated FV or BFV
+  //
+  Status = PeiServicesLocatePpi (
+             &gEfiPeiCoreFvLocationPpiGuid,
+             0,
+             NULL,
+             (VOID **) &PeiCoreFvLocationPpi
+             );
+  if (!EFI_ERROR (Status) && (PeiCoreFvLocationPpi->PeiCoreFvLocation != NULL)) {
+    //
+    // If PeiCoreFvLocation present, the PEI Core should be found from indicated FV
+    //
+    for (Index = 0; Index < PrivateData->FvCount; Index ++) {
+      if (PrivateData->Fv[Index].FvHandle == PeiCoreFvLocationPpi->PeiCoreFvLocation) {
+        PeiCoreFvIndex = Index;
+        break;
+      }
+    }
+    ASSERT (Index < PrivateData->FvCount);
+  }
+  //
+  // Find PEI Core from the given FV index
+  //
+  Status = PrivateData->Fv[PeiCoreFvIndex].FvPpi->FindFileByType (
+                                                    PrivateData->Fv[PeiCoreFvIndex].FvPpi,
+                                                    EFI_FV_FILETYPE_PEI_CORE,
+                                                    PrivateData->Fv[PeiCoreFvIndex].FvHandle,
+                                                    &PeiCoreFileHandle
+                                                    );
   ASSERT_EFI_ERROR (Status);
 
   //
@@ -111,7 +132,7 @@ ShadowPeiCore (
   ASSERT_EFI_ERROR (Status);
 
   //
-  // Compute the PeiCore's function address after shaowed PeiCore.
+  // Compute the PeiCore's function address after shadowed PeiCore.
   // _ModuleEntryPoint is PeiCore main function entry
   //
   return (PEICORE_FUNCTION_POINTER)((UINTN) EntryPoint + (UINTN) PeiCore - (UINTN) _ModuleEntryPoint);
@@ -294,7 +315,7 @@ PeiCore (
       }
 
       //
-      // Shadow PEI Core. When permanent memory is avaiable, shadow
+      // Shadow PEI Core. When permanent memory is available, shadow
       // PEI Core and PEIMs to get high performance.
       //
       OldCoreData->ShadowedPeiCore = (PEICORE_FUNCTION_POINTER) (UINTN) PeiCore;

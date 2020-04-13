@@ -4,13 +4,7 @@
   Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
   Copyright (c) 2017, Linaro, Ltd. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -91,10 +85,6 @@ IsDayValid (
   IN  EFI_TIME  *Time
   )
 {
-  ASSERT (Time->Day >= 1);
-  ASSERT (Time->Day <= mDayOfMonth[Time->Month - 1]);
-  ASSERT (Time->Month != 2 || IsLeapYear (Time) || Time->Day <= 28);
-
   if (Time->Day < 1 ||
       Time->Day > mDayOfMonth[Time->Month - 1] ||
       (Time->Month == 2 && !IsLeapYear (Time) && Time->Day > 28)) {
@@ -119,6 +109,7 @@ IsTimeValid(
       Time->Hour   > 23                 ||
       Time->Minute > 59                 ||
       Time->Second > 59                 ||
+      Time->Nanosecond > 999999999      ||
       !IsValidTimeZone (Time->TimeZone) ||
       !IsValidDaylight (Time->Daylight)) {
     return FALSE;

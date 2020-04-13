@@ -2,15 +2,9 @@
 Implementation for EFI_HII_STRING_PROTOCOL.
 
 
-Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2007 - 2020, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1012,6 +1006,7 @@ SetStringWorker (
       TmpSize
       );
 
+    ZeroMem (StringPackage->StringBlock, OldBlockSize);
     FreePool (StringPackage->StringBlock);
     StringPackage->StringBlock = Block;
     StringPackage->StringPkgHdr->Header.Length += (UINT32) (BlockSize - OldBlockSize);
@@ -1045,6 +1040,7 @@ SetStringWorker (
       OldBlockSize - (StringTextPtr - StringPackage->StringBlock) - StringSize
       );
 
+    ZeroMem (StringPackage->StringBlock, OldBlockSize);
     FreePool (StringPackage->StringBlock);
     StringPackage->StringBlock = Block;
     StringPackage->StringPkgHdr->Header.Length += (UINT32) (BlockSize - OldBlockSize);
@@ -1096,6 +1092,7 @@ SetStringWorker (
 
   CopyMem (BlockPtr, StringPackage->StringBlock, OldBlockSize);
 
+  ZeroMem (StringPackage->StringBlock, OldBlockSize);
   FreePool (StringPackage->StringBlock);
   StringPackage->StringBlock = Block;
   StringPackage->StringPkgHdr->Header.Length += Ext2.Length;
@@ -1281,6 +1278,7 @@ HiiNewString (
       // Append a EFI_HII_SIBT_END block to the end.
       //
       *BlockPtr = EFI_HII_SIBT_END;
+      ZeroMem (StringPackage->StringBlock, OldBlockSize);
       FreePool (StringPackage->StringBlock);
       StringPackage->StringBlock = StringBlock;
       StringPackage->StringPkgHdr->Header.Length += Ucs2BlockSize;
@@ -1412,6 +1410,7 @@ HiiNewString (
     // Append a EFI_HII_SIBT_END block to the end.
     //
     *BlockPtr = EFI_HII_SIBT_END;
+    ZeroMem (StringPackage->StringBlock, OldBlockSize);
     FreePool (StringPackage->StringBlock);
     StringPackage->StringBlock = StringBlock;
     StringPackage->StringPkgHdr->Header.Length += Ucs2BlockSize;
@@ -1454,6 +1453,7 @@ HiiNewString (
       // Append a EFI_HII_SIBT_END block to the end.
       //
       *BlockPtr = EFI_HII_SIBT_END;
+      ZeroMem (StringPackage->StringBlock, OldBlockSize);
       FreePool (StringPackage->StringBlock);
       StringPackage->StringBlock = StringBlock;
       StringPackage->StringPkgHdr->Header.Length += Ucs2FontBlockSize;
@@ -1515,6 +1515,7 @@ HiiNewString (
       // Append a EFI_HII_SIBT_END block to the end.
       //
       *BlockPtr = EFI_HII_SIBT_END;
+      ZeroMem (StringPackage->StringBlock, OldBlockSize);
       FreePool (StringPackage->StringBlock);
       StringPackage->StringBlock = StringBlock;
       StringPackage->StringPkgHdr->Header.Length += FontBlockSize + Ucs2FontBlockSize;

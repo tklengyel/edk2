@@ -1,17 +1,11 @@
 /** @file
   SRAT table parser
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2020, ARM Limited. All rights reserved.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
-    - ACPI 6.2 Specification - Errata A, September 2017
+    - ACPI 6.3 Specification - January 2019
 **/
 
 #include <IndustryStandard/Acpi.h>
@@ -23,6 +17,7 @@
 // Local Variables
 STATIC CONST UINT8* SratRAType;
 STATIC CONST UINT8* SratRALength;
+STATIC CONST UINT8* SratDeviceHandleType;
 STATIC ACPI_DESCRIPTION_HEADER_INFO AcpiHdrInfo;
 
 /**
@@ -38,7 +33,174 @@ EFIAPI
 ValidateSratReserved (
   IN UINT8* Ptr,
   IN VOID*  Context
-  );
+  )
+{
+  if (*(UINT32*)Ptr != 1) {
+    IncrementErrorCount ();
+    Print (L"\nERROR: Reserved should be 1 for backward compatibility.\n");
+  }
+}
+
+/**
+  This function validates the Device Handle Type field in the Generic Initiator
+  Affinity Structure.
+
+  @param [in] Ptr     Pointer to the start of the field data.
+  @param [in] Context Pointer to context specific information e.g. this
+                      could be a pointer to the ACPI table header.
+**/
+STATIC
+VOID
+EFIAPI
+ValidateSratDeviceHandleType (
+  IN UINT8* Ptr,
+  IN VOID*  Context
+  )
+{
+  UINT8   DeviceHandleType;
+
+  DeviceHandleType = *Ptr;
+
+  if (DeviceHandleType > EFI_ACPI_6_3_PCI_DEVICE_HANDLE) {
+    IncrementErrorCount ();
+    Print (
+      L"\nERROR: Invalid Device Handle Type: %d. Must be between 0 and %d.",
+      DeviceHandleType,
+      EFI_ACPI_6_3_PCI_DEVICE_HANDLE
+      );
+  }
+}
+
+/**
+  This function traces the PCI BDF Number field inside Device Handle - PCI
+
+  @param [in] Format  Format string for tracing the data.
+  @param [in] Ptr     Pointer to the start of the buffer.
+**/
+STATIC
+VOID
+EFIAPI
+DumpSratPciBdfNumber (
+  IN CONST CHAR16* Format,
+  IN UINT8*        Ptr
+  )
+{
+  CHAR16 Buffer[OUTPUT_FIELD_COLUMN_WIDTH];
+
+  Print (L"\n");
+
+  /*
+    The PCI BDF Number subfields are printed in the order specified in the ACPI
+    specification. The format of the 16-bit PCI BDF Number field is as follows:
+
+    +-----+------+------+
+    |DEV  | FUNC | BUS  |
+    +-----+------+------+
+    |15:11| 10:8 |  7:0 |
+    +-----+------+------+
+  */
+
+  // Print PCI Bus Number (Bits 7:0 of Byte 2)
+  UnicodeSPrint (
+    Buffer,
+    sizeof (Buffer),
+    L"PCI Bus Number"
+    );
+  PrintFieldName (4, Buffer);
+  Print (
+    L"0x%x\n",
+    *Ptr
+    );
+
+  Ptr++;
+
+  // Print PCI Device Number (Bits 7:3 of Byte 3)
+  UnicodeSPrint (
+    Buffer,
+    sizeof (Buffer),
+    L"PCI Device Number"
+    );
+  PrintFieldName (4, Buffer);
+  Print (
+    L"0x%x\n",
+    (*Ptr & (BIT7 | BIT6 | BIT5 | BIT4 | BIT3)) >> 3
+    );
+
+  // PCI Function Number (Bits 2:0 of Byte 3)
+  UnicodeSPrint (
+    Buffer,
+    sizeof (Buffer),
+    L"PCI Function Number"
+    );
+  PrintFieldName (4, Buffer);
+  Print (
+    L"0x%x\n",
+    *Ptr & (BIT2 | BIT1 | BIT0)
+    );
+}
+
+/**
+  An ACPI_PARSER array describing the Device Handle - ACPI
+**/
+STATIC CONST ACPI_PARSER SratDeviceHandleAcpiParser[] = {
+  {L"ACPI_HID", 8, 0, L"0x%lx", NULL, NULL, NULL, NULL},
+  {L"ACPI_UID", 4, 8, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"Reserved", 4, 12, L"0x%x", NULL, NULL, NULL, NULL}
+};
+
+/**
+  An ACPI_PARSER array describing the Device Handle - PCI
+**/
+STATIC CONST ACPI_PARSER SratDeviceHandlePciParser[] = {
+  {L"PCI Segment", 2, 0, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"PCI BDF Number", 2, 2, NULL, DumpSratPciBdfNumber, NULL, NULL, NULL},
+  {L"Reserved", 12, 4, L"%x %x %x %x - %x %x %x %x - %x %x %x %x", Dump12Chars,
+   NULL, NULL, NULL}
+};
+
+/**
+  This function traces the Device Handle field inside Generic Initiator
+  Affinity Structure.
+
+  @param [in] Format  Format string for tracing the data.
+  @param [in] Ptr     Pointer to the start of the buffer.
+**/
+STATIC
+VOID
+EFIAPI
+DumpSratDeviceHandle (
+  IN CONST CHAR16* Format,
+  IN UINT8*        Ptr
+ )
+{
+  if (SratDeviceHandleType == NULL) {
+    IncrementErrorCount ();
+    Print (L"\nERROR: Device Handle Type read incorrectly.\n");
+    return;
+  }
+
+  Print (L"\n");
+
+  if (*SratDeviceHandleType == EFI_ACPI_6_3_ACPI_DEVICE_HANDLE) {
+    ParseAcpi (
+      TRUE,
+      2,
+      NULL,
+      Ptr,
+      sizeof (EFI_ACPI_6_3_DEVICE_HANDLE_ACPI),
+      PARSER_PARAMS (SratDeviceHandleAcpiParser)
+      );
+  } else if (*SratDeviceHandleType == EFI_ACPI_6_3_PCI_DEVICE_HANDLE) {
+    ParseAcpi (
+      TRUE,
+      2,
+      NULL,
+      Ptr,
+      sizeof (EFI_ACPI_6_3_DEVICE_HANDLE_PCI),
+      PARSER_PARAMS (SratDeviceHandlePciParser)
+      );
+  }
+}
 
 /**
   This function traces the APIC Proximity Domain field.
@@ -50,9 +212,16 @@ STATIC
 VOID
 EFIAPI
 DumpSratApicProximity (
-  IN  CONST CHAR16*  Format,
-  IN  UINT8*         Ptr
-  );
+ IN CONST CHAR16* Format,
+ IN UINT8*        Ptr
+ )
+{
+  UINT32 ProximityDomain;
+
+  ProximityDomain = Ptr[0] | (Ptr[1] << 8) | (Ptr[2] << 16);
+
+  Print (Format, ProximityDomain);
+}
 
 /**
   An ACPI_PARSER array describing the SRAT Table.
@@ -94,6 +263,22 @@ STATIC CONST ACPI_PARSER SratGicITSAffinityParser[] = {
   {L"Proximity Domain", 4, 2, L"0x%x", NULL, NULL, NULL, NULL},
   {L"Reserved", 2, 6, L"0x%x", NULL, NULL, NULL, NULL},
   {L"ITS Id", 4, 8, L"0x%x", NULL, NULL, NULL, NULL},
+};
+
+/**
+  An ACPI_PARSER array describing the Generic Initiator Affinity Structure
+**/
+STATIC CONST ACPI_PARSER SratGenericInitiatorAffinityParser[] = {
+  {L"Type", 1, 0, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"Length", 1, 1, L"0x%x", NULL, NULL, NULL, NULL},
+
+  {L"Reserved", 1, 2, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"Device Handle Type", 1, 3, L"%d", NULL, (VOID**)&SratDeviceHandleType,
+   ValidateSratDeviceHandleType, NULL},
+  {L"Proximity Domain", 4, 4, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"Device Handle", 16, 8, L"%s", DumpSratDeviceHandle, NULL, NULL, NULL},
+  {L"Flags", 4, 24, L"0x%x", NULL, NULL, NULL, NULL},
+  {L"Reserved", 4, 28, L"0x%x", NULL, NULL, NULL, NULL}
 };
 
 /**
@@ -145,47 +330,6 @@ STATIC CONST ACPI_PARSER SratX2ApciAffinityParser[] = {
   {L"Reserved", 4, 20, L"0x%x", NULL, NULL, NULL, NULL}
 };
 
-/** This function validates the Reserved field in the SRAT table header.
-
-  @param [in] Ptr     Pointer to the start of the field data.
-  @param [in] Context Pointer to context specific information e.g. this
-                      could be a pointer to the ACPI table header.
-**/
-STATIC
-VOID
-EFIAPI
-ValidateSratReserved (
-  IN UINT8* Ptr,
-  IN VOID*  Context
-  )
-{
-  if (*(UINT32*)Ptr != 1) {
-    IncrementErrorCount ();
-    Print (L"\nERROR: Reserved should be 1 for backward compatibility.\n");
-  }
-}
-
-/**
-  This function traces the APIC Proximity Domain field.
-
-  @param [in] Format  Format string for tracing the data.
-  @param [in] Ptr     Pointer to the start of the buffer.
-**/
-STATIC
-VOID
-EFIAPI
-DumpSratApicProximity (
- IN CONST CHAR16* Format,
- IN UINT8*        Ptr
- )
-{
-  UINT32 ProximityDomain;
-
-  ProximityDomain = Ptr[0] | (Ptr[1] << 8) | (Ptr[2] << 16);
-
-  Print (Format, ProximityDomain);
-}
-
 /**
   This function parses the ACPI SRAT table.
   When trace is enabled this function parses the SRAT table and
@@ -217,6 +361,7 @@ ParseAcpiSrat (
   UINT8* ResourcePtr;
   UINT32 GicCAffinityIndex;
   UINT32 GicITSAffinityIndex;
+  UINT32 GenericInitiatorAffinityIndex;
   UINT32 MemoryAffinityIndex;
   UINT32 ApicSapicAffinityIndex;
   UINT32 X2ApicAffinityIndex;
@@ -224,6 +369,7 @@ ParseAcpiSrat (
 
   GicCAffinityIndex = 0;
   GicITSAffinityIndex = 0;
+  GenericInitiatorAffinityIndex = 0;
   MemoryAffinityIndex = 0;
   ApicSapicAffinityIndex = 0;
   X2ApicAffinityIndex = 0;
@@ -240,6 +386,7 @@ ParseAcpiSrat (
              AcpiTableLength,
              PARSER_PARAMS (SratParser)
              );
+
   ResourcePtr = Ptr + Offset;
 
   while (Offset < AcpiTableLength) {
@@ -248,12 +395,39 @@ ParseAcpiSrat (
       0,
       NULL,
       ResourcePtr,
-      2,  // The length is 1 byte at offset 1
+      AcpiTableLength - Offset,
       PARSER_PARAMS (SratResourceAllocationParser)
       );
 
+    // Check if the values used to control the parsing logic have been
+    // successfully read.
+    if ((SratRAType == NULL) ||
+        (SratRALength == NULL)) {
+      IncrementErrorCount ();
+      Print (
+        L"ERROR: Insufficient remaining table buffer length to read the " \
+          L"Static Resource Allocation structure header. Length = %d.\n",
+        AcpiTableLength - Offset
+        );
+      return;
+    }
+
+    // Validate Static Resource Allocation Structure length
+    if ((*SratRALength == 0) ||
+        ((Offset + (*SratRALength)) > AcpiTableLength)) {
+      IncrementErrorCount ();
+      Print (
+        L"ERROR: Invalid Static Resource Allocation Structure length. " \
+          L"Length = %d. Offset = %d. AcpiTableLength = %d.\n",
+        *SratRALength,
+        Offset,
+        AcpiTableLength
+        );
+      return;
+    }
+
     switch (*SratRAType) {
-      case EFI_ACPI_6_2_GICC_AFFINITY:
+      case EFI_ACPI_6_3_GICC_AFFINITY:
         AsciiSPrint (
           Buffer,
           sizeof (Buffer),
@@ -270,7 +444,7 @@ ParseAcpiSrat (
           );
         break;
 
-      case EFI_ACPI_6_2_GIC_ITS_AFFINITY:
+      case EFI_ACPI_6_3_GIC_ITS_AFFINITY:
         AsciiSPrint (
           Buffer,
           sizeof (Buffer),
@@ -284,10 +458,27 @@ ParseAcpiSrat (
           ResourcePtr,
           *SratRALength,
           PARSER_PARAMS (SratGicITSAffinityParser)
+          );
+        break;
+
+      case EFI_ACPI_6_3_GENERIC_INITIATOR_AFFINITY:
+        AsciiSPrint (
+          Buffer,
+          sizeof (Buffer),
+          "Generic Initiator Affinity Structure [%d]",
+          GenericInitiatorAffinityIndex++
+        );
+        ParseAcpi (
+          TRUE,
+          2,
+          Buffer,
+          ResourcePtr,
+          *SratRALength,
+          PARSER_PARAMS (SratGenericInitiatorAffinityParser)
         );
         break;
 
-      case EFI_ACPI_6_2_MEMORY_AFFINITY:
+      case EFI_ACPI_6_3_MEMORY_AFFINITY:
         AsciiSPrint (
           Buffer,
           sizeof (Buffer),
@@ -304,7 +495,7 @@ ParseAcpiSrat (
           );
         break;
 
-      case EFI_ACPI_6_2_PROCESSOR_LOCAL_APIC_SAPIC_AFFINITY:
+      case EFI_ACPI_6_3_PROCESSOR_LOCAL_APIC_SAPIC_AFFINITY:
         AsciiSPrint (
           Buffer,
           sizeof (Buffer),
@@ -321,7 +512,7 @@ ParseAcpiSrat (
           );
         break;
 
-      case EFI_ACPI_6_2_PROCESSOR_LOCAL_X2APIC_AFFINITY:
+      case EFI_ACPI_6_3_PROCESSOR_LOCAL_X2APIC_AFFINITY:
         AsciiSPrint (
           Buffer,
           sizeof (Buffer),

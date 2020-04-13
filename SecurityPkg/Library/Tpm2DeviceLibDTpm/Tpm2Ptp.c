@@ -2,13 +2,7 @@
   PTP (Platform TPM Profile) CRB (Command Response Buffer) interface used by dTPM2.0 library.
 
 Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -32,7 +26,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #define PTP_TIMEOUT_MAX             (90000 * 1000)  // 90s
 
 //
-// Max TPM command/reponse length
+// Max TPM command/response length
 //
 #define TPMCMDBUFLENGTH             0x500
 
@@ -296,7 +290,7 @@ PtpCrbTpmCommand (
     DEBUG ((EFI_D_VERBOSE, "\n"));
   );
   //
-  // Check the reponse data header (tag, parasize and returncode)
+  // Check the response data header (tag, parasize and returncode)
   //
   CopyMem (&Data16, BufferOut, sizeof (UINT16));
   // TPM2 should not use this RSP_COMMAND
@@ -333,7 +327,7 @@ PtpCrbTpmCommand (
 
 GoReady_Exit:
   //
-  // Goto Ready State if command is completed succesfully and TPM support IdleBypass
+  // Goto Ready State if command is completed successfully and TPM support IdleBypass
   // If not supported. flow down to GoIdle
   //
   if (PcdGet8(PcdCRBIdleByPass) == 1) {
@@ -353,7 +347,7 @@ GoIdle_Exit:
   MmioWrite32((UINTN)&CrbReg->CrbControlRequest, PTP_CRB_CONTROL_AREA_REQUEST_GO_IDLE);
 
   //
-  // Only enforce Idle state transition if execution fails when CRBIndleBypass==1
+  // Only enforce Idle state transition if execution fails when CRBIdleBypass==1
   // Leave regular Idle delay at the beginning of next command execution
   //
   if (PcdGet8(PcdCRBIdleByPass) == 1){

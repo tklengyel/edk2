@@ -2,13 +2,7 @@
   CPU DXE Module to produce CPU ARCH Protocol.
 
   Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -399,7 +393,7 @@ CpuSetMemoryAttributes (
 
   //
   // If this function is called because GCD SetMemorySpaceAttributes () is called
-  // by RefreshGcdMemoryAttributes (), then we are just synchronzing GCD memory
+  // by RefreshGcdMemoryAttributes (), then we are just synchronizing GCD memory
   // map with MTRR values. So there is no need to modify MTRRs, just return immediately
   // to avoid unnecessary computing.
   //
@@ -462,7 +456,7 @@ CpuSetMemoryAttributes (
     CurrentCacheType = MtrrGetMemoryAttribute(BaseAddress);
     if (CurrentCacheType != CacheType) {
       //
-      // call MTRR libary function
+      // call MTRR library function
       //
       Status = MtrrSetMemoryAttribute (
                  BaseAddress,
@@ -837,7 +831,7 @@ RefreshMemoryAttributesFromMtrr (
         Attributes = CurrentAttributes;
       } else {
         //
-        // If fixed MTRR attribute changed, then set memory attribute for previous atrribute
+        // If fixed MTRR attribute changed, then set memory attribute for previous attribute
         //
         if (CurrentAttributes != Attributes) {
           SetGcdMemorySpaceAttributes (
@@ -1051,7 +1045,7 @@ IntersectMemoryDescriptor (
   @param Length       Length of the MMIO space.
   @param Capabilities Capabilities of the MMIO space.
 
-  @retval EFI_SUCCES The MMIO space was added successfully.
+  @retval EFI_SUCCESS The MMIO space was added successfully.
 **/
 EFI_STATUS
 AddMemoryMappedIoSpace (

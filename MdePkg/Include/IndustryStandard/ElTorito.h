@@ -1,18 +1,12 @@
 /** @file
   ElTorito Partitions Format Definition.
-  This file includes some defintions from
+  This file includes some definitions from
   1. "El Torito" Bootable CD-ROM Format Specification, Version 1.0.
   2. Volume and File Structure of CDROM for Information Interchange,
      Standard ECMA-119. (IS0 9660)
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -81,7 +75,7 @@ typedef union {
   } BootRecordVolume;
 
   ///
-  /// Primary Volumn Descriptor, defined in ISO 9660.
+  /// Primary Volume Descriptor, defined in ISO 9660.
   ///
   struct {
     UINT8   Type;

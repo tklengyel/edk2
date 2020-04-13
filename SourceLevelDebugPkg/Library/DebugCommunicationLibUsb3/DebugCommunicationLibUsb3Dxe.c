@@ -2,13 +2,7 @@
   Debug Port Library implementation based on usb3 debug port.
 
   Copyright (c) 2014 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -31,7 +25,7 @@ EFI_PCI_IO_PROTOCOL         *mUsb3PciIo = NULL;
 /**
   Creates a named event that can be signaled.
 
-  This function creates an event using NotifyTpl, NoifyFunction.
+  This function creates an event using NotifyTpl, NotifyFunction.
   If Name is NULL, then ASSERT().
   If NotifyTpl is not a legal TPL value, then ASSERT().
   If NotifyFunction is NULL, then ASSERT().
@@ -453,7 +447,7 @@ DebugCommunicationUsb3DxeConstructor (
   EFI_EVENT                     Event;
 
   Status = EfiGetSystemConfigurationTable (&gUsb3DbgGuid, (VOID **) &AddrPtr);
-  if (EFI_ERROR (Status)) {
+  if (EFI_ERROR (Status) || (AddrPtr == NULL)) {
     //
     // Instead of using local variables, install system configuration table for
     // the local instance and the buffer to save instance address pointer.

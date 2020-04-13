@@ -3,14 +3,8 @@
 
   Copyright (c) 2005 - 2018, Intel Corporation. All rights reserved.<BR>
   (C) Copyright 2014 Hewlett-Packard Development Company, L.P.<BR>
-  (C) Copyright 2015-2017 Hewlett Packard Enterprise Development LP<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  (C) Copyright 2015-2019 Hewlett Packard Enterprise Development LP<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1172,6 +1166,13 @@ SmbiosPrintStructure (
     PRINT_PENDING_STRING (Struct, Type43, Description);
     DisplayTpmDeviceCharacteristics (ReadUnaligned64 ((UINT64 *) (UINTN) &(Struct->Type43->Characteristics)), Option);
     PRINT_STRUCT_VALUE_H (Struct, Type43, OemDefined);
+    break;
+
+  //
+  // Processor Additional Information (Type 44)
+  //
+  case 44:
+    DisplayProcessorArchitectureType (Struct->Type44->ProcessorSpecificBlock.ProcessorArchType, Option);
     break;
 
   //
@@ -2354,6 +2355,18 @@ DisplayProcessorFamily2 (
 
     case 0x1F4:
       Print (L"Video Processor\n");
+      break;
+
+    case 0x200:
+      Print (L"RISC-V RV32\n");
+      break;
+
+    case 0x201:
+      Print (L"RISC-V RV64\n");
+      break;
+
+    case 0x202:
+      Print (L"RISC-V RV128\n");
       break;
 
     default:

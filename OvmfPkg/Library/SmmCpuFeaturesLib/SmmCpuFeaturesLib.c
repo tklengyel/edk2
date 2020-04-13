@@ -3,23 +3,20 @@
 
   Copyright (c) 2010 - 2015, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
+#include <IndustryStandard/Q35MchIch9.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemEncryptSevLib.h>
+#include <Library/PcdLib.h>
 #include <Library/SmmCpuFeaturesLib.h>
 #include <Library/SmmServicesTableLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <PiSmm.h>
+#include <Register/Intel/SmramSaveStateMap.h>
 #include <Register/QemuSmramSaveStateMap.h>
 
 //
@@ -221,8 +218,22 @@ SmmCpuFeaturesSmmRelocationComplete (
 
   ZeroMem ((VOID *)MapPagesBase, EFI_PAGES_TO_SIZE (MapPagesCount));
 
-  Status = gBS->FreePages (MapPagesBase, MapPagesCount);
-  ASSERT_EFI_ERROR (Status);
+  if (PcdGetBool (PcdQ35SmramAtDefaultSmbase)) {
+    //
+    // The initial SMRAM Save State Map has been covered as part of a larger
+    // reserved memory allocation in PlatformPei's InitializeRamRegions(). That
+    // allocation is supposed to survive into OS runtime; we must not release
+    // any part of it. Only re-assert the containment here.
+    //
+    ASSERT (SMM_DEFAULT_SMBASE <= MapPagesBase);
+    ASSERT (
+      (MapPagesBase + EFI_PAGES_TO_SIZE (MapPagesCount) <=
+       SMM_DEFAULT_SMBASE + MCH_DEFAULT_SMBASE_SIZE)
+      );
+  } else {
+    Status = gBS->FreePages (MapPagesBase, MapPagesCount);
+    ASSERT_EFI_ERROR (Status);
+  }
 }
 
 /**

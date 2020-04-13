@@ -1,13 +1,7 @@
 /** @file
 
   Copyright (c) 2015 - 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1296,7 +1290,7 @@ SdPeimExecTrb (
   BlkCount = 0;
   if (Trb->Mode != SdNoData) {
     //
-    // Calcuate Block Count.
+    // Calculate Block Count.
     //
     BlkCount = (UINT16)(Trb->DataLen / Trb->BlockSize);
   }
@@ -2500,7 +2494,7 @@ SdPeimSendTuningBlk (
 }
 
 /**
-  Tunning the sampling point of SDR104 or SDR50 bus speed mode.
+  Tuning the sampling point of SDR104 or SDR50 bus speed mode.
 
   Command SD_SEND_TUNING_BLOCK may be sent up to 40 times until the host finishes the
   tuning procedure.
@@ -2708,7 +2702,7 @@ SdPeimSetBusMode (
     return EFI_DEVICE_ERROR;
   }
   //
-  // Set to Hight Speed timing
+  // Set to High Speed timing
   //
   if (AccessMode == 1) {
     HostCtrl1 = BIT2;

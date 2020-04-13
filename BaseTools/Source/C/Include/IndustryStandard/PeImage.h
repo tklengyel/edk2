@@ -7,13 +7,7 @@
   Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
   Portions copyright (c) 2011 - 2013, ARM Ltd. All rights reserved.<BR>
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-    http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -42,7 +36,6 @@
 // PE32+ Machine type for EFI images
 //
 #define IMAGE_FILE_MACHINE_I386     0x014c
-#define IMAGE_FILE_MACHINE_IA64     0x0200
 #define IMAGE_FILE_MACHINE_EBC      0x0EBC
 #define IMAGE_FILE_MACHINE_X64      0x8664
 #define IMAGE_FILE_MACHINE_ARM      0x01c0  // Thumb only
@@ -53,8 +46,6 @@
 // Support old names for backward compatible
 //
 #define EFI_IMAGE_MACHINE_IA32      IMAGE_FILE_MACHINE_I386
-#define EFI_IMAGE_MACHINE_IA64      IMAGE_FILE_MACHINE_IA64
-#define EFI_IMAGE_MACHINE_IPF       IMAGE_FILE_MACHINE_IA64
 #define EFI_IMAGE_MACHINE_EBC       IMAGE_FILE_MACHINE_EBC
 #define EFI_IMAGE_MACHINE_X64       IMAGE_FILE_MACHINE_X64
 #define EFI_IMAGE_MACHINE_ARMT      IMAGE_FILE_MACHINE_ARMT

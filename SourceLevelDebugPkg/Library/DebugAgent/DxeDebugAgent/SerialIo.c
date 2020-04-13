@@ -2,20 +2,14 @@
   Install Serial IO Protocol that layers on top of a Debug Communication Library instance.
 
   Copyright (c) 2012 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
 #include "DxeDebugAgentLib.h"
 
 //
-// Serial I/O Protocol Interface defintions.
+// Serial I/O Protocol Interface definitions.
 //
 
 /**
@@ -237,7 +231,7 @@ typedef struct {
 } DEBUG_SERIAL_FIFO;
 
 //
-// Global Varibles
+// Global Variables
 //
 EFI_HANDLE                   mSerialIoHandle        = NULL;
 UINTN                        mLoopbackBuffer        = 0;
@@ -395,7 +389,7 @@ SerialReset (
   mSerialIoMode.ControlMask = SERIAL_PORT_DEFAULT_CONTROL_MASK;
   mLoopbackBuffer = 0;
   //
-  // Not reset serial devcie hardware indeed.
+  // Not reset serial device hardware indeed.
   //
   return EFI_SUCCESS;
 }

@@ -2,13 +2,7 @@
   Shell application to dump SMI handler profile information.
 
 Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -388,7 +382,7 @@ SxTypeToString (
   IN EFI_SLEEP_TYPE  Type
   )
 {
-  if (Type >= 0 && Type <= ARRAY_SIZE(mSxTypeString)) {
+  if (Type >= 0 && Type < ARRAY_SIZE(mSxTypeString)) {
     return mSxTypeString[Type];
   } else {
     AsciiSPrint (mNameString, sizeof(mNameString), "0x%x", Type);
@@ -413,7 +407,7 @@ SxPhaseToString (
   IN EFI_SLEEP_PHASE Phase
   )
 {
-  if (Phase >= 0 && Phase <= ARRAY_SIZE(mSxPhaseString)) {
+  if (Phase >= 0 && Phase < ARRAY_SIZE(mSxPhaseString)) {
     return mSxPhaseString[Phase];
   } else {
     AsciiSPrint (mNameString, sizeof(mNameString), "0x%x", Phase);
@@ -438,7 +432,7 @@ PowerButtonPhaseToString (
   IN EFI_POWER_BUTTON_PHASE  Phase
   )
 {
-  if (Phase >= 0 && Phase <= ARRAY_SIZE(mPowerButtonPhaseString)) {
+  if (Phase >= 0 && Phase < ARRAY_SIZE(mPowerButtonPhaseString)) {
     return mPowerButtonPhaseString[Phase];
   } else {
     AsciiSPrint (mNameString, sizeof(mNameString), "0x%x", Phase);
@@ -463,7 +457,7 @@ StandbyButtonPhaseToString (
   IN EFI_STANDBY_BUTTON_PHASE  Phase
   )
 {
-  if (Phase >= 0 && Phase <= ARRAY_SIZE(mStandbyButtonPhaseString)) {
+  if (Phase >= 0 && Phase < ARRAY_SIZE(mStandbyButtonPhaseString)) {
     return mStandbyButtonPhaseString[Phase];
   } else {
     AsciiSPrint (mNameString, sizeof(mNameString), "0x%x", Phase);
@@ -489,7 +483,7 @@ IoTrapTypeToString (
   IN EFI_SMM_IO_TRAP_DISPATCH_TYPE  Type
   )
 {
-  if (Type >= 0 && Type <= ARRAY_SIZE(mIoTrapTypeString)) {
+  if (Type >= 0 && Type < ARRAY_SIZE(mIoTrapTypeString)) {
     return mIoTrapTypeString[Type];
   } else {
     AsciiSPrint (mNameString, sizeof(mNameString), "0x%x", Type);
@@ -514,7 +508,7 @@ UsbTypeToString (
   IN EFI_USB_SMI_TYPE          Type
   )
 {
-  if (Type >= 0 && Type <= ARRAY_SIZE(mUsbTypeString)) {
+  if (Type >= 0 && Type < ARRAY_SIZE(mUsbTypeString)) {
     return mUsbTypeString[Type];
   } else {
     AsciiSPrint (mNameString, sizeof(mNameString), "0x%x", Type);

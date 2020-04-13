@@ -1,14 +1,8 @@
 /** @file
   ACPI table parser
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2020, ARM Limited. All rights reserved.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include <Uefi.h>
@@ -182,6 +176,7 @@ ProcessAcpiTable (
   CONST UINT32* AcpiTableSignature;
   CONST UINT32* AcpiTableLength;
   CONST UINT8*  AcpiTableRevision;
+  CONST UINT8*  SignaturePtr;
   PARSE_ACPI_TABLE_PROC ParserProc;
 
   ParseAcpiHeader (
@@ -199,7 +194,26 @@ ProcessAcpiTable (
 
   if (Trace) {
     DumpRaw (Ptr, *AcpiTableLength);
-    VerifyChecksum (TRUE, Ptr, *AcpiTableLength);
+
+    // Do not process the ACPI table any further if the table length read
+    // is invalid. The ACPI table should at least contain the table header.
+    if (*AcpiTableLength < sizeof (EFI_ACPI_DESCRIPTION_HEADER)) {
+      SignaturePtr = (CONST UINT8*)AcpiTableSignature;
+      IncrementErrorCount ();
+      Print (
+        L"ERROR: Invalid %c%c%c%c table length. Length = %d\n",
+        SignaturePtr[0],
+        SignaturePtr[1],
+        SignaturePtr[2],
+        SignaturePtr[3],
+        *AcpiTableLength
+        );
+      return;
+    }
+
+    if (GetConsistencyChecking ()) {
+      VerifyChecksum (TRUE, Ptr, *AcpiTableLength);
+    }
   }
 
   Status = GetParser (*AcpiTableSignature, &ParserProc);

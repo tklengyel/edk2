@@ -5,14 +5,7 @@
    support multi-segment PCI configuration access through enhanced configuration access mechanism.
 
   Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials are
-  licensed and made available under the terms and conditions of
-  the BSD License which accompanies this distribution.  The full
-  text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -116,12 +109,11 @@ DxeRuntimePciSegmentLibConstructor (
   //
   // Register SetVirtualAddressMap () notify function
   //
-  Status = gBS->CreateEventEx (
-                  EVT_NOTIFY_SIGNAL,
+  Status = gBS->CreateEvent (
+                  EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE,
                   TPL_NOTIFY,
                   DxeRuntimePciSegmentLibVirtualNotify,
                   NULL,
-                  &gEfiEventVirtualAddressChangeGuid,
                   &mDxeRuntimePciSegmentLibVirtualNotifyEvent
                   );
   ASSERT_EFI_ERROR (Status);
@@ -218,7 +210,7 @@ PciSegmentRegisterForRuntimeAccess (
   Address = (UINTN)EcamAddress;
 
   //
-  // See if Address has already been registerd for runtime access
+  // See if Address has already been registered for runtime access
   //
   for (Index = 0; Index < mDxeRuntimePciSegmentLibNumberOfRuntimeRanges; Index++) {
     if (mDxeRuntimePciSegmentLibRegistrationTable[Index].PhysicalAddress == Address) {

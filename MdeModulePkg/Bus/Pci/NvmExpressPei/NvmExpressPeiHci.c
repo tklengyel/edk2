@@ -2,16 +2,9 @@
   The NvmExpressPei driver is used to manage non-volatile memory subsystem
   which follows NVM Express specification at PEI phase.
 
-  Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2018 - 2019, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions
-  of the BSD License which accompanies this distribution.  The
-  full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -327,14 +320,14 @@ NvmeIdentifyController (
   IN VOID                                *Buffer
   )
 {
-  EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
-  EDKII_PEI_NVM_EXPRESS_COMMAND                     Command;
-  EDKII_PEI_NVM_EXPRESS_COMPLETION                  Completion;
-  EFI_STATUS                                        Status;
+  EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
+  EFI_NVM_EXPRESS_COMMAND                     Command;
+  EFI_NVM_EXPRESS_COMPLETION                  Completion;
+  EFI_STATUS                                  Status;
 
-  ZeroMem (&CommandPacket, sizeof(EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
-  ZeroMem (&Command, sizeof(EDKII_PEI_NVM_EXPRESS_COMMAND));
-  ZeroMem (&Completion, sizeof(EDKII_PEI_NVM_EXPRESS_COMPLETION));
+  ZeroMem (&CommandPacket, sizeof(EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
+  ZeroMem (&Command, sizeof(EFI_NVM_EXPRESS_COMMAND));
+  ZeroMem (&Completion, sizeof(EFI_NVM_EXPRESS_COMPLETION));
 
   Command.Cdw0.Opcode = NVME_ADMIN_IDENTIFY_CMD;
   //
@@ -355,7 +348,7 @@ NvmeIdentifyController (
   CommandPacket.NvmeCmd->Cdw10 = 1;
   CommandPacket.NvmeCmd->Flags = CDW10_VALID;
 
-  Status = NvmePassThru (
+  Status = NvmePassThruExecute (
              Private,
              NVME_CONTROLLER_NSID,
              &CommandPacket
@@ -381,14 +374,14 @@ NvmeIdentifyNamespace (
   IN VOID                                *Buffer
   )
 {
-  EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
-  EDKII_PEI_NVM_EXPRESS_COMMAND                     Command;
-  EDKII_PEI_NVM_EXPRESS_COMPLETION                  Completion;
-  EFI_STATUS                                        Status;
+  EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
+  EFI_NVM_EXPRESS_COMMAND                     Command;
+  EFI_NVM_EXPRESS_COMPLETION                  Completion;
+  EFI_STATUS                                  Status;
 
-  ZeroMem (&CommandPacket, sizeof(EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
-  ZeroMem (&Command, sizeof(EDKII_PEI_NVM_EXPRESS_COMMAND));
-  ZeroMem (&Completion, sizeof(EDKII_PEI_NVM_EXPRESS_COMPLETION));
+  ZeroMem (&CommandPacket, sizeof(EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
+  ZeroMem (&Command, sizeof(EFI_NVM_EXPRESS_COMMAND));
+  ZeroMem (&Completion, sizeof(EFI_NVM_EXPRESS_COMPLETION));
 
   Command.Cdw0.Opcode = NVME_ADMIN_IDENTIFY_CMD;
   Command.Nsid        = NamespaceId;
@@ -405,7 +398,7 @@ NvmeIdentifyNamespace (
   CommandPacket.NvmeCmd->Cdw10 = 0;
   CommandPacket.NvmeCmd->Flags = CDW10_VALID;
 
-  Status = NvmePassThru (
+  Status = NvmePassThruExecute (
              Private,
              NamespaceId,
              &CommandPacket
@@ -461,22 +454,21 @@ NvmeCreateIoCompletionQueue (
   IN PEI_NVME_CONTROLLER_PRIVATE_DATA    *Private
   )
 {
-  EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
-  EDKII_PEI_NVM_EXPRESS_COMMAND                     Command;
-  EDKII_PEI_NVM_EXPRESS_COMPLETION                  Completion;
-  EFI_STATUS                                        Status;
-  NVME_ADMIN_CRIOCQ                                 CrIoCq;
+  EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
+  EFI_NVM_EXPRESS_COMMAND                     Command;
+  EFI_NVM_EXPRESS_COMPLETION                  Completion;
+  EFI_STATUS                                  Status;
+  NVME_ADMIN_CRIOCQ                           CrIoCq;
 
-  ZeroMem (&CommandPacket, sizeof(EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
-  ZeroMem (&Command, sizeof(EDKII_PEI_NVM_EXPRESS_COMMAND));
-  ZeroMem (&Completion, sizeof(EDKII_PEI_NVM_EXPRESS_COMPLETION));
+  ZeroMem (&CommandPacket, sizeof(EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
+  ZeroMem (&Command, sizeof(EFI_NVM_EXPRESS_COMMAND));
+  ZeroMem (&Completion, sizeof(EFI_NVM_EXPRESS_COMPLETION));
   ZeroMem (&CrIoCq, sizeof(NVME_ADMIN_CRIOCQ));
 
   CommandPacket.NvmeCmd        = &Command;
   CommandPacket.NvmeCompletion = &Completion;
 
   Command.Cdw0.Opcode = NVME_ADMIN_CRIOCQ_CMD;
-  Command.Cdw0.Cid    = Private->Cid[NVME_ADMIN_QUEUE]++;
   CommandPacket.TransferBuffer = Private->CqBuffer[NVME_IO_QUEUE];
   CommandPacket.TransferLength = EFI_PAGE_SIZE;
   CommandPacket.CommandTimeout = NVME_GENERIC_TIMEOUT;
@@ -488,7 +480,7 @@ NvmeCreateIoCompletionQueue (
   CopyMem (&CommandPacket.NvmeCmd->Cdw10, &CrIoCq, sizeof (NVME_ADMIN_CRIOCQ));
   CommandPacket.NvmeCmd->Flags = CDW10_VALID | CDW11_VALID;
 
-  Status = NvmePassThru (
+  Status = NvmePassThruExecute (
              Private,
              NVME_CONTROLLER_NSID,
              &CommandPacket
@@ -510,22 +502,21 @@ NvmeCreateIoSubmissionQueue (
   IN PEI_NVME_CONTROLLER_PRIVATE_DATA    *Private
   )
 {
-  EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
-  EDKII_PEI_NVM_EXPRESS_COMMAND                     Command;
-  EDKII_PEI_NVM_EXPRESS_COMPLETION                  Completion;
-  EFI_STATUS                                        Status;
-  NVME_ADMIN_CRIOSQ                                 CrIoSq;
+  EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET    CommandPacket;
+  EFI_NVM_EXPRESS_COMMAND                     Command;
+  EFI_NVM_EXPRESS_COMPLETION                  Completion;
+  EFI_STATUS                                  Status;
+  NVME_ADMIN_CRIOSQ                           CrIoSq;
 
-  ZeroMem (&CommandPacket, sizeof(EDKII_PEI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
-  ZeroMem (&Command, sizeof(EDKII_PEI_NVM_EXPRESS_COMMAND));
-  ZeroMem (&Completion, sizeof(EDKII_PEI_NVM_EXPRESS_COMPLETION));
+  ZeroMem (&CommandPacket, sizeof(EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
+  ZeroMem (&Command, sizeof(EFI_NVM_EXPRESS_COMMAND));
+  ZeroMem (&Completion, sizeof(EFI_NVM_EXPRESS_COMPLETION));
   ZeroMem (&CrIoSq, sizeof(NVME_ADMIN_CRIOSQ));
 
   CommandPacket.NvmeCmd        = &Command;
   CommandPacket.NvmeCompletion = &Completion;
 
   Command.Cdw0.Opcode = NVME_ADMIN_CRIOSQ_CMD;
-  Command.Cdw0.Cid    = Private->Cid[NVME_ADMIN_QUEUE]++;
   CommandPacket.TransferBuffer = Private->SqBuffer[NVME_IO_QUEUE];
   CommandPacket.TransferLength = EFI_PAGE_SIZE;
   CommandPacket.CommandTimeout = NVME_GENERIC_TIMEOUT;
@@ -539,7 +530,7 @@ NvmeCreateIoSubmissionQueue (
   CopyMem (&CommandPacket.NvmeCmd->Cdw10, &CrIoSq, sizeof (NVME_ADMIN_CRIOSQ));
   CommandPacket.NvmeCmd->Flags = CDW10_VALID | CDW11_VALID;
 
-  Status = NvmePassThru (
+  Status = NvmePassThruExecute (
              Private,
              NVME_CONTROLLER_NSID,
              &CommandPacket
@@ -702,47 +693,25 @@ NvmeControllerInit (
 }
 
 /**
-  Free the resources allocated by an NVME controller.
+  Free the DMA resources allocated by an NVME controller.
 
   @param[in] Private     The pointer to the PEI_NVME_CONTROLLER_PRIVATE_DATA data structure.
 
 **/
 VOID
-NvmeFreeControllerResource (
+NvmeFreeDmaResource (
   IN PEI_NVME_CONTROLLER_PRIVATE_DATA    *Private
   )
 {
-  //
-  // Free the controller data buffer
-  //
-  if (Private->ControllerData != NULL) {
-    FreePool (Private->ControllerData);
-    Private->ControllerData = NULL;
-  }
+  ASSERT (Private != NULL);
 
-  //
-  // Free the DMA buffers
-  //
-  if (Private->Buffer != NULL) {
+  if (Private->BufferMapping != NULL) {
     IoMmuFreeBuffer (
        NVME_MEM_MAX_PAGES,
        Private->Buffer,
        Private->BufferMapping
        );
-    Private->Buffer = NULL;
   }
 
-  //
-  // Free the namespaces information buffer
-  //
-  if (Private->NamespaceInfo != NULL) {
-    FreePool (Private->NamespaceInfo);
-    Private->NamespaceInfo = NULL;
-  }
-
-  //
-  // Free the controller private data structure
-  //
-  FreePool (Private);
   return;
 }

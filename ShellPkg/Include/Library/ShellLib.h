@@ -3,13 +3,7 @@
 
   Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
   Copyright 2018 Dell Technologies.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -161,7 +155,7 @@ ShellOpenFileByDevicePath(
   otherwise, the Filehandle is NULL. Attributes is valid only for
   EFI_FILE_MODE_CREATE.
 
-  @param[in] FilePath           The pointer to file name.
+  @param[in] FileName           The pointer to file name.
   @param[out] FileHandle        The pointer to the file handle.
   @param[in] OpenMode           The mode to open the file with.
   @param[in] Attributes         The file's file attributes.
@@ -186,7 +180,7 @@ ShellOpenFileByDevicePath(
 EFI_STATUS
 EFIAPI
 ShellOpenFileByName(
-  IN CONST CHAR16               *FilePath,
+  IN CONST CHAR16               *FileName,
   OUT SHELL_FILE_HANDLE         *FileHandle,
   IN UINT64                     OpenMode,
   IN UINT64                     Attributes
@@ -971,7 +965,7 @@ ShellPrintHiiEx(
   IN INT32                Row OPTIONAL,
   IN CONST CHAR8          *Language OPTIONAL,
   IN CONST EFI_STRING_ID  HiiFormatStringId,
-  IN CONST EFI_HANDLE     HiiFormatHandle,
+  IN CONST EFI_HII_HANDLE HiiFormatHandle,
   ...
   );
 
@@ -1266,7 +1260,7 @@ EFIAPI
 ShellPromptForResponseHii (
   IN SHELL_PROMPT_REQUEST_TYPE         Type,
   IN CONST EFI_STRING_ID  HiiFormatStringId,
-  IN CONST EFI_HANDLE     HiiFormatHandle,
+  IN CONST EFI_HII_HANDLE HiiFormatHandle,
   IN OUT VOID             **Response
   );
 

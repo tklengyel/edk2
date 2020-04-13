@@ -3,13 +3,7 @@
   according to USB Mass Storage Class Bulk-Only Transport, Revision 1.0.
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -332,7 +326,7 @@ UsbBotGetStatus (
 
   for (Index = 0; Index < USB_BOT_RECV_CSW_RETRY; Index++) {
     //
-    // Attemp to the read Command Status Wrapper from bulk in endpoint
+    // Attempt to the read Command Status Wrapper from bulk in endpoint
     //
     ZeroMem (&Csw, sizeof (USB_BOT_CSW));
     Result = 0;
@@ -559,7 +553,7 @@ UsbBotGetMaxLun (
   UsbBot = (USB_BOT_PROTOCOL *) Context;
 
   //
-  // Issue a class specific Bulk-Only Mass Storage get max lun reqest.
+  // Issue a class specific Bulk-Only Mass Storage get max lun request.
   // according to section 3.2 of USB Mass Storage Class Bulk-Only Transport Spec, v1.0.
   //
   Request.RequestType = 0xA1;

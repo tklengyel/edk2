@@ -1,14 +1,8 @@
 /** @file
   CPU Register Table Library functions.
 
-  Copyright (c) 2016, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -18,6 +12,8 @@
 #include <Library/PeiServicesLib.h>
 #include <Library/PeiServicesTablePointerLib.h>
 #include <Ppi/MpServices.h>
+#include <Ppi/MpServices2.h>
+
 #include "RegisterCpuFeatures.h"
 
 #define REGISTER_CPU_FEATURES_GUID \
@@ -68,15 +64,15 @@ GetCpuFeaturesData (
 /**
   Worker function to get MP PPI service pointer.
 
-  @return PEI PPI service pointer.
+  @return MP_SERVICES variable.
 **/
-EFI_PEI_MP_SERVICES_PPI *
-GetMpPpi (
+MP_SERVICES
+GetMpService (
   VOID
   )
 {
   EFI_STATUS                 Status;
-  EFI_PEI_MP_SERVICES_PPI    *CpuMpPpi;
+  MP_SERVICES                MpService;
 
   //
   // Get MP Services Protocol
@@ -85,29 +81,36 @@ GetMpPpi (
              &gEfiPeiMpServicesPpiGuid,
              0,
              NULL,
-             (VOID **)&CpuMpPpi
+             (VOID **)&MpService.Ppi
              );
   ASSERT_EFI_ERROR (Status);
-  return CpuMpPpi;
+  return MpService;
 }
 
 /**
   Worker function to return processor index.
 
+  @param  CpuFeaturesData    Cpu Feature Data structure.
+
   @return  The processor index.
 **/
 UINTN
 GetProcessorIndex (
-  VOID
+  IN CPU_FEATURES_DATA        *CpuFeaturesData
   )
 {
   EFI_STATUS                 Status;
   EFI_PEI_MP_SERVICES_PPI    *CpuMpPpi;
   UINTN                      ProcessorIndex;
 
-  CpuMpPpi = GetMpPpi ();
+  CpuMpPpi = CpuFeaturesData->MpService.Ppi;
 
-  Status = CpuMpPpi->WhoAmI(GetPeiServicesTablePointer (), CpuMpPpi, &ProcessorIndex);
+  //
+  // For two reasons which use NULL for WhoAmI:
+  // 1. This function will be called by APs and AP should not use PeiServices Table
+  // 2. Check WhoAmI implementation, this parameter will not be used.
+  //
+  Status = CpuMpPpi->WhoAmI(NULL, CpuMpPpi, &ProcessorIndex);
   ASSERT_EFI_ERROR (Status);
   return ProcessorIndex;
 }
@@ -130,8 +133,11 @@ GetProcessorInformation (
 {
   EFI_PEI_MP_SERVICES_PPI    *CpuMpPpi;
   EFI_STATUS                 Status;
+  CPU_FEATURES_DATA          *CpuFeaturesData;
 
-  CpuMpPpi = GetMpPpi ();
+  CpuFeaturesData = GetCpuFeaturesData ();
+  CpuMpPpi = CpuFeaturesData->MpService.Ppi;
+
   Status = CpuMpPpi->GetProcessorInfo (
                GetPeiServicesTablePointer(),
                CpuMpPpi,
@@ -150,7 +156,7 @@ GetProcessorInformation (
 
 **/
 VOID
-StartupAPsWorker (
+StartupAllAPsWorker (
   IN  EFI_AP_PROCEDURE                 Procedure,
   IN  EFI_EVENT                        MpEvent
   )
@@ -160,17 +166,7 @@ StartupAPsWorker (
   CPU_FEATURES_DATA                    *CpuFeaturesData;
 
   CpuFeaturesData = GetCpuFeaturesData ();
-
-  //
-  // Get MP Services Protocol
-  //
-  Status = PeiServicesLocatePpi (
-             &gEfiPeiMpServicesPpiGuid,
-             0,
-             NULL,
-             (VOID **)&CpuMpPpi
-             );
-  ASSERT_EFI_ERROR (Status);
+  CpuMpPpi = CpuFeaturesData->MpService.Ppi;
 
   //
   // Wakeup all APs for data collection.
@@ -180,6 +176,47 @@ StartupAPsWorker (
                  CpuMpPpi,
                  Procedure,
                  FALSE,
+                 0,
+                 CpuFeaturesData
+                 );
+  ASSERT_EFI_ERROR (Status);
+}
+
+/**
+  Worker function to execute a caller provided function on all enabled CPUs.
+
+  @param[in]  Procedure               A pointer to the function to be run on
+                                      enabled CPUs of the system.
+
+**/
+VOID
+StartupAllCPUsWorker (
+  IN  EFI_AP_PROCEDURE                 Procedure
+  )
+{
+  EFI_STATUS                           Status;
+  EDKII_PEI_MP_SERVICES2_PPI           *CpuMp2Ppi;
+  CPU_FEATURES_DATA                    *CpuFeaturesData;
+
+  CpuFeaturesData = GetCpuFeaturesData ();
+
+  //
+  // Get MP Services2 Ppi
+  //
+  Status = PeiServicesLocatePpi (
+             &gEdkiiPeiMpServices2PpiGuid,
+             0,
+             NULL,
+             (VOID **)&CpuMp2Ppi
+             );
+  ASSERT_EFI_ERROR (Status);
+
+  //
+  // Wakeup all APs for data collection.
+  //
+  Status = CpuMp2Ppi->StartupAllCPUs (
+                 CpuMp2Ppi,
+                 Procedure,
                  0,
                  CpuFeaturesData
                  );
@@ -198,17 +235,10 @@ SwitchNewBsp (
 {
   EFI_STATUS                           Status;
   EFI_PEI_MP_SERVICES_PPI              *CpuMpPpi;
+  CPU_FEATURES_DATA                    *CpuFeaturesData;
 
-  //
-  // Get MP Services Protocol
-  //
-  Status = PeiServicesLocatePpi (
-             &gEfiPeiMpServicesPpiGuid,
-             0,
-             NULL,
-             (VOID **)&CpuMpPpi
-             );
-  ASSERT_EFI_ERROR (Status);
+  CpuFeaturesData = GetCpuFeaturesData ();
+  CpuMpPpi = CpuFeaturesData->MpService.Ppi;
 
   //
   // Wakeup all APs for data collection.
@@ -240,17 +270,10 @@ GetNumberOfProcessor (
 {
   EFI_STATUS                 Status;
   EFI_PEI_MP_SERVICES_PPI    *CpuMpPpi;
+  CPU_FEATURES_DATA          *CpuFeaturesData;
 
-  //
-  // Get MP Services Protocol
-  //
-  Status = PeiServicesLocatePpi (
-             &gEfiPeiMpServicesPpiGuid,
-             0,
-             NULL,
-             (VOID **)&CpuMpPpi
-             );
-  ASSERT_EFI_ERROR (Status);
+  CpuFeaturesData = GetCpuFeaturesData ();
+  CpuMpPpi = CpuFeaturesData->MpService.Ppi;
 
   //
   // Get the number of CPUs
@@ -283,24 +306,13 @@ CpuFeaturesInitialize (
 
   CpuFeaturesData = GetCpuFeaturesData ();
 
-  OldBspNumber = GetProcessorIndex();
+  OldBspNumber = GetProcessorIndex (CpuFeaturesData);
   CpuFeaturesData->BspNumber = OldBspNumber;
 
   //
-  // Known limitation: In PEI phase, CpuFeatures driver not
-  // support async mode execute tasks. So semaphore type
-  // register can't been used for this instance, must use
-  // DXE type instance.
+  // Start to program register for all CPUs.
   //
-
-  //
-  // Wakeup all APs for programming.
-  //
-  StartupAPsWorker (SetProcessorRegister, NULL);
-  //
-  // Programming BSP
-  //
-  SetProcessorRegister (CpuFeaturesData);
+  StartupAllCPUsWorker (SetProcessorRegister);
 
   //
   // Switch to new BSP if required

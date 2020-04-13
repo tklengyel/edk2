@@ -5,13 +5,7 @@
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
   (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -620,6 +614,11 @@ Ping6OnEchoReplyReceived (
 
 ON_EXIT:
 
+  //
+  // Recycle the packet before reusing RxToken
+  //
+  gBS->SignalEvent (Private->IpChoice == PING_IP_CHOICE_IP6?((EFI_IP6_RECEIVE_DATA*)Private->RxToken.Packet.RxData)->RecycleSignal:((EFI_IP4_RECEIVE_DATA*)Private->RxToken.Packet.RxData)->RecycleSignal);
+
   if (Private->RxCount < Private->SendNum) {
     //
     // Continue to receive icmp echo reply packets.
@@ -638,10 +637,6 @@ ON_EXIT:
     //
     Private->Status = EFI_SUCCESS;
   }
-  //
-  // Singal to recycle the each rxdata here, not at the end of process.
-  //
-  gBS->SignalEvent (Private->IpChoice == PING_IP_CHOICE_IP6?((EFI_IP6_RECEIVE_DATA*)Private->RxToken.Packet.RxData)->RecycleSignal:((EFI_IP4_RECEIVE_DATA*)Private->RxToken.Packet.RxData)->RecycleSignal);
 }
 
 /**

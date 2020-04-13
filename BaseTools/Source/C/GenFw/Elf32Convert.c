@@ -4,13 +4,7 @@ Elf32 Convert solution
 Copyright (c) 2010 - 2018, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2013, ARM Ltd. All rights reserved.<BR>
 
-This program and the accompanying materials are licensed and made available
-under the terms and conditions of the BSD License which accompanies this
-distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -74,7 +68,7 @@ CleanUp32 (
   );
 
 //
-// Rename ELF32 strucutres to common names to help when porting to ELF64.
+// Rename ELF32 structures to common names to help when porting to ELF64.
 //
 typedef Elf32_Shdr Elf_Shdr;
 typedef Elf32_Ehdr Elf_Ehdr;
@@ -450,7 +444,7 @@ ScanSections32 (
   mCoffOffset = CoffAlign(mCoffOffset);
 
   if (SectionCount > 1 && mOutImageType == FW_EFI_IMAGE) {
-    Warning (NULL, 0, 0, NULL, "Mulitple sections in %s are merged into 1 text section. Source level debug might not work correctly.", mInImageName);
+    Warning (NULL, 0, 0, NULL, "Multiple sections in %s are merged into 1 text section. Source level debug might not work correctly.", mInImageName);
   }
 
   //
@@ -487,7 +481,7 @@ ScanSections32 (
   }
 
   if (SectionCount > 1 && mOutImageType == FW_EFI_IMAGE) {
-    Warning (NULL, 0, 0, NULL, "Mulitple sections in %s are merged into 1 data section. Source level debug might not work correctly.", mInImageName);
+    Warning (NULL, 0, 0, NULL, "Multiple sections in %s are merged into 1 data section. Source level debug might not work correctly.", mInImageName);
   }
 
   //
@@ -688,7 +682,7 @@ WriteSections32 (
 
       default:
         //
-        //  Ignore for unkown section type.
+        //  Ignore for unknown section type.
         //
         VerboseMsg ("%s unknown section type %x. We ignore this unknown section type.", mInImageName, (unsigned)Shdr->sh_type);
         break;
@@ -1090,7 +1084,7 @@ WriteRelocations32 (
             break;
 
           default:
-            Error (NULL, 0, 3000, "Invalid", "%s bad ARM dynamic relocations, unkown type %d.", mInImageName, ELF32_R_TYPE (Rel->r_info));
+            Error (NULL, 0, 3000, "Invalid", "%s bad ARM dynamic relocations, unknown type %d.", mInImageName, ELF32_R_TYPE (Rel->r_info));
             break;
           }
         }

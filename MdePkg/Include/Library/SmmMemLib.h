@@ -6,13 +6,7 @@
   from non-SMRAM to non-SMRAM, or set data in non-SMRAM.
 
   Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -73,7 +67,7 @@ SmmCopyMemToSmram (
   @param  SourceBuffer        The pointer to the source buffer of the memory copy.
   @param  Length              The number of bytes to copy from SourceBuffer to DestinationBuffer.
 
-  @retval EFI_SECURITY_VIOLATION The DesinationBuffer is invalid per processor architecture or overlap with SMRAM.
+  @retval EFI_SECURITY_VIOLATION The DestinationBuffer is invalid per processor architecture or overlap with SMRAM.
   @retval EFI_SUCCESS            Memory is copied.
 
 **/
@@ -98,7 +92,7 @@ SmmCopyMemFromSmram (
   @param  SourceBuffer        The pointer to the source buffer of the memory copy.
   @param  Length              The number of bytes to copy from SourceBuffer to DestinationBuffer.
 
-  @retval EFI_SECURITY_VIOLATION The DesinationBuffer is invalid per processor architecture or overlap with SMRAM.
+  @retval EFI_SECURITY_VIOLATION The DestinationBuffer is invalid per processor architecture or overlap with SMRAM.
   @retval EFI_SECURITY_VIOLATION The SourceBuffer is invalid per processor architecture or overlap with SMRAM.
   @retval EFI_SUCCESS            Memory is copied.
 

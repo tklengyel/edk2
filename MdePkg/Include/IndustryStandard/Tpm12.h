@@ -3,13 +3,7 @@
   See http://trustedcomputinggroup.org for latest specification updates
 
   Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 
@@ -603,7 +597,7 @@ typedef struct tdTPM_CHANGEAUTH_VALIDATE {
 
 ///
 /// Part 2, section 5.12: TPM_MIGRATIONKEYAUTH
-///   decalared after section 10 to catch declaration of TPM_PUBKEY
+///   declared after section 10 to catch declaration of TPM_PUBKEY
 ///
 /// Part 2 section 10.1: TPM_KEY_PARMS
 ///   [size_is(parmSize)] BYTE* parms;

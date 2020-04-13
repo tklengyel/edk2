@@ -2,13 +2,7 @@
 handles console redirection from boot manager
 
 Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -903,6 +897,7 @@ IsTerminalDevicePath (
   VENDOR_DEVICE_PATH        *Vendor;
   UART_DEVICE_PATH          *Uart;
   ACPI_HID_DEVICE_PATH      *Acpi;
+  UINTN                     Index;
 
   IsTerminal = FALSE;
 
@@ -935,35 +930,20 @@ IsTerminalDevicePath (
   }
 
   //
-  // There are four kinds of Terminal types
+  // There are 9 kinds of Terminal types
   // check to see whether this devicepath
   // is one of that type
   //
-  if (CompareGuid (&Vendor->Guid, &TerminalTypeGuid[0])) {
-    *Termi      = TerminalTypePcAnsi;
-    IsTerminal  = TRUE;
-  } else {
-    if (CompareGuid (&Vendor->Guid, &TerminalTypeGuid[1])) {
-      *Termi      = TerminalTypeVt100;
-      IsTerminal  = TRUE;
-    } else {
-      if (CompareGuid (&Vendor->Guid, &TerminalTypeGuid[2])) {
-        *Termi      = TerminalTypeVt100Plus;
-        IsTerminal  = TRUE;
-      } else {
-        if (CompareGuid (&Vendor->Guid, &TerminalTypeGuid[3])) {
-          *Termi      = TerminalTypeVtUtf8;
-          IsTerminal  = TRUE;
-        } else {
-          if (CompareGuid (&Vendor->Guid, &TerminalTypeGuid[4])) {
-            *Termi      = TerminalTypeTtyTerm;
-            IsTerminal  = TRUE;
-          } else {
-            IsTerminal = FALSE;
-          }
-        }
-      }
+  for (Index = 0; Index < ARRAY_SIZE (TerminalTypeGuid); Index++) {
+    if (CompareGuid (&Vendor->Guid, &TerminalTypeGuid[Index])) {
+      *Termi = Index;
+      IsTerminal = TRUE;
+      break;
     }
+  }
+
+  if (Index == ARRAY_SIZE (TerminalTypeGuid)) {
+    IsTerminal = FALSE;
   }
 
   if (!IsTerminal) {

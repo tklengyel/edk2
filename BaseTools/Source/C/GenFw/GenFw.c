@@ -2,13 +2,7 @@
 Converts a pe32+ image to an FW, Te image type, or other specific image.
 
 Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -176,7 +170,7 @@ Returns:
   //
   fprintf (stdout, "Options:\n");
   fprintf (stdout, "  -o FileName, --outputfile FileName\n\
-                        File will be created to store the ouput content.\n");
+                        File will be created to store the output content.\n");
   fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
                         Create Efi Image. EFI_FILETYPE is one of BASE,SMM_CORE,\n\
                         PEI_CORE, PEIM, DXE_CORE, DXE_DRIVER, UEFI_APPLICATION,\n\
@@ -261,13 +255,13 @@ Returns:
                         Guid is used to specify hii package list guid.\n\
                         Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n\
                         If not specified, the first Form FormSet guid is used.\n");
-  fprintf (stdout, "  --hiipackage          Combine all input binary hii pacakges into \n\
+  fprintf (stdout, "  --hiipackage          Combine all input binary hii packages into \n\
                         a single package list as the text resource data(RC).\n\
                         It can't be combined with other action options\n\
                         except for -o option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
                         input action option will override the previous one.\n");
-  fprintf (stdout, "  --hiibinpackage       Combine all input binary hii pacakges into \n\
+  fprintf (stdout, "  --hiibinpackage       Combine all input binary hii packages into \n\
                         a single package list as the binary resource section.\n\
                         It can't be combined with other action options\n\
                         except for -o option. It is a action option.\n\
@@ -559,7 +553,7 @@ PeCoffConvertImageToXip (
   if (PeHdr->Pe32.OptionalHeader.SectionAlignment != PeHdr->Pe32.OptionalHeader.FileAlignment) {
     //
     // The only reason to expand zero fill sections is to make them compatible with XIP images.
-    // If SectionAlignment is not equal to FileAlginment then it is not an XIP type image.
+    // If SectionAlignment is not equal to FileAlignment then it is not an XIP type image.
     //
     return;
   }
@@ -659,7 +653,11 @@ PeCoffConvertImageToXip (
     //
     // Make the size of raw data in section header alignment.
     //
-    SectionHeader->SizeOfRawData = (SectionHeader->Misc.VirtualSize + PeHdr->Pe32.OptionalHeader.FileAlignment - 1) & (~(PeHdr->Pe32.OptionalHeader.FileAlignment - 1));
+    SectionSize = (SectionHeader->Misc.VirtualSize + PeHdr->Pe32.OptionalHeader.FileAlignment - 1) & (~(PeHdr->Pe32.OptionalHeader.FileAlignment - 1));
+    if (SectionSize < SectionHeader->SizeOfRawData) {
+      SectionHeader->SizeOfRawData = SectionSize;
+    }
+
     SectionHeader->PointerToRawData = SectionHeader->VirtualAddress;
   }
 
@@ -1005,7 +1003,7 @@ Returns:
     CopyMem (
       FileBuffer + SectionHeader->PointerToRawData,
       (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress),
-      SectionHeader->SizeOfRawData
+      SectionHeader->SizeOfRawData < SectionHeader->Misc.VirtualSize ? SectionHeader->SizeOfRawData : SectionHeader->Misc.VirtualSize
       );
   }
 
@@ -1014,7 +1012,7 @@ Returns:
   //
   // Update Image Base Address
   //
-  if ((ImgHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (ImgHdr->Pe32.FileHeader.Machine != IMAGE_FILE_MACHINE_IA64)) {
+  if (ImgHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
     ImgHdr->Pe32.OptionalHeader.ImageBase = (UINT32) NewPe32BaseAddress;
   } else if (ImgHdr->Pe32Plus.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
     ImgHdr->Pe32Plus.OptionalHeader.ImageBase = NewPe32BaseAddress;
@@ -1117,6 +1115,7 @@ Returns:
   time_t                           InputFileTime;
   time_t                           OutputFileTime;
   struct stat                      Stat_Buf;
+  BOOLEAN                          ZeroDebugFlag;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -1164,6 +1163,7 @@ Returns:
   NegativeAddr           = FALSE;
   InputFileTime          = 0;
   OutputFileTime         = 0;
+  ZeroDebugFlag          = FALSE;
 
   if (argc == 1) {
     Error (NULL, 0, 1001, "Missing options", "No input options.");
@@ -1203,6 +1203,9 @@ Returns:
         goto Finish;
       }
       ModuleType = argv[1];
+      if (mOutImageType == FW_ZERO_DEBUG_IMAGE) {
+        ZeroDebugFlag = TRUE;
+      }
       if (mOutImageType != FW_TE_IMAGE) {
         mOutImageType = FW_EFI_IMAGE;
       }
@@ -1226,6 +1229,9 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--terse") == 0)) {
+      if (mOutImageType == FW_ZERO_DEBUG_IMAGE) {
+        ZeroDebugFlag = TRUE;
+      }
       mOutImageType = FW_TE_IMAGE;
       argc --;
       argv ++;
@@ -1247,7 +1253,12 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-z") == 0) || (stricmp (argv[0], "--zero") == 0)) {
-      mOutImageType = FW_ZERO_DEBUG_IMAGE;
+      if (mOutImageType == FW_DUMMY_IMAGE) {
+        mOutImageType = FW_ZERO_DEBUG_IMAGE;
+      }
+      if (mOutImageType == FW_TE_IMAGE || mOutImageType == FW_EFI_IMAGE) {
+        ZeroDebugFlag = TRUE;
+      }
       argc --;
       argv ++;
       continue;
@@ -1390,7 +1401,7 @@ Returns:
         goto Finish;
       }
       if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", (int) LogLevel);
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, current input level is %d", (int) LogLevel);
         goto Finish;
       }
       SetPrintLevel (LogLevel);
@@ -1536,16 +1547,16 @@ Returns:
     VerboseMsg ("Dump the TE header information of the input TE image.");
     break;
   case FW_MCI_IMAGE:
-    VerboseMsg ("Conver input MicroCode.txt file to MicroCode.bin file.");
+    VerboseMsg ("Convert input MicroCode.txt file to MicroCode.bin file.");
     break;
   case FW_MERGE_IMAGE:
     VerboseMsg ("Combine the input multi microcode bin files to one bin file.");
     break;
   case FW_HII_PACKAGE_LIST_RCIMAGE:
-    VerboseMsg ("Combine the input multi hii bin packages to one text pacakge list RC file.");
+    VerboseMsg ("Combine the input multi hii bin packages to one text package list RC file.");
     break;
   case FW_HII_PACKAGE_LIST_BINIMAGE:
-    VerboseMsg ("Combine the input multi hii bin packages to one binary pacakge list file.");
+    VerboseMsg ("Combine the input multi hii bin packages to one binary package list file.");
     break;
   case FW_REBASE_IMAGE:
     VerboseMsg ("Rebase the input image to new base address.");
@@ -1633,7 +1644,7 @@ Returns:
       goto Finish;
     }
     //
-    // Get hii package list lenght
+    // Get hii package list length
     //
     HiiPackageListHeader.PackageLength = sizeof (EFI_HII_PACKAGE_LIST_HEADER);
     for (Index = 0; Index < InputFileNum; Index ++) {
@@ -1668,7 +1679,7 @@ Returns:
       goto Finish;
     }
     if (memcmp (&HiiPackageListGuid, &mZeroGuid, sizeof (EFI_GUID)) == 0) {
-      Error (NULL, 0, 3000, "Invalid", "HII pacakge list guid is not specified!");
+      Error (NULL, 0, 3000, "Invalid", "HII package list guid is not specified!");
       goto Finish;
     }
     memcpy (&HiiPackageListHeader.PackageListGuid, &HiiPackageListGuid, sizeof (EFI_GUID));
@@ -2172,7 +2183,7 @@ Returns:
 
   if (PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_ARM) {
     // Some tools kick out IMAGE_FILE_MACHINE_ARM (0x1c0) vs IMAGE_FILE_MACHINE_ARMT (0x1c2)
-    // so patch back to the offical UEFI value.
+    // so patch back to the official UEFI value.
     PeHdr->Pe32.FileHeader.Machine = IMAGE_FILE_MACHINE_ARMT;
   }
 
@@ -2180,7 +2191,7 @@ Returns:
   // Set new base address into image
   //
   if (mOutImageType == FW_REBASE_IMAGE || mOutImageType == FW_SET_ADDRESS_IMAGE) {
-    if ((PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (PeHdr->Pe32.FileHeader.Machine != IMAGE_FILE_MACHINE_IA64)) {
+    if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       if (NewBaseAddress >= 0x100000000ULL) {
         Error (NULL, 0, 3000, "Invalid", "New base address is larger than 4G for 32bit PE image");
         goto Finish;
@@ -2372,7 +2383,7 @@ Returns:
             //
             memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
             //
-            // Zero Execption Table
+            // Zero Exception Table
             //
             Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
             Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size           = 0;
@@ -2451,7 +2462,7 @@ Returns:
     // Zero the .pdata section for X64 machine and don't check the Debug Directory is empty
     // For Itaninum and X64 Image, remove .pdata section.
     //
-    if ((!KeepExceptionTableFlag && PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_X64) || PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
+    if ((!KeepExceptionTableFlag && PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_X64)) {
       if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
         Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
         Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
@@ -2479,7 +2490,7 @@ Returns:
                 memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
               }
               //
-              // Zero Execption Table
+              // Zero Exception Table
               //
               Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
               Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
@@ -2594,7 +2605,7 @@ Returns:
   //
   // Zero Time/Data field
   //
-  ZeroDebugData (FileBuffer, FALSE);
+  ZeroDebugData (FileBuffer, ZeroDebugFlag);
 
   if (mOutImageType == FW_TE_IMAGE) {
     if ((PeHdr->Pe32.FileHeader.NumberOfSections &~0xFF) || (Type &~0xFF)) {

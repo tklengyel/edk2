@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 '''
@@ -227,7 +221,7 @@ class InfSectionParser(InfDefinSectionParser,
         self.InfBuildOptionSection = InfBuildOptionsObject()
         self.InfLibraryClassSection = InfLibraryClassObject()
         self.InfPackageSection = InfPackageObject()
-        self.InfPcdSection = InfPcdObject(self.MetaFiles.keys()[0])
+        self.InfPcdSection = InfPcdObject(list(self.MetaFiles.keys())[0])
         self.InfSourcesSection = InfSourcesObject()
         self.InfUserExtensionSection = InfUserExtensionObject()
         self.InfProtocolSection = InfProtocolObject()
@@ -455,7 +449,7 @@ class InfSectionParser(InfDefinSectionParser,
                     Arch = Match.groups(1)[0].upper()
                     ArchList.append(Arch)
             CommentSoFar = ''
-            for Index in xrange(1, len(List)):
+            for Index in range(1, len(List)):
                 Result = ParseComment(List[Index], DT.ALL_USAGE_TOKENS, TokenDict, [], False)
                 Usage = Result[0]
                 Type = Result[1]

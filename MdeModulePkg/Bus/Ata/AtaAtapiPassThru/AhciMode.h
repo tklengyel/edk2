@@ -2,13 +2,7 @@
   Header file for AHCI mode of ATA host controller.
 
   Copyright (c) 2010 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 #ifndef __ATA_HC_AHCI_MODE_H__
@@ -269,7 +263,7 @@ typedef struct {
 } EFI_AHCI_COMMAND_PRDT;
 
 //
-// Command table data strucute which is pointed to by the entry in the command list
+// Command table data structure which is pointed to by the entry in the command list
 //
 typedef struct {
   EFI_AHCI_COMMAND_FIS      CommandFis;       // A software constructed FIS.
@@ -289,7 +283,7 @@ typedef struct {
   UINT8    AhciD2HRegisterFis[0x14];      // D2H Register Fis: offset 0x40
   UINT8    AhciD2HRegisterFisRsvd[0x04];
   UINT64   AhciSetDeviceBitsFis;          // Set Device Bits Fix: offset 0x58
-  UINT8    AhciUnknownFis[0x40];          // Unkonwn Fis: offset 0x60
+  UINT8    AhciUnknownFis[0x40];          // Unknown Fis: offset 0x60
   UINT8    AhciUnknownFisRsvd[0x60];
 } EFI_AHCI_RECEIVED_FIS;
 

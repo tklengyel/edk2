@@ -12,14 +12,9 @@
   of size reduction when compiler optimization is disabled. If MDEPKG_NDEBUG is
   defined, then debug and assert related macros wrapped by it are the NULL implementations.
 
+Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials are licensed and made available under
-the terms and conditions of the BSD License that accompanies this distribution.
-The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php.
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -467,6 +462,24 @@ EfiTestChildHandle (
   );
 
 /**
+  This function checks the supported languages list for a target language,
+  This only supports RFC 4646 Languages.
+
+  @param  SupportedLanguages  The supported languages
+  @param  TargetLanguage      The target language
+
+  @retval Returns EFI_SUCCESS if the language is supported,
+          EFI_UNSUPPORTED otherwise
+
+**/
+EFI_STATUS
+EFIAPI
+IsLanguageSupported (
+  IN CONST CHAR8 *SupportedLanguages,
+  IN CONST CHAR8 *TargetLanguage
+  );
+
+/**
   This function looks up a Unicode string in UnicodeStringTable.
 
   If Language is a member of SupportedLanguages and a Unicode string is found in
@@ -736,9 +749,9 @@ GetEfiGlobalVariable (
   @param[out] Value The buffer point saved the variable info.
   @param[out] Size  The buffer size of the variable.
 
-  @return EFI_OUT_OF_RESOURCES      Allocate buffer failed.
-  @return EFI_SUCCESS               Find the specified variable.
-  @return Others Errors             Return errors from call to gRT->GetVariable.
+  @retval EFI_OUT_OF_RESOURCES      Allocate buffer failed.
+  @retval EFI_SUCCESS               Find the specified variable.
+  @retval Others Errors             Return errors from call to gRT->GetVariable.
 
 **/
 EFI_STATUS
@@ -764,9 +777,9 @@ GetVariable2 (
   @param[out] Value The buffer point saved the variable info.
   @param[out] Size  The buffer size of the variable.
 
-  @return EFI_OUT_OF_RESOURCES      Allocate buffer failed.
-  @return EFI_SUCCESS               Find the specified variable.
-  @return Others Errors             Return errors from call to gRT->GetVariable.
+  @retval EFI_OUT_OF_RESOURCES      Allocate buffer failed.
+  @retval EFI_SUCCESS               Find the specified variable.
+  @retval Others Errors             Return errors from call to gRT->GetVariable.
 
 **/
 EFI_STATUS
@@ -775,6 +788,39 @@ GetEfiGlobalVariable2 (
   IN CONST CHAR16    *Name,
   OUT VOID           **Value,
   OUT UINTN          *Size OPTIONAL
+  );
+
+/** Return the attributes of the variable.
+
+  Returns the status whether get the variable success. The function retrieves
+  variable  through the UEFI Runtime Service GetVariable().  The
+  returned buffer is allocated using AllocatePool().  The caller is responsible
+  for freeing this buffer with FreePool().  The attributes are returned if
+  the caller provides a valid Attribute parameter.
+
+  If Name  is NULL, then ASSERT().
+  If Guid  is NULL, then ASSERT().
+  If Value is NULL, then ASSERT().
+
+  @param[in]  Name  The pointer to a Null-terminated Unicode string.
+  @param[in]  Guid  The pointer to an EFI_GUID structure
+  @param[out] Value The buffer point saved the variable info.
+  @param[out] Size  The buffer size of the variable.
+  @param[out] Attr  The pointer to the variable attributes as found in var store
+
+  @retval EFI_OUT_OF_RESOURCES      Allocate buffer failed.
+  @retval EFI_SUCCESS               Find the specified variable.
+  @retval Others Errors             Return errors from call to gRT->GetVariable.
+
+**/
+EFI_STATUS
+EFIAPI
+GetVariable3(
+  IN CONST CHAR16       *Name,
+  IN CONST EFI_GUID     *Guid,
+     OUT VOID           **Value,
+     OUT UINTN          *Size OPTIONAL,
+     OUT UINT32         *Attr OPTIONAL
   );
 
 /**
@@ -1283,6 +1329,7 @@ AsciiPrintXY (
   ...
   );
 
+
 /**
   Installs and completes the initialization of a Driver Binding Protocol instance.
 
@@ -1312,6 +1359,25 @@ EfiLibInstallDriverBinding (
   IN CONST EFI_SYSTEM_TABLE       *SystemTable,
   IN EFI_DRIVER_BINDING_PROTOCOL  *DriverBinding,
   IN EFI_HANDLE                   DriverBindingHandle
+  );
+
+
+/**
+  Uninstalls a Driver Binding Protocol instance.
+
+  If DriverBinding is NULL, then ASSERT().
+  If DriverBinding can not be uninstalled, then ASSERT().
+
+  @param  DriverBinding        A Driver Binding Protocol instance that this driver produced.
+
+  @retval EFI_SUCCESS           The protocol uninstallation successfully completed.
+  @retval Others                Status from gBS->UninstallMultipleProtocolInterfaces().
+
+**/
+EFI_STATUS
+EFIAPI
+EfiLibUninstallDriverBinding (
+  IN EFI_DRIVER_BINDING_PROTOCOL  *DriverBinding
   );
 
 
@@ -1354,6 +1420,31 @@ EfiLibInstallAllDriverProtocols (
   );
 
 
+/**
+  Uninstalls a Driver Binding Protocol instance and optionally uninstalls the
+  Component Name, Driver Configuration and Driver Diagnostics Protocols.
+
+  If DriverBinding is NULL, then ASSERT().
+  If the uninstallation fails, then ASSERT().
+
+  @param  DriverBinding        A Driver Binding Protocol instance that this driver produced.
+  @param  ComponentName        A Component Name Protocol instance that this driver produced.
+  @param  DriverConfiguration  A Driver Configuration Protocol instance that this driver produced.
+  @param  DriverDiagnostics    A Driver Diagnostics Protocol instance that this driver produced.
+
+  @retval EFI_SUCCESS           The protocol uninstallation successfully completed.
+  @retval Others                Status from gBS->UninstallMultipleProtocolInterfaces().
+
+**/
+EFI_STATUS
+EFIAPI
+EfiLibUninstallAllDriverProtocols (
+  IN EFI_DRIVER_BINDING_PROTOCOL              *DriverBinding,
+  IN CONST EFI_COMPONENT_NAME_PROTOCOL        *ComponentName,       OPTIONAL
+  IN CONST EFI_DRIVER_CONFIGURATION_PROTOCOL  *DriverConfiguration, OPTIONAL
+  IN CONST EFI_DRIVER_DIAGNOSTICS_PROTOCOL    *DriverDiagnostics    OPTIONAL
+  );
+
 
 /**
   Installs Driver Binding Protocol with optional Component Name and Component Name 2 Protocols.
@@ -1385,6 +1476,29 @@ EfiLibInstallDriverBindingComponentName2 (
   IN CONST EFI_SYSTEM_TABLE                   *SystemTable,
   IN EFI_DRIVER_BINDING_PROTOCOL              *DriverBinding,
   IN EFI_HANDLE                               DriverBindingHandle,
+  IN CONST EFI_COMPONENT_NAME_PROTOCOL        *ComponentName,       OPTIONAL
+  IN CONST EFI_COMPONENT_NAME2_PROTOCOL       *ComponentName2       OPTIONAL
+  );
+
+
+/**
+  Uninstalls Driver Binding Protocol with optional Component Name and Component Name 2 Protocols.
+
+  If DriverBinding is NULL, then ASSERT().
+  If the uninstallation fails, then ASSERT().
+
+  @param  DriverBinding        A Driver Binding Protocol instance that this driver produced.
+  @param  ComponentName        A Component Name Protocol instance that this driver produced.
+  @param  ComponentName2       A Component Name 2 Protocol instance that this driver produced.
+
+  @retval EFI_SUCCESS           The protocol installation successfully completed.
+  @retval Others                Status from gBS->UninstallMultipleProtocolInterfaces().
+
+**/
+EFI_STATUS
+EFIAPI
+EfiLibUninstallDriverBindingComponentName2 (
+  IN EFI_DRIVER_BINDING_PROTOCOL              *DriverBinding,
   IN CONST EFI_COMPONENT_NAME_PROTOCOL        *ComponentName,       OPTIONAL
   IN CONST EFI_COMPONENT_NAME2_PROTOCOL       *ComponentName2       OPTIONAL
   );
@@ -1433,6 +1547,40 @@ EfiLibInstallAllDriverProtocols2 (
   IN CONST EFI_DRIVER_DIAGNOSTICS_PROTOCOL    *DriverDiagnostics,    OPTIONAL
   IN CONST EFI_DRIVER_DIAGNOSTICS2_PROTOCOL   *DriverDiagnostics2    OPTIONAL
   );
+
+
+/**
+  Uninstalls Driver Binding Protocol with optional Component Name, Component Name 2, Driver
+  Configuration, Driver Configuration 2, Driver Diagnostics, and Driver Diagnostics 2 Protocols.
+
+  If DriverBinding is NULL, then ASSERT().
+  If the installation fails, then ASSERT().
+
+
+  @param  DriverBinding         A Driver Binding Protocol instance that this driver produced.
+  @param  ComponentName         A Component Name Protocol instance that this driver produced.
+  @param  ComponentName2        A Component Name 2 Protocol instance that this driver produced.
+  @param  DriverConfiguration   A Driver Configuration Protocol instance that this driver produced.
+  @param  DriverConfiguration2  A Driver Configuration Protocol 2 instance that this driver produced.
+  @param  DriverDiagnostics     A Driver Diagnostics Protocol instance that this driver produced.
+  @param  DriverDiagnostics2    A Driver Diagnostics Protocol 2 instance that this driver produced.
+
+  @retval EFI_SUCCESS           The protocol uninstallation successfully completed.
+  @retval Others                Status from gBS->UninstallMultipleProtocolInterfaces().
+
+**/
+EFI_STATUS
+EFIAPI
+EfiLibUninstallAllDriverProtocols2 (
+  IN EFI_DRIVER_BINDING_PROTOCOL              *DriverBinding,
+  IN CONST EFI_COMPONENT_NAME_PROTOCOL        *ComponentName,        OPTIONAL
+  IN CONST EFI_COMPONENT_NAME2_PROTOCOL       *ComponentName2,       OPTIONAL
+  IN CONST EFI_DRIVER_CONFIGURATION_PROTOCOL  *DriverConfiguration,  OPTIONAL
+  IN CONST EFI_DRIVER_CONFIGURATION2_PROTOCOL *DriverConfiguration2, OPTIONAL
+  IN CONST EFI_DRIVER_DIAGNOSTICS_PROTOCOL    *DriverDiagnostics,    OPTIONAL
+  IN CONST EFI_DRIVER_DIAGNOSTICS2_PROTOCOL   *DriverDiagnostics2    OPTIONAL
+  );
+
 
 /**
   Appends a formatted Unicode string to a Null-terminated Unicode string

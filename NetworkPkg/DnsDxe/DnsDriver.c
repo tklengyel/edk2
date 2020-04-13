@@ -1,14 +1,8 @@
 /** @file
 The driver binding and service binding protocol for DnsDxe driver.
 
-Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -376,36 +370,32 @@ DnsUnload (
 
     while (!IsListEmpty (&mDriverData->Dns4CacheList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns4CacheList);
+      ASSERT (Entry != NULL);
       ItemCache4 = NET_LIST_USER_STRUCT (Entry, DNS4_CACHE, AllCacheLink);
-      if (ItemCache4->DnsCache.HostName != NULL) {
-        FreePool (ItemCache4->DnsCache.HostName);
-      }
-      if (ItemCache4->DnsCache.IpAddress != NULL) {
-        FreePool (ItemCache4->DnsCache.IpAddress);
-      }
+      FreePool (ItemCache4->DnsCache.HostName);
+      FreePool (ItemCache4->DnsCache.IpAddress);
       FreePool (ItemCache4);
     }
 
     while (!IsListEmpty (&mDriverData->Dns4ServerList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns4ServerList);
+      ASSERT (Entry != NULL);
       ItemServerIp4 = NET_LIST_USER_STRUCT (Entry, DNS4_SERVER_IP, AllServerLink);
       FreePool (ItemServerIp4);
     }
 
     while (!IsListEmpty (&mDriverData->Dns6CacheList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns6CacheList);
+      ASSERT (Entry != NULL);
       ItemCache6 = NET_LIST_USER_STRUCT (Entry, DNS6_CACHE, AllCacheLink);
-      if (ItemCache6->DnsCache.HostName != NULL) {
-        FreePool (ItemCache6->DnsCache.HostName);
-      }
-      if (ItemCache6->DnsCache.IpAddress != NULL) {
-        FreePool (ItemCache6->DnsCache.IpAddress);
-      }
+      FreePool (ItemCache6->DnsCache.HostName);
+      FreePool (ItemCache6->DnsCache.IpAddress);
       FreePool (ItemCache6);
     }
 
     while (!IsListEmpty (&mDriverData->Dns6ServerList)) {
       Entry = NetListRemoveHead (&mDriverData->Dns6ServerList);
+      ASSERT (Entry != NULL);
       ItemServerIp6 = NET_LIST_USER_STRUCT (Entry, DNS6_SERVER_IP, AllServerLink);
       FreePool (ItemServerIp6);
     }
@@ -510,28 +500,18 @@ DnsDriverEntryPoint (
     FreePool (mDriverData);
 
   Error2:
-     gBS->UninstallMultipleProtocolInterfaces (
-           gDns6DriverBinding.DriverBindingHandle,
-           &gEfiDriverBindingProtocolGuid,
-           &gDns6DriverBinding,
-           &gEfiComponentName2ProtocolGuid,
-           &gDnsComponentName2,
-           &gEfiComponentNameProtocolGuid,
-           &gDnsComponentName,
-           NULL
-           );
+     EfiLibUninstallDriverBindingComponentName2 (
+       &gDns6DriverBinding,
+       &gDnsComponentName,
+       &gDnsComponentName2
+       );
 
   Error1:
-    gBS->UninstallMultipleProtocolInterfaces (
-           ImageHandle,
-           &gEfiDriverBindingProtocolGuid,
-           &gDns4DriverBinding,
-           &gEfiComponentName2ProtocolGuid,
-           &gDnsComponentName2,
-           &gEfiComponentNameProtocolGuid,
-           &gDnsComponentName,
-           NULL
-           );
+    EfiLibUninstallDriverBindingComponentName2 (
+      &gDns4DriverBinding,
+      &gDnsComponentName,
+      &gDnsComponentName2
+      );
 
   return Status;
 }
@@ -650,7 +630,7 @@ Dns4DriverBindingSupported (
   @retval EFI_SUCCESS              The device was started.
   @retval EFI_DEVICE_ERROR         The device could not be started due to a device error.Currently not implemented.
   @retval EFI_OUT_OF_RESOURCES     The request could not be completed due to a lack of resources.
-  @retval Others                   The driver failded to start the device.
+  @retval Others                   The driver failed to start the device.
 
 **/
 EFI_STATUS
@@ -914,7 +894,7 @@ Dns6DriverBindingSupported (
   @retval EFI_SUCCESS              The device was started.
   @retval EFI_DEVICE_ERROR         The device could not be started due to a device error.Currently not implemented.
   @retval EFI_OUT_OF_RESOURCES     The request could not be completed due to a lack of resources.
-  @retval Others                   The driver failded to start the device.
+  @retval Others                   The driver failed to start the device.
 
 **/
 EFI_STATUS
@@ -1077,7 +1057,7 @@ Dns6DriverBindingStop (
                          then a new handle is created. If it is a pointer to an existing UEFI handle,
                          then the protocol is added to the existing UEFI handle.
 
-  @retval EFI_SUCCES            The protocol was added to ChildHandle.
+  @retval EFI_SUCCESS           The protocol was added to ChildHandle.
   @retval EFI_INVALID_PARAMETER ChildHandle is NULL.
   @retval EFI_OUT_OF_RESOURCES  There are not enough resources available to create
                                 the child
@@ -1165,7 +1145,7 @@ Dns4ServiceBindingCreateChild (
            DnsSb->ConnectUdp->UdpHandle,
            &gEfiUdp4ProtocolGuid,
            gDns4DriverBinding.DriverBindingHandle,
-           ChildHandle
+           *ChildHandle
            );
 
      gBS->UninstallMultipleProtocolInterfaces (
@@ -1206,7 +1186,7 @@ ON_ERROR:
   @param[in] This        Pointer to the EFI_SERVICE_BINDING_PROTOCOL instance.
   @param[in] ChildHandle Handle of the child to destroy
 
-  @retval EFI_SUCCES            The protocol was removed from ChildHandle.
+  @retval EFI_SUCCESS           The protocol was removed from ChildHandle.
   @retval EFI_UNSUPPORTED       ChildHandle does not support the protocol that is being removed.
   @retval EFI_INVALID_PARAMETER Child handle is NULL.
   @retval EFI_ACCESS_DENIED     The protocol could not be removed from the ChildHandle
@@ -1320,7 +1300,7 @@ Dns4ServiceBindingDestroyChild (
                          then a new handle is created. If it is a pointer to an existing UEFI handle,
                          then the protocol is added to the existing UEFI handle.
 
-  @retval EFI_SUCCES            The protocol was added to ChildHandle.
+  @retval EFI_SUCCESS           The protocol was added to ChildHandle.
   @retval EFI_INVALID_PARAMETER ChildHandle is NULL.
   @retval EFI_OUT_OF_RESOURCES  There are not enough resources available to create
                                 the child
@@ -1408,7 +1388,7 @@ Dns6ServiceBindingCreateChild (
            DnsSb->ConnectUdp->UdpHandle,
            &gEfiUdp6ProtocolGuid,
            gDns6DriverBinding.DriverBindingHandle,
-           ChildHandle
+           *ChildHandle
            );
 
      gBS->UninstallMultipleProtocolInterfaces (
@@ -1449,7 +1429,7 @@ ON_ERROR:
   @param[in] This        Pointer to the EFI_SERVICE_BINDING_PROTOCOL instance.
   @param[in] ChildHandle Handle of the child to destroy
 
-  @retval EFI_SUCCES            The protocol was removed from ChildHandle.
+  @retval EFI_SUCCESS           The protocol was removed from ChildHandle.
   @retval EFI_UNSUPPORTED       ChildHandle does not support the protocol that is being removed.
   @retval EFI_INVALID_PARAMETER Child handle is NULL.
   @retval EFI_ACCESS_DENIED     The protocol could not be removed from the ChildHandle

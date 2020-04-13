@@ -4,13 +4,7 @@ Elf64 convert solution
 Copyright (c) 2010 - 2018, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2013-2014, ARM Ltd. All rights reserved.<BR>
 
-This program and the accompanying materials are licensed and made available
-under the terms and conditions of the BSD License which accompanies this
-distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -74,7 +68,7 @@ CleanUp64 (
   );
 
 //
-// Rename ELF32 strucutres to common names to help when porting to ELF64.
+// Rename ELF32 structures to common names to help when porting to ELF64.
 //
 typedef Elf64_Shdr Elf_Shdr;
 typedef Elf64_Ehdr Elf_Ehdr;
@@ -486,7 +480,6 @@ ScanSections64 (
   mNtHdrOffset = mCoffOffset;
   switch (mEhdr->e_machine) {
   case EM_X86_64:
-  case EM_IA_64:
   case EM_AARCH64:
     mCoffOffset += sizeof (EFI_IMAGE_NT_HEADERS64);
   break;
@@ -581,7 +574,7 @@ ScanSections64 (
   mCoffOffset = CoffAlign(mCoffOffset);
 
   if (SectionCount > 1 && mOutImageType == FW_EFI_IMAGE) {
-    Warning (NULL, 0, 0, NULL, "Mulitple sections in %s are merged into 1 text section. Source level debug might not work correctly.", mInImageName);
+    Warning (NULL, 0, 0, NULL, "Multiple sections in %s are merged into 1 text section. Source level debug might not work correctly.", mInImageName);
   }
 
   //
@@ -635,7 +628,7 @@ ScanSections64 (
   }
 
   if (SectionCount > 1 && mOutImageType == FW_EFI_IMAGE) {
-    Warning (NULL, 0, 0, NULL, "Mulitple sections in %s are merged into 1 data section. Source level debug might not work correctly.", mInImageName);
+    Warning (NULL, 0, 0, NULL, "Multiple sections in %s are merged into 1 data section. Source level debug might not work correctly.", mInImageName);
   }
 
   //
@@ -691,10 +684,6 @@ ScanSections64 (
   switch (mEhdr->e_machine) {
   case EM_X86_64:
     NtHdr->Pe32Plus.FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
-    NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
-    break;
-  case EM_IA_64:
-    NtHdr->Pe32Plus.FileHeader.Machine = EFI_IMAGE_MACHINE_IPF;
     NtHdr->Pe32Plus.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     break;
   case EM_AARCH64:
@@ -822,7 +811,7 @@ WriteSections64 (
 
       default:
         //
-        //  Ignore for unkown section type.
+        //  Ignore for unknown section type.
         //
         VerboseMsg ("%s unknown section type %x. We ignore this unknown section type.", mInImageName, (unsigned)Shdr->sh_type);
         break;
@@ -1028,8 +1017,46 @@ WriteSections64 (
         } else if (mEhdr->e_machine == EM_AARCH64) {
 
           switch (ELF_R_TYPE(Rel->r_info)) {
+            INT64 Offset;
+
+          case R_AARCH64_LD64_GOT_LO12_NC:
+            //
+            // Convert into an ADD instruction - see R_AARCH64_ADR_GOT_PAGE below.
+            //
+            *(UINT32 *)Targ &= 0x3ff;
+            *(UINT32 *)Targ |= 0x91000000 | ((Sym->st_value & 0xfff) << 10);
+            break;
+
+          case R_AARCH64_ADR_GOT_PAGE:
+            //
+            // This relocation points to the GOT entry that contains the absolute
+            // address of the symbol we are referring to. Since EDK2 only uses
+            // fully linked binaries, we can avoid the indirection, and simply
+            // refer to the symbol directly. This implies having to patch the
+            // subsequent LDR instruction (covered by a R_AARCH64_LD64_GOT_LO12_NC
+            // relocation) into an ADD instruction - this is handled above.
+            //
+            Offset = (Sym->st_value - (Rel->r_offset & ~0xfff)) >> 12;
+
+            *(UINT32 *)Targ &= 0x9000001f;
+            *(UINT32 *)Targ |= ((Offset & 0x1ffffc) << (5 - 2)) | ((Offset & 0x3) << 29);
+
+            /* fall through */
 
           case R_AARCH64_ADR_PREL_PG_HI21:
+            //
+            // In order to handle Cortex-A53 erratum #843419, the LD linker may
+            // convert ADRP instructions into ADR instructions, but without
+            // updating the static relocation type, and so we may end up here
+            // while the instruction in question is actually ADR. So let's
+            // just disregard it: the section offset check we apply below to
+            // ADR instructions will trigger for its R_AARCH64_xxx_ABS_LO12_NC
+            // companion instruction as well, so it is safe to omit it here.
+            //
+            if ((*(UINT32 *)Targ & BIT31) == 0) {
+              break;
+            }
+
             //
             // AArch64 PG_H21 relocations are typically paired with ABS_LO12
             // relocations, where a PC-relative reference with +/- 4 GB range is
@@ -1048,7 +1075,6 @@ WriteSections64 (
               // Attempt to convert the ADRP into an ADR instruction.
               // This is only possible if the symbol is within +/- 1 MB.
               //
-              INT64 Offset;
 
               // Decode the ADRP instruction
               Offset = (INT32)((*(UINT32 *)Targ & 0xffffe0) << 8);
@@ -1223,6 +1249,8 @@ WriteRelocations64 (
             case R_AARCH64_LDST32_ABS_LO12_NC:
             case R_AARCH64_LDST64_ABS_LO12_NC:
             case R_AARCH64_LDST128_ABS_LO12_NC:
+            case R_AARCH64_ADR_GOT_PAGE:
+            case R_AARCH64_LD64_GOT_LO12_NC:
               //
               // No fixups are required for relative relocations, provided that
               // the relative offsets between sections have been preserved in

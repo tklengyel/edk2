@@ -1,14 +1,8 @@
 ## @file
 # This file is used to define checkpoints used by ECC tool
 #
-# Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# Copyright (c) 2008 - 2020, Intel Corporation. All rights reserved.<BR>
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 from __future__ import absolute_import
 import Common.LongFilePathOs as os
@@ -223,7 +217,7 @@ class Check(object):
                     IndexOfLine = 0
                     for Line in op:
                         IndexOfLine += 1
-                        if not Line.endswith('\r\n'):
+                        if not bytes.decode(Line).endswith('\r\n'):
                             OtherMsg = "File %s has invalid line ending at line %s" % (Record[1], IndexOfLine)
                             EccGlobalData.gDb.TblReport.Insert(ERROR_GENERAL_CHECK_INVALID_LINE_ENDING, OtherMsg=OtherMsg, BelongsToTable='File', BelongsToItem=Record[0])
 
@@ -235,7 +229,7 @@ class Check(object):
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
             for Record in RecordSet:
                 if Record[2].upper() not in EccGlobalData.gConfig.BinaryExtList:
-                    op = open(Record[1], 'rb').readlines()
+                    op = open(Record[1], 'r').readlines()
                     IndexOfLine = 0
                     for Line in op:
                         IndexOfLine += 1
@@ -271,7 +265,7 @@ class Check(object):
         self.FunctionLayoutCheckBody()
         self.FunctionLayoutCheckLocalVariable()
         self.FunctionLayoutCheckDeprecated()
-    
+
     # To check if the deprecated functions are used
     def FunctionLayoutCheckDeprecated(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckNoDeprecated == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -447,7 +441,7 @@ class Check(object):
         self.DeclCheckUnionType()
 
 
-    # Check whether no use of int, unsigned, char, void, static, long in any .c, .h or .asl files.
+    # Check whether no use of int, unsigned, char, void, long in any .c, .h or .asl files.
     def DeclCheckNoUseCType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration No use C type ...")
@@ -1403,7 +1397,7 @@ class Check(object):
     # Check whether only capital letters are used for #define declarations
     def NamingConventionCheckDefineStatement(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of #define statement ...")
+            EdkLogger.quiet("Checking naming convention of #define statement ...")
 
             SqlCommand = """select ID, Value from %s where Model = %s""" % (FileTable, MODEL_IDENTIFIER_MACRO_DEFINE)
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
@@ -1418,7 +1412,7 @@ class Check(object):
     # Check whether only capital letters are used for typedef declarations
     def NamingConventionCheckTypedefStatement(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of #typedef statement ...")
+            EdkLogger.quiet("Checking naming convention of #typedef statement ...")
 
             SqlCommand = """select ID, Name from %s where Model = %s""" % (FileTable, MODEL_IDENTIFIER_TYPEDEF)
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
@@ -1438,7 +1432,7 @@ class Check(object):
     # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
     def NamingConventionCheckIfndefStatement(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckIfndefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of #ifndef statement ...")
+            EdkLogger.quiet("Checking naming convention of #ifndef statement ...")
 
             SqlCommand = """select ID, Value from %s where Model = %s""" % (FileTable, MODEL_IDENTIFIER_MACRO_IFNDEF)
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
@@ -1455,7 +1449,7 @@ class Check(object):
     # Check whether the path name followed the rule
     def NamingConventionCheckPathName(self):
         if EccGlobalData.gConfig.NamingConventionCheckPathName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of file path name ...")
+            EdkLogger.quiet("Checking naming convention of file path name ...")
             Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
             SqlCommand = """select ID, Name from File"""
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
@@ -1472,16 +1466,17 @@ class Check(object):
     # Check whether the variable name followed the rule
     def NamingConventionCheckVariableName(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckVariableName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of variable name ...")
+            EdkLogger.quiet("Checking naming convention of variable name ...")
             Pattern = re.compile(r'^[A-Zgm]+\S*[a-z]\S*$')
 
-            SqlCommand = """select ID, Name from %s where Model = %s""" % (FileTable, MODEL_IDENTIFIER_VARIABLE)
+            SqlCommand = """select ID, Name, Modifier from %s where Model = %s""" % (FileTable, MODEL_IDENTIFIER_VARIABLE)
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
             for Record in RecordSet:
                 Var = Record[1]
+                Modifier = Record[2]
                 if Var.startswith('CONST'):
                     Var = Var[5:].lstrip()
-                if not Pattern.match(Var):
+                if not Pattern.match(Var) and not (Modifier.endswith('*') and Var.startswith('p')):
                     if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Record[1]):
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, OtherMsg="The variable name [%s] does not follow the rules" % (Record[1]), BelongsToTable=FileTable, BelongsToItem=Record[0])
 
@@ -1492,7 +1487,7 @@ class Check(object):
     # Check whether the function name followed the rule
     def NamingConventionCheckFunctionName(self):
         if EccGlobalData.gConfig.NamingConventionCheckFunctionName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of function name ...")
+            EdkLogger.quiet("Checking naming convention of function name ...")
             Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
             SqlCommand = """select ID, Name from Function"""
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
@@ -1504,7 +1499,7 @@ class Check(object):
     # Check whether NO use short variable name with single character
     def NamingConventionCheckSingleCharacterVariable(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckSingleCharacterVariable == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            EdkLogger.quiet("Checking naming covention of single character variable name ...")
+            EdkLogger.quiet("Checking naming convention of single character variable name ...")
 
             SqlCommand = """select ID, Name from %s where Model = %s""" % (FileTable, MODEL_IDENTIFIER_VARIABLE)
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)

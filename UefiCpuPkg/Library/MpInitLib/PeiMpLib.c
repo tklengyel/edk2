@@ -1,20 +1,15 @@
 /** @file
   MP initialize support functions for PEI phase.
 
-  Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2020, Intel Corporation. All rights reserved.<BR>
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
 #include "MpLib.h"
 #include <Library/PeiServicesLib.h>
 #include <Guid/S3SmmInitDone.h>
+#include <Ppi/ShadowMicrocode.h>
 
 /**
   S3 SMM Init Done notification function.
@@ -297,6 +292,59 @@ CheckAndUpdateApsStatus (
 }
 
 /**
+  Build the microcode patch HOB that contains the base address and size of the
+  microcode patch stored in the memory.
+
+  @param[in]  CpuMpData    Pointer to the CPU_MP_DATA structure.
+
+**/
+VOID
+BuildMicrocodeCacheHob (
+  IN CPU_MP_DATA    *CpuMpData
+  )
+{
+  EDKII_MICROCODE_PATCH_HOB    *MicrocodeHob;
+  UINTN                        HobDataLength;
+  UINT32                       Index;
+
+  HobDataLength = sizeof (EDKII_MICROCODE_PATCH_HOB) +
+                  sizeof (UINT64) * CpuMpData->CpuCount;
+
+  MicrocodeHob  = AllocatePool (HobDataLength);
+  if (MicrocodeHob == NULL) {
+    ASSERT (FALSE);
+    return;
+  }
+
+  //
+  // Store the information of the memory region that holds the microcode patches.
+  //
+  MicrocodeHob->MicrocodePatchAddress    = CpuMpData->MicrocodePatchAddress;
+  MicrocodeHob->MicrocodePatchRegionSize = CpuMpData->MicrocodePatchRegionSize;
+
+  //
+  // Store the detected microcode patch for each processor as well.
+  //
+  MicrocodeHob->ProcessorCount = CpuMpData->CpuCount;
+  for (Index = 0; Index < CpuMpData->CpuCount; Index++) {
+    if (CpuMpData->CpuData[Index].MicrocodeEntryAddr != 0) {
+      MicrocodeHob->ProcessorSpecificPatchOffset[Index] =
+        CpuMpData->CpuData[Index].MicrocodeEntryAddr - CpuMpData->MicrocodePatchAddress;
+    } else {
+      MicrocodeHob->ProcessorSpecificPatchOffset[Index] = MAX_UINT64;
+    }
+  }
+
+  BuildGuidDataHob (
+    &gEdkiiMicrocodePatchHobGuid,
+    MicrocodeHob,
+    HobDataLength
+    );
+
+  return;
+}
+
+/**
   Initialize global data for MP support.
 
   @param[in] CpuMpData  The pointer to CPU MP Data structure.
@@ -308,6 +356,7 @@ InitMpGlobalData (
 {
   EFI_STATUS  Status;
 
+  BuildMicrocodeCacheHob (CpuMpData);
   SaveCpuMpData (CpuMpData);
 
   ///
@@ -407,9 +456,10 @@ MpInitLibStartupAllAPs (
     return EFI_UNSUPPORTED;
   }
 
-  return StartupAllAPsWorker (
+  return StartupAllCPUsWorker (
            Procedure,
            SingleThread,
+           TRUE,
            NULL,
            TimeoutInMicroseconds,
            ProcedureArgument,
@@ -590,4 +640,71 @@ MpInitLibEnableDisableAP (
   return EnableDisableApWorker (ProcessorNumber, EnableAP, HealthFlag);
 }
 
+/**
+  This funtion will try to invoke platform specific microcode shadow logic to
+  relocate microcode update patches into memory.
 
+  @param[in, out] CpuMpData  The pointer to CPU MP Data structure.
+
+  @retval EFI_SUCCESS              Shadow microcode success.
+  @retval EFI_OUT_OF_RESOURCES     No enough resource to complete the operation.
+  @retval EFI_UNSUPPORTED          Can't find platform specific microcode shadow
+                                   PPI/Protocol.
+**/
+EFI_STATUS
+PlatformShadowMicrocode (
+  IN OUT CPU_MP_DATA             *CpuMpData
+  )
+{
+  EFI_STATUS                         Status;
+  EDKII_PEI_SHADOW_MICROCODE_PPI     *ShadowMicrocodePpi;
+  UINTN                              CpuCount;
+  EDKII_PEI_MICROCODE_CPU_ID         *MicrocodeCpuId;
+  UINTN                              Index;
+  UINTN                              BufferSize;
+  VOID                               *Buffer;
+
+  Status = PeiServicesLocatePpi (
+             &gEdkiiPeiShadowMicrocodePpiGuid,
+             0,
+             NULL,
+             (VOID **) &ShadowMicrocodePpi
+             );
+  if (EFI_ERROR (Status)) {
+    return EFI_UNSUPPORTED;
+  }
+
+  CpuCount = CpuMpData->CpuCount;
+  MicrocodeCpuId = (EDKII_PEI_MICROCODE_CPU_ID *) AllocateZeroPool (sizeof (EDKII_PEI_MICROCODE_CPU_ID) * CpuCount);
+  if (MicrocodeCpuId == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  for (Index = 0; Index < CpuMpData->CpuCount; Index++) {
+    MicrocodeCpuId[Index].ProcessorSignature = CpuMpData->CpuData[Index].ProcessorSignature;
+    MicrocodeCpuId[Index].PlatformId         = CpuMpData->CpuData[Index].PlatformId;
+  }
+
+  Status = ShadowMicrocodePpi->ShadowMicrocode (
+             ShadowMicrocodePpi,
+             CpuCount,
+             MicrocodeCpuId,
+             &BufferSize,
+             &Buffer
+             );
+  FreePool (MicrocodeCpuId);
+  if (EFI_ERROR (Status)) {
+    return EFI_NOT_FOUND;
+  }
+
+  CpuMpData->MicrocodePatchAddress    = (UINTN) Buffer;
+  CpuMpData->MicrocodePatchRegionSize = BufferSize;
+
+  DEBUG ((
+    DEBUG_INFO,
+    "%a: Required microcode patches have been loaded at 0x%lx, with size 0x%lx.\n",
+    __FUNCTION__, CpuMpData->MicrocodePatchAddress, CpuMpData->MicrocodePatchRegionSize
+    ));
+
+  return EFI_SUCCESS;
+}

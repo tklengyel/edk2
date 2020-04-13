@@ -17,13 +17,7 @@
  SmmPerformanceHandlerEx(), SmmPerformanceHandler() will receive untrusted input and do basic validation.
 
 Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -593,7 +587,7 @@ InsertFpdtRecord (
   switch (PerfId) {
   case MODULE_START_ID:
   case MODULE_END_ID:
-    GetModuleInfoFromHandle ((EFI_HANDLE *)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
+    GetModuleInfoFromHandle ((EFI_HANDLE)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
     StringPtr = ModuleName;
     //
     // Cache the offset of start image start record and use to update the start image end record if needed.
@@ -618,7 +612,7 @@ InsertFpdtRecord (
 
   case MODULE_LOADIMAGE_START_ID:
   case MODULE_LOADIMAGE_END_ID:
-    GetModuleInfoFromHandle ((EFI_HANDLE *)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
+    GetModuleInfoFromHandle ((EFI_HANDLE)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
     StringPtr = ModuleName;
     if (PerfId == MODULE_LOADIMAGE_START_ID) {
       mLoadImageCount++;
@@ -675,7 +669,7 @@ InsertFpdtRecord (
   case PERF_INMODULE_END_ID:
   case PERF_CROSSMODULE_START_ID:
   case PERF_CROSSMODULE_END_ID:
-    GetModuleInfoFromHandle ((EFI_HANDLE *)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
+    GetModuleInfoFromHandle ((EFI_HANDLE)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
     if (String != NULL) {
       StringPtr = String;
     } else {
@@ -697,7 +691,7 @@ InsertFpdtRecord (
 
   default:
     if (Attribute != PerfEntry) {
-      GetModuleInfoFromHandle ((EFI_HANDLE *)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
+      GetModuleInfoFromHandle ((EFI_HANDLE)CallerIdentifier, ModuleName, sizeof (ModuleName), &ModuleGuid);
       if (String != NULL) {
         StringPtr = String;
       } else {

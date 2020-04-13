@@ -3,13 +3,7 @@
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -72,7 +66,7 @@ Mtftp6ParseMcastOption (
 
 
 /**
-  Parse the MTFTP6 extesion options.
+  Parse the MTFTP6 extension options.
 
   @param[in]  Options       The pointer to the extension options list.
   @param[in]  Count         The num of the extension options.

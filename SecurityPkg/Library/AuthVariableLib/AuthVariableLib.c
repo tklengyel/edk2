@@ -12,13 +12,7 @@
   the authentication service provided in this driver will be broken, and the behavior is undefined.
 
 Copyright (c) 2015 - 2016, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -102,7 +96,7 @@ VOID **mAuthVarAddressPointer[9];
 AUTH_VAR_LIB_CONTEXT_IN *mAuthVarLibContextIn = NULL;
 
 /**
-  Initialization for authenticated varibale services.
+  Initialization for authenticated variable services.
   If this initialization returns error status, other APIs will not work
   and expect to be not called then.
 
@@ -388,7 +382,7 @@ AuthVariableLibInitialize (
   @retval EFI_INVALID_PARAMETER     Invalid parameter.
   @retval EFI_WRITE_PROTECTED       Variable is write-protected.
   @retval EFI_OUT_OF_RESOURCES      There is not enough resource.
-  @retval EFI_SECURITY_VIOLATION    The variable is with EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACESS
+  @retval EFI_SECURITY_VIOLATION    The variable is with EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS
                                     set, but the AuthInfo does NOT pass the validation
                                     check carried out by the firmware.
   @retval EFI_UNSUPPORTED           Unsupported to process authenticated variable.

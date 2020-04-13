@@ -1,14 +1,8 @@
 /** @file
   SLIT table parser
 
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
     - ACPI 6.2 Specification - Errata A, September 2017
@@ -63,9 +57,9 @@ ParseAcpiSlit (
   )
 {
   UINT32 Offset;
-  UINT64 Count;
-  UINT64 Index;
-  UINT64 LocalityCount;
+  UINT32 Count;
+  UINT32 Index;
+  UINT32 LocalityCount;
   UINT8* LocalityPtr;
   CHAR16 Buffer[80];  // Used for AsciiName param of ParseAcpi
 
@@ -81,9 +75,58 @@ ParseAcpiSlit (
              AcpiTableLength,
              PARSER_PARAMS (SlitParser)
              );
+
+  // Check if the values used to control the parsing logic have been
+  // successfully read.
+  if (SlitSystemLocalityCount == NULL) {
+    IncrementErrorCount ();
+    Print (
+      L"ERROR: Insufficient table length. AcpiTableLength = %d.\n",
+      AcpiTableLength
+      );
+    return;
+  }
+
+  /*
+    Despite the 'Number of System Localities' being a 64-bit field in SLIT,
+    the maximum number of localities that can be represented in SLIT is limited
+    by the 'Length' field of the ACPI table.
+
+    Since the ACPI table length field is 32-bit wide. The maximum number of
+    localities that can be represented in SLIT can be calculated as:
+
+    MaxLocality = sqrt (MAX_UINT32 - sizeof (EFI_ACPI_6_3_SYSTEM_LOCALITY_DISTANCE_INFORMATION_TABLE_HEADER))
+                = 65535
+                = MAX_UINT16
+  */
+  if (*SlitSystemLocalityCount > MAX_UINT16) {
+    IncrementErrorCount ();
+    Print (
+      L"ERROR: The Number of System Localities provided can't be represented " \
+        L"in the SLIT table. SlitSystemLocalityCount = %ld. " \
+        L"MaxLocalityCountAllowed = %d.\n",
+      *SlitSystemLocalityCount,
+      MAX_UINT16
+      );
+    return;
+  }
+
+  LocalityCount = (UINT32)*SlitSystemLocalityCount;
+
+  // Make sure system localities fit in the table buffer provided
+  if (Offset + (LocalityCount * LocalityCount) > AcpiTableLength) {
+    IncrementErrorCount ();
+    Print (
+      L"ERROR: Invalid Number of System Localities. " \
+        L"SlitSystemLocalityCount = %ld. AcpiTableLength = %d.\n",
+      *SlitSystemLocalityCount,
+      AcpiTableLength
+      );
+    return;
+  }
+
   LocalityPtr = Ptr + Offset;
 
-  LocalityCount = *SlitSystemLocalityCount;
   // We only print the Localities if the count is less than 16
   // If the locality count is more than 16 then refer to the
   // raw data dump.

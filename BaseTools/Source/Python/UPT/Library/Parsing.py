@@ -4,13 +4,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 '''
@@ -959,7 +953,7 @@ def MacroParser(Line, FileName, SectionType, FileLocalMacros):
 #                       INF, DEC specs
 # @param  SectionDict:  section statement dict, key is SectionAttrs(arch,
 #                       moduletype or platform may exist as needed) list
-#                       seperated by space,
+#                       separated by space,
 #                       value is statement
 #
 def GenSection(SectionName, SectionDict, SplitArch=True, NeedBlankLine=False):
@@ -974,7 +968,7 @@ def GenSection(SectionName, SectionDict, SplitArch=True, NeedBlankLine=False):
                     ArchList = GetSplitValueList(SectionAttrs, DataType.TAB_COMMENT_SPLIT)
                 else:
                     ArchList = [SectionAttrs]
-            for Index in xrange(0, len(ArchList)):
+            for Index in range(0, len(ArchList)):
                 ArchList[Index] = ConvertArchForInstall(ArchList[Index])
             Section = '[' + SectionName + '.' + (', ' + SectionName + '.').join(ArchList) + ']'
         else:

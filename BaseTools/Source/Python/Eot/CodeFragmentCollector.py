@@ -3,13 +3,7 @@
 #
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ##
@@ -21,13 +15,19 @@ import re
 import Common.LongFilePathOs as os
 import sys
 
-import antlr3
-from .CLexer import CLexer
-from .CParser import CParser
+if sys.version_info.major == 3:
+    import antlr4 as antlr
+    from Eot.CParser4.CLexer import CLexer
+    from Eot.CParser4.CParser import CParser
+else:
+    import antlr3 as antlr
+    antlr.InputStream = antlr.StringStream
+    from Eot.CParser3.CLexer import CLexer
+    from Eot.CParser3.CParser import CParser
 
-from . import FileProfile
-from .CodeFragment import PP_Directive
-from .ParserWarning import Warning
+from Eot import FileProfile
+from Eot.CodeFragment import PP_Directive
+from Eot.ParserWarning import Warning
 
 
 ##define T_CHAR_SPACE                ' '
@@ -354,9 +354,9 @@ class CodeFragmentCollector:
         FileStringContents = ''
         for fileLine in self.Profile.FileLinesList:
             FileStringContents += fileLine
-        cStream = antlr3.StringStream(FileStringContents)
+        cStream = antlr.InputStream(FileStringContents)
         lexer = CLexer(cStream)
-        tStream = antlr3.CommonTokenStream(lexer)
+        tStream = antlr.CommonTokenStream(lexer)
         parser = CParser(tStream)
         parser.translation_unit()
 
@@ -384,10 +384,10 @@ class CodeFragmentCollector:
         print('################# ' + self.FileName + '#####################')
 
         print('/****************************************/')
-        print('/*************** ASSIGNMENTS ***************/')
+        print('/************** ASSIGNMENTS *************/')
         print('/****************************************/')
-        for asign in FileProfile.AssignmentExpressionList:
-            print(str(asign.StartPos) + asign.Name + asign.Operator + asign.Value)
+        for assign in FileProfile.AssignmentExpressionList:
+            print(str(assign.StartPos) + assign.Name + assign.Operator + assign.Value)
 
         print('/****************************************/')
         print('/********* PREPROCESS DIRECTIVES ********/')

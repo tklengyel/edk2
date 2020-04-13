@@ -4,13 +4,7 @@
 
   Copyright (C) 2013, Red Hat, Inc.
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution. The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -124,7 +118,7 @@ VirtioNetUninitRing (
                                   a lack of resources.
   @return                         Status codes from
                                   VirtioMapAllBytesInSharedBuffer()
-  @retval EFI_SUCCESS             Caller-supplied buffer is succesfully mapped.
+  @retval EFI_SUCCESS             Caller-supplied buffer is successfully mapped.
 */
 EFI_STATUS
 EFIAPI

@@ -3,17 +3,11 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 '''
-PaserValidate
+ParserValidate
 '''
 
 import os.path
@@ -68,7 +62,7 @@ def IsValidHex(HexStr):
 #
 def IsValidBoolType(BoolString):
     #
-    # Valid Ture
+    # Valid True
     #
     if BoolString == 'TRUE' or \
        BoolString == 'True' or \
@@ -124,11 +118,11 @@ def IsValidInfComponentType(ComponentType):
 ## Is valid Tool Family or not
 #
 # @param   ToolFamily:   A string contain Tool Family need to be judged.
-# Famlily := [A-Z]([a-zA-Z0-9])*
+# Family := [A-Z]([a-zA-Z0-9])*
 #
 def IsValidToolFamily(ToolFamily):
-    ReIsValieFamily = re.compile(r"^[A-Z]+[A-Za-z0-9]{0,}$", re.DOTALL)
-    if ReIsValieFamily.match(ToolFamily) is None:
+    ReIsValidFamily = re.compile(r"^[A-Z]+[A-Za-z0-9]{0,}$", re.DOTALL)
+    if ReIsValidFamily.match(ToolFamily) is None:
         return False
     return True
 
@@ -158,8 +152,8 @@ def IsValidToolTagName(TagName):
 def IsValidArch(Arch):
     if Arch == 'common':
         return True
-    ReIsValieArch = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9]{0,}$", re.DOTALL)
-    if ReIsValieArch.match(Arch) is None:
+    ReIsValidArch = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9]{0,}$", re.DOTALL)
+    if ReIsValidArch.match(Arch) is None:
         return False
     return True
 
@@ -727,7 +721,7 @@ def IsValidUserId(UserId):
 #
 def CheckUTF16FileHeader(File):
     FileIn = open(File, 'rb').read(2)
-    if FileIn != '\xff\xfe':
+    if FileIn != b'\xff\xfe':
         return False
 
     return True

@@ -4,13 +4,7 @@
 # Copyright (c) 2011 - 2017, ARM Limited. All rights reserved.
 # Copyright (c) 2016, Linaro Limited. All rights reserved.
 #
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #------------------------------------------------------------------------------
 
@@ -436,13 +430,13 @@ ASM_FUNC(ArmReadMpidr)
   ret
 
 
-// Keep old function names for C compatibilty for now. Change later?
+// Keep old function names for C compatibility for now. Change later?
 ASM_FUNC(ArmReadTpidrurw)
   mrs   x0, tpidr_el0           // read tpidr_el0 (v7 TPIDRURW) -> (v8 TPIDR_EL0)
   ret
 
 
-// Keep old function names for C compatibilty for now. Change later?
+// Keep old function names for C compatibility for now. Change later?
 ASM_FUNC(ArmWriteTpidrurw)
   msr   tpidr_el0, x0           // write tpidr_el0 (v7 TPIDRURW) -> (v8 TPIDR_EL0)
   ret
@@ -459,7 +453,7 @@ ASM_FUNC(ArmReadIdPfr0)
   ret
 
 
-// Q: id_aa64pfr1_el1 not defined yet. What does this funtion want to access?
+// Q: id_aa64pfr1_el1 not defined yet. What does this function want to access?
 // A: used to setup arch timer. Check if we have security extensions, permissions to set stuff.
 //    See: ArmPkg/Library/ArmArchTimerLib/AArch64/ArmArchTimerLib.c
 //    Not defined yet, but stick in here for now, should read all zeros.

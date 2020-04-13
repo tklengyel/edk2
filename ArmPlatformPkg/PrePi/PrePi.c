@@ -2,18 +2,13 @@
 *
 *  Copyright (c) 2011-2017, ARM Limited. All rights reserved.
 *
-*  This program and the accompanying materials
-*  are licensed and made available under the terms and conditions of the BSD License
-*  which accompanies this distribution.  The full text of the license may be found at
-*  http://opensource.org/licenses/bsd-license.php
-*
-*  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+*  SPDX-License-Identifier: BSD-2-Clause-Patent
 *
 **/
 
 #include <PiPei.h>
 
+#include <Library/CacheMaintenanceLib.h>
 #include <Library/DebugAgentLib.h>
 #include <Library/PrePiLib.h>
 #include <Library/PrintLib.h>
@@ -28,7 +23,7 @@
 #include "PrePi.h"
 
 #define IS_XIP() (((UINT64)FixedPcdGet64 (PcdFdBaseAddress) > mSystemMemoryEnd) || \
-                  ((FixedPcdGet64 (PcdFdBaseAddress) + FixedPcdGet32 (PcdFdSize)) < FixedPcdGet64 (PcdSystemMemoryBase)))
+                  ((FixedPcdGet64 (PcdFdBaseAddress) + FixedPcdGet32 (PcdFdSize)) <= FixedPcdGet64 (PcdSystemMemoryBase)))
 
 UINT64 mSystemMemoryEnd = FixedPcdGet64(PcdSystemMemoryBase) +
                           FixedPcdGet64(PcdSystemMemorySize) - 1;
@@ -184,8 +179,6 @@ CEntryPoint (
 
   // Data Cache enabled on Primary core when MMU is enabled.
   ArmDisableDataCache ();
-  // Invalidate Data cache
-  ArmInvalidateDataCache ();
   // Invalidate instruction cache
   ArmInvalidateInstructionCache ();
   // Enable Instruction Caches on all cores.
@@ -199,13 +192,17 @@ CEntryPoint (
         ArmCallSEV ();
       }
     } else {
-      // Wait the Primay core has defined the address of the Global Variable region (event: ARM_CPU_EVENT_DEFAULT)
+      // Wait the Primary core has defined the address of the Global Variable region (event: ARM_CPU_EVENT_DEFAULT)
       ArmCallWFE ();
     }
   }
 
   // If not primary Jump to Secondary Main
   if (ArmPlatformIsPrimaryCore (MpId)) {
+
+    InvalidateDataCacheRange ((VOID *)UefiMemoryBase,
+                              FixedPcdGet32 (PcdSystemMemoryUefiRegionSize));
+
     // Goto primary Main.
     PrimaryMain (UefiMemoryBase, StacksBase, StartTimeStamp);
   } else {
@@ -215,4 +212,3 @@ CEntryPoint (
   // DXE Core should always load and never return
   ASSERT (FALSE);
 }
-

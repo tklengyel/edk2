@@ -2,20 +2,14 @@
   The helper functions for BlockIo and BlockIo2 protocol.
 
   Copyright (c) 2015 - 2017, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
 #include "EmmcDxe.h"
 
 /**
-  Nonblocking I/O callback funtion when the event is signaled.
+  Nonblocking I/O callback function when the event is signaled.
 
   @param[in]  Event     The Event this notify function registered to.
   @param[in]  Context   Pointer to the context data registered to the
@@ -791,7 +785,7 @@ Error:
   @retval EFI_WRITE_PROTECTED   The device can not be read/written to.
   @retval EFI_DEVICE_ERROR      The device reported an error while performing the read/write.
   @retval EFI_NO_MEDIA          There is no media in the device.
-  @retval EFI_MEDIA_CHNAGED     The MediaId does not matched the current device.
+  @retval EFI_MEDIA_CHANGED     The MediaId does not match the current device.
   @retval EFI_BAD_BUFFER_SIZE   The Buffer was not a multiple of the block size of the device.
   @retval EFI_INVALID_PARAMETER The read/write request contains LBAs that are not valid,
                                 or the buffer is not on proper alignment.
@@ -960,7 +954,7 @@ EmmcReset (
   @retval EFI_SUCCESS           The data was read correctly from the device.
   @retval EFI_DEVICE_ERROR      The device reported an error while performing the read.
   @retval EFI_NO_MEDIA          There is no media in the device.
-  @retval EFI_MEDIA_CHANGED     The MediaId does not matched the current device.
+  @retval EFI_MEDIA_CHANGED     The MediaId does not match the current device.
   @retval EFI_BAD_BUFFER_SIZE   The Buffer was not a multiple of the block size of the device.
   @retval EFI_INVALID_PARAMETER The read request contains LBAs that are not valid,
                                 or the buffer is not on proper alignment.
@@ -999,7 +993,7 @@ EmmcReadBlocks (
   @retval EFI_WRITE_PROTECTED   The device can not be written to.
   @retval EFI_DEVICE_ERROR      The device reported an error while performing the write.
   @retval EFI_NO_MEDIA          There is no media in the device.
-  @retval EFI_MEDIA_CHNAGED     The MediaId does not matched the current device.
+  @retval EFI_MEDIA_CHANGED     The MediaId does not match the current device.
   @retval EFI_BAD_BUFFER_SIZE   The Buffer was not a multiple of the block size of the device.
   @retval EFI_INVALID_PARAMETER The write request contains LBAs that are not valid,
                                 or the buffer is not on proper alignment.
@@ -1157,7 +1151,7 @@ EmmcReadBlocksEx (
   @retval EFI_WRITE_PROTECTED   The device can not be written to.
   @retval EFI_DEVICE_ERROR      The device reported an error while performing the write.
   @retval EFI_NO_MEDIA          There is no media in the device.
-  @retval EFI_MEDIA_CHNAGED     The MediaId does not matched the current device.
+  @retval EFI_MEDIA_CHANGED     The MediaId does not match the current device.
   @retval EFI_BAD_BUFFER_SIZE   The Buffer was not a multiple of the block size of the device.
   @retval EFI_INVALID_PARAMETER The write request contains LBAs that are not valid,
                                 or the buffer is not on proper alignment.
@@ -2064,7 +2058,7 @@ EmmcEraseBlocks (
 
     //
     // If the size to erase is smaller than the erase group size, the whole
-    // erase operation is performed by writting zeros.
+    // erase operation is performed by writing zeros.
     //
     if (BlockNum < EraseGroupSize) {
       Status = EmmcWriteZeros (Partition, FirstLba, Size);

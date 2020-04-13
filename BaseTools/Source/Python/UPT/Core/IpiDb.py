@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 '''
@@ -44,7 +38,7 @@ class IpiDatabase(object):
         Dir = os.path.dirname(DbPath)
         if not os.path.isdir(Dir):
             os.mkdir(Dir)
-        self.Conn = sqlite3.connect(unicode(DbPath), isolation_level='DEFERRED')
+        self.Conn = sqlite3.connect(u''.join(DbPath), isolation_level='DEFERRED')
         self.Conn.execute("PRAGMA page_size=4096")
         self.Conn.execute("PRAGMA synchronous=OFF")
         self.Cur = self.Conn.cursor()
@@ -735,8 +729,8 @@ class IpiDatabase(object):
 
     ## Get a list of module information that comes from DP.
     #
-    # @param DpGuid: A Distrabution Guid
-    # @param DpVersion: A Distrabution version
+    # @param DpGuid: A Distribution Guid
+    # @param DpVersion: A Distribution version
     #
     def GetSModInsPathListFromDp(self, DpGuid, DpVersion):
 
@@ -754,8 +748,8 @@ class IpiDatabase(object):
 
     ## Get a list of package information.
     #
-    # @param DpGuid: A Distrabution Guid
-    # @param DpVersion: A Distrabution version
+    # @param DpGuid: A Distribution Guid
+    # @param DpVersion: A Distribution version
     #
     def GetPackageListFromDp(self, DpGuid, DpVersion):
 
@@ -774,8 +768,8 @@ class IpiDatabase(object):
 
     ## Get a list of modules that depends on package information from a DP.
     #
-    # @param DpGuid: A Distrabution Guid
-    # @param DpVersion: A Distrabution version
+    # @param DpGuid: A Distribution Guid
+    # @param DpVersion: A Distribution version
     #
     def GetDpDependentModuleList(self, DpGuid, DpVersion):
 
@@ -831,8 +825,8 @@ class IpiDatabase(object):
 
     ## Get Dp's list of modules.
     #
-    # @param DpGuid: A Distrabution Guid
-    # @param DpVersion: A Distrabution version
+    # @param DpGuid: A Distribution Guid
+    # @param DpVersion: A Distribution version
     #
     def GetDpModuleList(self, DpGuid, DpVersion):
         ModList = []
@@ -921,7 +915,7 @@ class IpiDatabase(object):
     def __ConvertToSqlString(self, StringList):
         if self.DpTable:
             pass
-        return map(lambda s: s.replace("'", "''"), StringList)
+        return list(map(lambda s: s.replace("'", "''"), StringList))
 
 
 

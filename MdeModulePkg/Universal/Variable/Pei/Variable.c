@@ -2,14 +2,9 @@
   Implement ReadOnly Variable Services required by PEIM and install
   PEI ReadOnly Varaiable2 PPI. These services operates the non volatile storage space.
 
-Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+Copyright (c) Microsoft Corporation.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -584,9 +579,9 @@ GetVariableStore (
       break;
 
     case VariableStoreTypeNv:
-      if (GetBootModeHob () != BOOT_IN_RECOVERY_MODE) {
+      if (!PcdGetBool (PcdEmuVariableNvModeEnable)) {
         //
-        // The content of NV storage for variable is not reliable in recovery boot mode.
+        // Emulated non-volatile variable mode is not enabled.
         //
 
         NvStorageSize = PcdGet32 (PcdFlashNvStorageVariableSize);
@@ -594,6 +589,8 @@ GetVariableStore (
                                                 PcdGet64 (PcdFlashNvStorageVariableBase64) :
                                                 PcdGet32 (PcdFlashNvStorageVariableBase)
                                                );
+        ASSERT (NvStorageBase != 0);
+
         //
         // First let FvHeader point to NV storage base.
         //
@@ -900,7 +897,7 @@ FindVariableEx (
       //
       if ((IndexTable != NULL) && !StopRecord) {
         Offset = (UINTN) Variable - (UINTN) LastVariable;
-        if ((Offset > 0x0FFFF) || (IndexTable->Length == sizeof (IndexTable->Index) / sizeof (IndexTable->Index[0]))) {
+        if ((Offset > 0x0FFFF) || (IndexTable->Length >= sizeof (IndexTable->Index) / sizeof (IndexTable->Index[0]))) {
           //
           // Stop to record if the distance of two neighbouring VAR_ADDED variable is larger than the allowable scope(UINT16),
           // or the record buffer is full.
@@ -1051,17 +1048,17 @@ PeiGetVariable (
     }
 
     GetVariableNameOrData (&StoreInfo, GetVariableDataPtr (Variable.CurrPtr, VariableHeader, StoreInfo.AuthFlag), VarDataSize, Data);
-
-    if (Attributes != NULL) {
-      *Attributes = VariableHeader->Attributes;
-    }
-
-    *DataSize = VarDataSize;
-    return EFI_SUCCESS;
+    Status = EFI_SUCCESS;
   } else {
-    *DataSize = VarDataSize;
-    return EFI_BUFFER_TOO_SMALL;
+    Status = EFI_BUFFER_TOO_SMALL;
   }
+
+  if (Attributes != NULL) {
+    *Attributes = VariableHeader->Attributes;
+  }
+  *DataSize = VarDataSize;
+
+  return Status;
 }
 
 /**

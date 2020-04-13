@@ -6,13 +6,7 @@ This sequence is further divided into Blocks and Huffman codings are applied to
 each Block.
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -229,7 +223,7 @@ Routine Description:
 
   Allocate memory spaces for data structures used in compression process
 
-Argements:
+Arguments:
   VOID
 
 Returns:
@@ -507,7 +501,7 @@ Returns: (VOID)
   if (mMatchLen >= 4) {
     //
     // We have just got a long match, the target tree
-    // can be located by MatchPos + 1. Travese the tree
+    // can be located by MatchPos + 1. Traverse the tree
     // from bottom up to get to a proper starting point.
     // The usage of PERC_FLAG ensures proper node deletion
     // in DeleteNode() later.
@@ -1708,7 +1702,7 @@ Returns:
   fprintf (stdout, "  --uefi\n\
             Enable UefiCompress, use TianoCompress when without this option\n");
   fprintf (stdout, "  -o FileName, --output FileName\n\
-            File will be created to store the ouput content.\n");
+            File will be created to store the output content.\n");
   fprintf (stdout, "  -v, --verbose\n\
            Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  -q, --quiet\n\
@@ -2281,10 +2275,11 @@ Returns:
 
     if (Len <= TableBits) {
 
+      if (Start[Len] >= NextCode || NextCode > MaxTableLength){
+        return (UINT16) BAD_TABLE;
+      }
+
       for (Index = Start[Len]; Index < NextCode; Index++) {
-        if (Index >= MaxTableLength) {
-          return (UINT16) BAD_TABLE;
-        }
         Table[Index] = Char;
       }
 
@@ -2714,11 +2709,11 @@ Arguments:
   Source          - The source buffer containing the compressed data.
   Destination     - The destination buffer to store the decompressed data
   Scratch         - The buffer used internally by the decompress routine. This  buffer is needed to store intermediate data.
-  Version         - 1 for EFI1.1 Decompress algoruthm, 2 for Tiano Decompress algorithm
+  Version         - 1 for EFI1.1 Decompress algorithm, 2 for Tiano Decompress algorithm
 
 Returns:
 
-  RETURN_SUCCESS           - Decompression is successfull
+  RETURN_SUCCESS           - Decompression is successful
   RETURN_INVALID_PARAMETER - The source data is corrupted
 
 --*/

@@ -2,13 +2,7 @@
   SMM Services Table Library.
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -42,7 +36,7 @@ SmmServicesTableLibConstructor (
   //
   // Retrieve SMM Base2 Protocol,  Do not use gBS from UefiBootServicesTableLib on purpose
   // to prevent inclusion of gBS, gST, and gImageHandle from SMM Drivers unless the
-  // SMM driver explicity declares that dependency.
+  // SMM driver explicitly declares that dependency.
   //
   Status = SystemTable->BootServices->LocateProtocol (
                                         &gEfiSmmBase2ProtocolGuid,

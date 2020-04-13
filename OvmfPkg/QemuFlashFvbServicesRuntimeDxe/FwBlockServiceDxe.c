@@ -5,13 +5,7 @@
   Copyright (C) 2015, Red Hat, Inc.
   Copyright (c) 2006 - 2014, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include <Guid/EventGroup.h>
@@ -221,4 +215,31 @@ MarkIoMemoryRangeForRuntimeAccess (
   }
 
   return Status;
+}
+
+VOID
+SetPcdFlashNvStorageBaseAddresses (
+  VOID
+  )
+{
+  RETURN_STATUS PcdStatus;
+
+  //
+  // Set several PCD values to point to flash
+  //
+  PcdStatus = PcdSet64S (
+    PcdFlashNvStorageVariableBase64,
+    (UINTN) PcdGet32 (PcdOvmfFlashNvStorageVariableBase)
+    );
+  ASSERT_RETURN_ERROR (PcdStatus);
+  PcdStatus = PcdSet32S (
+    PcdFlashNvStorageFtwWorkingBase,
+    PcdGet32 (PcdOvmfFlashNvStorageFtwWorkingBase)
+    );
+  ASSERT_RETURN_ERROR (PcdStatus);
+  PcdStatus = PcdSet32S (
+    PcdFlashNvStorageFtwSpareBase,
+    PcdGet32 (PcdOvmfFlashNvStorageFtwSpareBase)
+    );
+  ASSERT_RETURN_ERROR (PcdStatus);
 }

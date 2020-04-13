@@ -1,14 +1,8 @@
 /** @file
   EFI PCI IO protocol functions declaration for PCI Bus module.
 
-Copyright (c) 2006 - 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -527,7 +521,7 @@ CheckBarType (
   @param  Operation    Set or Disable.
 
   @retval  EFI_UNSUPPORTED  If root bridge does not support change attribute.
-  @retval  EFI_SUCCESS      Successfully set new attributs.
+  @retval  EFI_SUCCESS      Successfully set new attributes.
 
 **/
 EFI_STATUS

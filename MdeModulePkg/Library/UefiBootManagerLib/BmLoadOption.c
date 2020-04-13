@@ -1,15 +1,9 @@
 /** @file
   Load option library functions which relate with creating and processing load options.
 
-Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2011 - 2019, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2015-2018 Hewlett Packard Enterprise Development LP<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1233,10 +1227,8 @@ BmIsLoadOptionPeHeaderValid (
       // Check PE32 or PE32+ magic, and machine type
       //
       OptionalHeader = (EFI_IMAGE_OPTIONAL_HEADER32 *) &PeHeader->Pe32.OptionalHeader;
-      if ((OptionalHeader->Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC ||
-           OptionalHeader->Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) &&
-          EFI_IMAGE_MACHINE_TYPE_SUPPORTED (PeHeader->Pe32.FileHeader.Machine)
-          ) {
+      if (OptionalHeader->Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC ||
+          OptionalHeader->Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
         //
         // Check the Subsystem:
         //   Driver#### must be of type BootServiceDriver or RuntimeDriver
@@ -1419,7 +1411,17 @@ EfiBootManagerProcessLoadOption (
                     );
     FreePool (FileBuffer);
 
-    if (!EFI_ERROR (Status)) {
+    if (EFI_ERROR (Status)) {
+      //
+      // With EFI_SECURITY_VIOLATION retval, the Image was loaded and an ImageHandle was created
+      // with a valid EFI_LOADED_IMAGE_PROTOCOL, but the image can not be started right now.
+      // If the caller doesn't have the option to defer the execution of an image, we should
+      // unload image for the EFI_SECURITY_VIOLATION to avoid resource leak.
+      //
+      if (Status == EFI_SECURITY_VIOLATION) {
+        gBS->UnloadImage (ImageHandle);
+      }
+    } else {
       Status = gBS->HandleProtocol (ImageHandle, &gEfiLoadedImageProtocolGuid, (VOID **)&ImageInfo);
       ASSERT_EFI_ERROR (Status);
 

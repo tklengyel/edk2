@@ -3,13 +3,7 @@
 #
 #  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-#  This program and the accompanying materials
-#  are licensed and made available under the terms and conditions of the BSD License
-#  which accompanies this distribution.  The full text of the license may be found at
-#  http://opensource.org/licenses/bsd-license.php
-#
-#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 ## FD data in FDF
@@ -35,7 +29,6 @@ class FDClassObject:
         # SetVarDict[var] = value
         self.SetVarDict = {}
         self.RegionList = []
-        self.vtfRawDict = {}
 
 ## FFS data in FDF
 #
@@ -304,25 +297,6 @@ class CapsuleClassObject :
         self.TokensDict = {}
         self.CapsuleDataList = []
         self.FmpPayloadList = []
-
-## VTF component data in FDF
-#
-#
-class ComponentStatementClassObject :
-    ## The constructor
-    #
-    #   @param  self        The object pointer
-    #
-    def __init__(self):
-        self.CompName = None
-        self.CompLoc = None
-        self.CompType = None
-        self.CompVer = None
-        self.CompCs = None
-        self.CompBin = None
-        self.CompSym = None
-        self.CompSize = None
-        self.FilePos = None
 
 ## OptionROM data in FDF
 #

@@ -2,13 +2,7 @@
 # This file is used to define each component of the build database
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 from collections import OrderedDict, namedtuple
@@ -16,10 +10,13 @@ from Common.DataType import *
 import collections
 import re
 from collections import OrderedDict
-from Common.Misc import CopyDict
+from Common.Misc import CopyDict,ArrayIndex
 import copy
+import Common.EdkLogger as EdkLogger
+from Common.BuildToolError import OPTION_VALUE_INVALID
+from Common.caching import cached_property
 StructPattern = re.compile(r'[_a-zA-Z][0-9A-Za-z_\[\]]*$')
-ArrayIndex = re.compile("\[\s*[0-9a-fA-FxX]*\s*\]")
+
 ## PcdClassObject
 #
 # This Class is used for PcdObject
@@ -68,6 +65,7 @@ class PcdClassObject(object):
         self.expressions = expressions if expressions is not None else []
         self.DscDefaultValue = None
         self.DscRawValue = {}
+        self.DscRawValueInfo = {}
         if IsDsc:
             self.DscDefaultValue = Value
         self.PcdValueFromComm = ""
@@ -78,30 +76,47 @@ class PcdClassObject(object):
 
     @property
     def Capacity(self):
-        self._Capacity = []
-        dimension = ArrayIndex.findall(self._DatumType)
-        for item in dimension:
-            maxsize = item.lstrip("[").rstrip("]").strip()
-            if not maxsize:
-                maxsize = "-1"
-            maxsize = str(int(maxsize,16)) if maxsize.startswith(("0x","0X")) else maxsize
-            self._Capacity.append(maxsize)
-        if hasattr(self, "SkuOverrideValues"):
-            for sku in self.SkuOverrideValues:
-                for defaultstore in self.SkuOverrideValues[sku]:
-                    fields = self.SkuOverrideValues[sku][defaultstore]
-                    for demesionattr in fields:
-                        deme = ArrayIndex.findall(demesionattr)
-                        for i in range(len(deme)-1):
-                            if int(deme[i].lstrip("[").rstrip("]").strip()) > int(self._Capacity[i]):
-                                print "error"
-        if hasattr(self,"DefaultValues"):
-            for demesionattr in self.DefaultValues:
-                deme = ArrayIndex.findall(demesionattr)
-                for i in range(len(deme)-1):
-                    if int(deme[i].lstrip("[").rstrip("]").strip()) > int(self._Capacity[i]):
-                        print "error"
+        if self._Capacity is None:
+            self._Capacity = []
+            dimension = ArrayIndex.findall(self._DatumType)
+            for item in dimension:
+                maxsize = item.lstrip("[").rstrip("]").strip()
+                if not maxsize:
+                    maxsize = "-1"
+                maxsize = str(int(maxsize,16)) if maxsize.startswith(("0x","0X")) else maxsize
+                self._Capacity.append(maxsize)
+            if hasattr(self, "SkuOverrideValues"):
+                for sku in self.SkuOverrideValues:
+                    for defaultstore in self.SkuOverrideValues[sku]:
+                        fields = self.SkuOverrideValues[sku][defaultstore]
+                        for demesionattr in fields:
+                            fieldinfo = fields[demesionattr]
+                            deme = ArrayIndex.findall(demesionattr)
+                            for i in range(len(deme)):
+                                if int(deme[i].lstrip("[").rstrip("]").strip()) >= int(self._Capacity[i]):
+                                    if self._Capacity[i] != "-1":
+                                        firstfieldinfo = list(fieldinfo.values())[0]
+                                        EdkLogger.error('Build', OPTION_VALUE_INVALID, "For Pcd %s, Array Index exceed the Array size. From %s Line %s \n " %
+                                    (".".join((self.TokenSpaceGuidCName, self.TokenCName)), firstfieldinfo[1],firstfieldinfo[2] ))
+            if hasattr(self,"DefaultValues"):
+                for demesionattr in self.DefaultValues:
+                    fieldinfo = self.DefaultValues[demesionattr]
+                    deme = ArrayIndex.findall(demesionattr)
+                    for i in range(len(deme)):
+                        if int(deme[i].lstrip("[").rstrip("]").strip()) >= int(self._Capacity[i]):
+                            if self._Capacity[i] != "-1":
+                                firstfieldinfo = list(fieldinfo.values())[0]
+                                EdkLogger.error('Build', OPTION_VALUE_INVALID, "For Pcd %s, Array Index exceed the Array size. From %s Line %s \n " %
+                                    (".".join((self.TokenSpaceGuidCName, self.TokenCName)), firstfieldinfo[1],firstfieldinfo[2] ))
         return self._Capacity
+
+    def PcdArraySize(self):
+        if self.Capacity[-1] == "-1":
+            return -1
+        size = 1
+        for de in self.Capacity:
+            size = size * int(de)
+        return size
     @property
     def DatumType(self):
         return self._DatumType
@@ -176,7 +191,7 @@ class PcdClassObject(object):
     ## Convert the class to a string
     #
     #  Convert each member of the class to string
-    #  Organize to a signle line format string
+    #  Organize to a single line format string
     #
     #  @retval Rtn Formatted String
     #
@@ -213,6 +228,15 @@ class PcdClassObject(object):
     def __hash__(self):
         return hash((self.TokenCName, self.TokenSpaceGuidCName))
 
+    @cached_property
+    def _fullname(self):
+        return ".".join((self.TokenSpaceGuidCName,self.TokenCName))
+
+    def __lt__(self,pcd):
+        return self._fullname < pcd._fullname
+    def __gt__(self,pcd):
+        return self._fullname > pcd._fullname
+
     def sharedcopy(self,new_pcd):
         new_pcd.TokenCName = self.TokenCName
         new_pcd.TokenSpaceGuidCName = self.TokenSpaceGuidCName
@@ -222,6 +246,7 @@ class PcdClassObject(object):
         new_pcd.DefaultValue = self.DefaultValue
         new_pcd.TokenValue = self.TokenValue
         new_pcd.MaxDatumSize = self.MaxDatumSize
+        new_pcd.MaxSizeUserSet = self.MaxSizeUserSet
 
         new_pcd.Phase = self.Phase
         new_pcd.Pending = self.Pending
@@ -232,6 +257,7 @@ class PcdClassObject(object):
         new_pcd.PcdValueFromFdf = self.PcdValueFromFdf
         new_pcd.UserDefinedDefaultStoresFlag = self.UserDefinedDefaultStoresFlag
         new_pcd.DscRawValue = self.DscRawValue
+        new_pcd.DscRawValueInfo = self.DscRawValueInfo
         new_pcd.CustomAttribute = self.CustomAttribute
         new_pcd.validateranges = [item for item in self.validateranges]
         new_pcd.validlists = [item for item in self.validlists]
@@ -267,9 +293,11 @@ class StructurePcd(PcdClassObject):
         self.PcdDefineLineNo = 0
         self.PkgPath = ""
         self.DefaultValueFromDec = ""
+        self.DefaultValueFromDecInfo = None
         self.ValueChain = set()
         self.PcdFieldValueFromComm = OrderedDict()
         self.PcdFieldValueFromFdf = OrderedDict()
+        self.DefaultFromDSC=None
     def __repr__(self):
         return self.TypeName
 
@@ -281,8 +309,9 @@ class StructurePcd(PcdClassObject):
         self.DefaultValues[DimensionAttr][FieldName] = [Value.strip(), FileName, LineNo]
         return self.DefaultValues[DimensionAttr][FieldName]
 
-    def SetDecDefaultValue(self, DefaultValue):
+    def SetDecDefaultValue(self, DefaultValue,decpath=None,lineno=None):
         self.DefaultValueFromDec = DefaultValue
+        self.DefaultValueFromDecInfo = (decpath,lineno)
     def AddOverrideValue (self, FieldName, Value, SkuName, DefaultStoreName, FileName="", LineNo=0, DimensionAttr = '-1'):
         if SkuName not in self.SkuOverrideValues:
             self.SkuOverrideValues[SkuName] = OrderedDict()
@@ -317,6 +346,7 @@ class StructurePcd(PcdClassObject):
         self.validlists = PcdObject.validlists if PcdObject.validlists else self.validlists
         self.expressions = PcdObject.expressions if PcdObject.expressions else self.expressions
         self.DscRawValue = PcdObject.DscRawValue if PcdObject.DscRawValue else self.DscRawValue
+        self.DscRawValueInfo = PcdObject.DscRawValueInfo if PcdObject.DscRawValueInfo else self.DscRawValueInfo
         self.PcdValueFromComm = PcdObject.PcdValueFromComm if PcdObject.PcdValueFromComm else self.PcdValueFromComm
         self.PcdValueFromFdf = PcdObject.PcdValueFromFdf if PcdObject.PcdValueFromFdf else self.PcdValueFromFdf
         self.CustomAttribute = PcdObject.CustomAttribute if PcdObject.CustomAttribute else self.CustomAttribute
@@ -326,8 +356,8 @@ class StructurePcd(PcdClassObject):
             self.PackageDecs = PcdObject.PackageDecs if PcdObject.PackageDecs else self.PackageDecs
             self.DefaultValues = PcdObject.DefaultValues if PcdObject.DefaultValues else self.DefaultValues
             self.PcdMode = PcdObject.PcdMode if PcdObject.PcdMode else self.PcdMode
-            self.DefaultFromDSC=None
             self.DefaultValueFromDec = PcdObject.DefaultValueFromDec if PcdObject.DefaultValueFromDec else self.DefaultValueFromDec
+            self.DefaultValueFromDecInfo = PcdObject.DefaultValueFromDecInfo if PcdObject.DefaultValueFromDecInfo else self.DefaultValueFromDecInfo
             self.SkuOverrideValues = PcdObject.SkuOverrideValues if PcdObject.SkuOverrideValues else self.SkuOverrideValues
             self.StructName = PcdObject.DatumType if PcdObject.DatumType else self.StructName
             self.PcdDefineLineNo = PcdObject.PcdDefineLineNo if PcdObject.PcdDefineLineNo else self.PcdDefineLineNo
@@ -341,6 +371,7 @@ class StructurePcd(PcdClassObject):
         self.sharedcopy(new_pcd)
 
         new_pcd.DefaultValueFromDec = self.DefaultValueFromDec
+        new_pcd.DefaultValueFromDecInfo = self.DefaultValueFromDecInfo
         new_pcd.PcdMode = self.PcdMode
         new_pcd.StructName = self.DatumType
         new_pcd.PcdDefineLineNo = self.PcdDefineLineNo
@@ -355,7 +386,7 @@ class StructurePcd(PcdClassObject):
         new_pcd.ValueChain = {item for item in self.ValueChain}
         return new_pcd
 
-LibraryClassObject = namedtuple('LibraryClassObject', ['LibraryClass','SupModList'], verbose=False)
+LibraryClassObject = namedtuple('LibraryClassObject', ['LibraryClass','SupModList'])
 
 ## ModuleBuildClassObject
 #
@@ -412,7 +443,6 @@ class ModuleBuildClassObject(object):
         self.PcdIsDriver             = ''
         self.BinaryModule            = ''
         self.Shadow                  = ''
-        self.SourceOverridePath      = ''
         self.CustomMakefile          = {}
         self.Specification           = {}
         self.LibraryClass            = []

@@ -1,14 +1,8 @@
 /** @file
 Provides services to access SMRAM Save State Map
 
-Copyright (c) 2010 - 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2010 - 2019, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -20,8 +14,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <Library/BaseMemoryLib.h>
 #include <Library/SmmServicesTableLib.h>
 #include <Library/DebugLib.h>
-#include <Register/Cpuid.h>
-#include <Register/SmramSaveStateMap.h>
 
 #include "PiSmmCpuDxeSmm.h"
 
@@ -268,7 +260,7 @@ GetRegisterIndex (
 
   @retval EFI_SUCCESS           The register was read from Save State.
   @retval EFI_NOT_FOUND         The register is not defined for the Save State of Processor.
-  @retval EFI_INVALID_PARAMTER  This or Buffer is NULL.
+  @retval EFI_INVALID_PARAMETER  This or Buffer is NULL.
 
 **/
 EFI_STATUS
@@ -351,7 +343,7 @@ ReadSaveStateRegisterByIndex (
 
   @retval EFI_SUCCESS           The register was read from Save State.
   @retval EFI_NOT_FOUND         The register is not defined for the Save State of Processor.
-  @retval EFI_INVALID_PARAMTER  This or Buffer is NULL.
+  @retval EFI_INVALID_PARAMETER  This or Buffer is NULL.
 
 **/
 EFI_STATUS
@@ -366,7 +358,6 @@ ReadSaveStateRegister (
   UINT32                      SmmRevId;
   SMRAM_SAVE_STATE_IOMISC     IoMisc;
   EFI_SMM_SAVE_STATE_IO_INFO  *IoInfo;
-  VOID                        *IoMemAddr;
 
   //
   // Check for special EFI_SMM_SAVE_STATE_REGISTER_LMA
@@ -413,6 +404,14 @@ ReadSaveStateRegister (
     }
 
     //
+    // Only support IN/OUT, but not INS/OUTS/REP INS/REP OUTS.
+    //
+    if ((mSmmCpuIoType[IoMisc.Bits.Type] != EFI_SMM_SAVE_STATE_IO_TYPE_INPUT) &&
+        (mSmmCpuIoType[IoMisc.Bits.Type] != EFI_SMM_SAVE_STATE_IO_TYPE_OUTPUT)) {
+      return EFI_NOT_FOUND;
+    }
+
+    //
     // Compute index for the I/O Length and I/O Type lookup tables
     //
     if (mSmmCpuIoWidth[IoMisc.Bits.Length].Width == 0 || mSmmCpuIoType[IoMisc.Bits.Type] == 0) {
@@ -431,13 +430,7 @@ ReadSaveStateRegister (
     IoInfo->IoPort = (UINT16)IoMisc.Bits.Port;
     IoInfo->IoWidth = mSmmCpuIoWidth[IoMisc.Bits.Length].IoWidth;
     IoInfo->IoType = mSmmCpuIoType[IoMisc.Bits.Type];
-    if (IoInfo->IoType == EFI_SMM_SAVE_STATE_IO_TYPE_INPUT || IoInfo->IoType == EFI_SMM_SAVE_STATE_IO_TYPE_OUTPUT) {
-      ReadSaveStateRegister (CpuIndex, EFI_SMM_SAVE_STATE_REGISTER_RAX, mSmmCpuIoWidth[IoMisc.Bits.Length].Width, &IoInfo->IoData);
-    }
-    else {
-      ReadSaveStateRegisterByIndex(CpuIndex, SMM_SAVE_STATE_REGISTER_IOMEMADDR_INDEX, sizeof(IoMemAddr), &IoMemAddr);
-      CopyMem(&IoInfo->IoData, IoMemAddr, mSmmCpuIoWidth[IoMisc.Bits.Length].Width);
-    }
+    ReadSaveStateRegister (CpuIndex, EFI_SMM_SAVE_STATE_REGISTER_RAX, mSmmCpuIoWidth[IoMisc.Bits.Length].Width, &IoInfo->IoData);
     return EFI_SUCCESS;
   }
 
@@ -462,7 +455,7 @@ ReadSaveStateRegister (
 
   @retval EFI_SUCCESS           The register was written to Save State.
   @retval EFI_NOT_FOUND         The register is not defined for the Save State of Processor.
-  @retval EFI_INVALID_PARAMTER  ProcessorIndex or Width is not correct.
+  @retval EFI_INVALID_PARAMETER  ProcessorIndex or Width is not correct.
 
 **/
 EFI_STATUS
@@ -713,6 +706,8 @@ InstallSmiHandler (
       );
     return;
   }
+
+  InitShadowStack (CpuIndex, (VOID *)((UINTN)SmiStack + StackSize));
 
   //
   // Initialize values in template before copy

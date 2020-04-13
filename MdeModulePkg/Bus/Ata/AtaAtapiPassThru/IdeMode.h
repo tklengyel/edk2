@@ -2,13 +2,7 @@
   Header file for IDE mode of ATA host controller.
 
   Copyright (c) 2010 - 2018, Intel Corporation. All rights reserved.<BR>
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 #ifndef __ATA_HC_IDE_MODE_H__
@@ -164,7 +158,7 @@ typedef struct {
 
   @retval EFI_UNSUPPORTED        Return this value when the BARs is not IO type
   @retval EFI_SUCCESS            Get the Base address successfully
-  @retval Other                  Read the pci configureation data error
+  @retval Other                  Read the pci configuration data error
 
 **/
 EFI_STATUS

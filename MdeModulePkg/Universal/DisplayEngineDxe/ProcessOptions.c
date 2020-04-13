@@ -2,14 +2,8 @@
 Implementation for handling the User Interface option processing.
 
 
-Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2004 - 2020, Intel Corporation. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -829,6 +823,7 @@ PasswordProcess (
     //
     Status = ReadString (MenuOption, gPromptForPassword, StringPtr);
     if (EFI_ERROR (Status)) {
+      ZeroMem (StringPtr, (Maximum + 1) * sizeof (CHAR16));
       FreePool (StringPtr);
       return Status;
     }
@@ -846,7 +841,7 @@ PasswordProcess (
       } else {
         Status = EFI_SUCCESS;
       }
-
+      ZeroMem (StringPtr, (Maximum + 1) * sizeof (CHAR16));
       FreePool (StringPtr);
       return Status;
     }
@@ -862,6 +857,7 @@ PasswordProcess (
     // Reset state machine for password
     //
     Question->PasswordCheck (gFormData, Question, NULL);
+    ZeroMem (StringPtr, (Maximum + 1) * sizeof (CHAR16));
     FreePool (StringPtr);
     return Status;
   }
@@ -877,6 +873,8 @@ PasswordProcess (
     // Reset state machine for password
     //
     Question->PasswordCheck (gFormData, Question, NULL);
+    ZeroMem (StringPtr, (Maximum + 1) * sizeof (CHAR16));
+    ZeroMem (TempString, (Maximum + 1) * sizeof (CHAR16));
     FreePool (StringPtr);
     FreePool (TempString);
     return Status;

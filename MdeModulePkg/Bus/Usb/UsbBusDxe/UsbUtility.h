@@ -3,13 +3,7 @@
     Manage Usb Port/Hc/Etc.
 
 Copyright (c) 2007, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -107,7 +101,7 @@ UsbHcClearRootHubPortFeature (
   @param  UsbResult        The result of transfer.
 
   @retval EFI_SUCCESS      The control transfer finished without error.
-  @retval Others           The control transfer failed, reason returned in UsbReslt.
+  @retval Others           The control transfer failed, reason returned in UsbResult.
 
 **/
 EFI_STATUS

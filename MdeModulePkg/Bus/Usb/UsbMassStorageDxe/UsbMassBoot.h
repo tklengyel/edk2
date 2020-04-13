@@ -3,13 +3,7 @@
   for Bootability, Revision 1.0.
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -83,7 +77,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 // Mass command timeout, refers to specification[USB20-9.2.6.1]
 //
 // USB2.0 Spec define the up-limit timeout 5s for all command. USB floppy,
-// USB CD-Rom and iPod devices are much slower than USB key when reponse
+// USB CD-Rom and iPod devices are much slower than USB key when response
 // most of commands, So we set 5s as timeout here.
 //
 #define USB_BOOT_GENERAL_CMD_TIMEOUT    (5 * USB_MASS_1_SECOND)
@@ -219,7 +213,7 @@ typedef struct {
   This function get the parameters for the USB mass storage media,
   It is used both to initialize the media during the Start() phase
   of Driver Binding Protocol and to re-initialize it when the media is
-  changed. Althought the RemoveableMedia is unlikely to change,
+  changed. Although the RemoveableMedia is unlikely to change,
   it is also included here.
 
   @param  UsbMass                The device to retrieve disk gemotric.

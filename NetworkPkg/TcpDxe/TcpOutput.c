@@ -3,13 +3,7 @@
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -483,7 +477,7 @@ TcpGetSegmentSndQue (
 
   //
   // If SYN is set and out of the range, clear the flag.
-  // Becuase the sequence of the first byte is SEG.SEQ+1,
+  // Because the sequence of the first byte is SEG.SEQ+1,
   // adjust Offset by -1. If SYN is in the range, copy
   // one byte less.
   //
@@ -666,7 +660,7 @@ TcpRetransmit (
   UINT32  Len;
 
   //
-  // Compute the maxium length of retransmission. It is
+  // Compute the maximum length of retransmission. It is
   // limited by three factors:
   // 1. Less than SndMss
   // 2. Must in the current send window

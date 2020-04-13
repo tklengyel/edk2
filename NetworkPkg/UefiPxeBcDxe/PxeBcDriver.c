@@ -1,16 +1,10 @@
 /** @file
-  Driver Binding functions implementationfor for UefiPxeBc Driver.
+  Driver Binding functions implementation for UefiPxeBc Driver.
 
   (C) Copyright 2014 Hewlett-Packard Development Company, L.P.<BR>
-  Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2007 - 2019, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -1190,7 +1184,7 @@ PxeBcCreateIp6Children (
   }
 
   //
-  // Set IPv6 avaiable flag and set default configure data for
+  // Set IPv6 available flag and set default configure data for
   // Udp6Read and Ip6 instance.
   //
   Status = PxeBcCheckIpv6Support (ControllerHandle, Private, &Private->Mode.Ipv6Available);
@@ -1248,6 +1242,10 @@ PxeBcDriverEntryPoint (
 {
   EFI_STATUS  Status;
 
+  if ((PcdGet8(PcdIPv4PXESupport) == PXE_DISABLED) && (PcdGet8(PcdIPv6PXESupport) == PXE_DISABLED)) {
+    return EFI_UNSUPPORTED;
+  }
+
   Status = EfiLibInstallDriverBindingComponentName2 (
              ImageHandle,
              SystemTable,
@@ -1269,16 +1267,11 @@ PxeBcDriverEntryPoint (
              &gPxeBcComponentName2
              );
   if (EFI_ERROR (Status)) {
-    gBS->UninstallMultipleProtocolInterfaces (
-           ImageHandle,
-           &gEfiDriverBindingProtocolGuid,
-           &gPxeBcIp4DriverBinding,
-           &gEfiComponentName2ProtocolGuid,
-           &gPxeBcComponentName2,
-           &gEfiComponentNameProtocolGuid,
-           &gPxeBcComponentName,
-           NULL
-           );
+    EfiLibUninstallDriverBindingComponentName2 (
+      &gPxeBcIp4DriverBinding,
+      &gPxeBcComponentName,
+      &gPxeBcComponentName2
+      );
   }
 
   return Status;
@@ -1312,9 +1305,15 @@ PxeBcSupported (
   EFI_GUID                        *MtftpServiceBindingGuid;
 
   if (IpVersion == IP_VERSION_4) {
+    if (PcdGet8(PcdIPv4PXESupport) == PXE_DISABLED) {
+      return EFI_UNSUPPORTED;
+    }
     DhcpServiceBindingGuid  = &gEfiDhcp4ServiceBindingProtocolGuid;
     MtftpServiceBindingGuid = &gEfiMtftp4ServiceBindingProtocolGuid;
   } else {
+    if (PcdGet8(PcdIPv6PXESupport) == PXE_DISABLED) {
+      return EFI_UNSUPPORTED;
+    }
     DhcpServiceBindingGuid  = &gEfiDhcp6ServiceBindingProtocolGuid;
     MtftpServiceBindingGuid = &gEfiMtftp6ServiceBindingProtocolGuid;
   }

@@ -5,18 +5,12 @@
 #
 # Copyright (c) 2011 - 2018, Intel Corporation. All rights reserved.<BR>
 #
-# This program and the accompanying materials are licensed and made available
-# under the terms and conditions of the BSD License which accompanies this
-# distribution. The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 
 """This file produce action class to generate doxygen document for edk2 codebase.
    The action classes are shared by GUI and command line tools.
 """
-import plugins.EdkPlugins.basemodel.doxygen as doxygen
+from plugins.EdkPlugins.basemodel import doxygen
 import os
 try:
     import wx
@@ -24,8 +18,8 @@ try:
 except:
     gInGui = False
 import re
-import plugins.EdkPlugins.edk2.model.inf as inf
-import plugins.EdkPlugins.edk2.model.dec as dec
+from plugins.EdkPlugins.edk2.model import inf
+from plugins.EdkPlugins.edk2.model import dec
 from plugins.EdkPlugins.basemodel.message import *
 
 _ignore_dir = ['.svn', '_svn', 'cvs']
@@ -376,9 +370,10 @@ class PackageDocumentAction(DoxygenAction):
             return
 
         try:
-            f = open(path, 'r')
-            lines = f.readlines()
-            f.close()
+            with open(path, 'r') as f:
+                lines = f.readlines()
+        except UnicodeDecodeError:
+            return
         except IOError:
             ErrorMsg('Fail to open file %s' % path)
             return
@@ -386,7 +381,7 @@ class PackageDocumentAction(DoxygenAction):
         configFile.AddFile(path)
 
         no = 0
-        for no in xrange(len(lines)):
+        for no in range(len(lines)):
             if len(lines[no].strip()) == 0:
                 continue
             if lines[no].strip()[:2] in ['##', '//', '/*', '*/']:
@@ -797,7 +792,7 @@ class PackageDocumentAction(DoxygenAction):
         Generate page for a module/library.
         @param infObj     INF file object for module/library
         @param configFile doxygen config file object
-        @param isLib      Whether this module is libary
+        @param isLib      Whether this module is library
 
         @param module doxygen page object
         """
@@ -1000,7 +995,7 @@ class PackageDocumentAction(DoxygenAction):
         #file = textfile.TextFile(path)
 
         try:
-            file = open(path, 'rb')
+            file = open(path, 'r')
         except (IOError, OSError) as msg:
             return None
 

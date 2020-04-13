@@ -3,13 +3,7 @@
 
   Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -39,7 +33,7 @@
   @param[in, out] BufferSize     Pointer to buffer size.
 
   @retval EFI_SUCCESS        Successfully obtained the size of file.
-  @retval EFI_NOT_FOUND      Parse the tftp ptions failed.
+  @retval EFI_NOT_FOUND      Parse the tftp options failed.
   @retval EFI_DEVICE_ERROR   The network device encountered an error during this operation.
   @retval Others             Did not obtain the size of the file.
 
@@ -125,7 +119,7 @@ PxeBcTftpWriteFile (
   @param[in, out]  BufferSize     Pointer to buffer size.
   @param[in]       DontUseBuffer  Indicates whether with a receive buffer.
 
-  @retval EFI_SUCCES         Successfully obtained the data from the file included in directory.
+  @retval EFI_SUCCESS        Successfully obtained the data from the file included in directory.
   @retval EFI_DEVICE_ERROR   The network device encountered an error during this operation.
   @retval Others             Operation failed.
 

@@ -3,13 +3,7 @@
 
 Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
 
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -304,7 +298,7 @@ ON_EXIT:
   @param[in]    QuestionIdBase      Base question id of the cert list.
   @param[in]    DeleteIndex         Cert index to delete.
 
-  @retval   EFI_SUCCESS             Delete siganture successfully.
+  @retval   EFI_SUCCESS             Delete signature successfully.
   @retval   EFI_NOT_FOUND           Can't find the signature item,
   @retval   EFI_OUT_OF_RESOURCES    Could not allocate needed resources.
 **/
@@ -603,7 +597,7 @@ DevicePathToStr (
 
   @param DevicePath       Device path.
 
-  @retval NULL            Not enough memory resourece for AllocateCopyPool.
+  @retval NULL            Not enough memory resource for AllocateCopyPool.
   @retval Other           A new allocated string that represents the file name.
 
 **/
@@ -663,7 +657,6 @@ EnrollX509toVariable (
   EFI_SIGNATURE_LIST                *CACert;
   EFI_SIGNATURE_DATA                *CACertData;
   VOID                              *Data;
-  VOID                              *CurrentData;
   UINTN                             DataSize;
   UINTN                             SigDataSize;
   UINT32                            Attr;
@@ -675,7 +668,6 @@ EnrollX509toVariable (
   CACert        = NULL;
   CACertData    = NULL;
   Data          = NULL;
-  CurrentData   = NULL;
   Attr          = 0;
 
   Status = ReadFileContent (
@@ -718,30 +710,11 @@ EnrollX509toVariable (
   Status = gRT->GetVariable(
                   VariableName,
                   &gEfiTlsCaCertificateGuid,
-                  NULL,
+                  &Attr,
                   &DataSize,
                   NULL
                   );
   if (Status == EFI_BUFFER_TOO_SMALL) {
-    //
-    // Per spec, we have to fetch the variable's contents, even though we're
-    // only interested in the variable's attributes.
-    //
-    CurrentData = AllocatePool (DataSize);
-    if (CurrentData == NULL) {
-      Status = EFI_OUT_OF_RESOURCES;
-      goto ON_EXIT;
-    }
-    Status = gRT->GetVariable(
-                    VariableName,
-                    &gEfiTlsCaCertificateGuid,
-                    &Attr,
-                    &DataSize,
-                    CurrentData
-                    );
-    if (EFI_ERROR (Status)) {
-      goto ON_EXIT;
-    }
     Attr |= EFI_VARIABLE_APPEND_WRITE;
   } else if (Status == EFI_NOT_FOUND) {
     Attr = TLS_AUTH_CONFIG_VAR_BASE_ATTR;
@@ -770,10 +743,6 @@ ON_EXIT:
 
   if (Data != NULL) {
     FreePool (Data);
-  }
-
-  if (CurrentData != NULL) {
-    FreePool (CurrentData);
   }
 
   if (X509Data != NULL) {
@@ -1309,7 +1278,7 @@ TlsAuthConfigAccessExtractConfig (
   @param Progress       A pointer to a string filled in with the
                         offset of the most recent '&' before the
                         first failing name / value pair (or the
-                        beginn ing of the string if the failure
+                        beginning of the string if the failure
                         is in the first name / value pair) or
                         the terminating NULL if all was
                         successful.

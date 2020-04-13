@@ -3,13 +3,7 @@
   It provides basic TPM Interface Specification (TIS) and Command functions.
 
 Copyright (c) 2005 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -191,7 +185,7 @@ typedef TIS_PC_REGISTERS  *TIS_PC_REGISTERS_PTR;
 #define TIS_TIMEOUT_D               750 * 1000   // 750ms
 
 //
-// Max TPM command/reponse length
+// Max TPM command/response length
 //
 #define TPMCMDBUFLENGTH             1024
 
@@ -216,11 +210,11 @@ TisPcWaitRegisterBits (
   );
 
 /**
-  Get BurstCount by reading the burstCount field of a TIS regiger
+  Get BurstCount by reading the burstCount field of a TIS register
   in the time of default TIS_TIMEOUT_D.
 
   @param[in]  TisReg                Pointer to TIS register.
-  @param[out] BurstCount            Pointer to a buffer to store the got BurstConut.
+  @param[out] BurstCount            Pointer to a buffer to store the got BurstCount.
 
   @retval     EFI_SUCCESS           Get BurstCount.
   @retval     EFI_INVALID_PARAMETER TisReg is NULL or BurstCount is NULL.

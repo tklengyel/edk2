@@ -3,13 +3,7 @@
     Usb bus enumeration support.
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -165,7 +159,7 @@ UsbCreateInterface (
 
   if (EFI_ERROR (Status)) {
     gBS->UninstallMultipleProtocolInterfaces (
-           &UsbIf->Handle,
+           UsbIf->Handle,
            &gEfiDevicePathProtocolGuid,
            UsbIf->DevicePath,
            &gEfiUsbIoProtocolGuid,
@@ -725,6 +719,7 @@ UsbEnumerateNewDev (
 
   if (!USB_BIT_IS_SET (PortState.PortStatus, USB_PORT_STAT_CONNECTION)) {
     DEBUG ((EFI_D_ERROR, "UsbEnumerateNewDev: No device present at port %d\n", Port));
+    Status = EFI_NOT_FOUND;
     goto ON_ERROR;
   } else if (USB_BIT_IS_SET (PortState.PortStatus, USB_PORT_STAT_SUPER_SPEED)){
     Child->Speed      = EFI_USB_SPEED_SUPER;
@@ -762,7 +757,7 @@ UsbEnumerateNewDev (
 
   //
   // After port is reset, hub establishes a signal path between
-  // the device and host (DEFALUT state). Device's registers are
+  // the device and host (DEFAULT state). Device's registers are
   // reset, use default address 0 (host enumerates one device at
   // a time) , and ready to respond to control transfer at EP 0.
   //

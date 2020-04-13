@@ -2,14 +2,9 @@
   Root include file of C runtime library to support building the third-party
   cryptographic library.
 
-Copyright (c) 2010 - 2017, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2010 - 2019, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -27,6 +22,17 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #define MAX_STRING_SIZE  0x1000
 
 //
+// We already have "no-ui" in out Configure invocation.
+// but the code still fails to compile.
+// Ref:  https://github.com/openssl/openssl/issues/8904
+//
+// This is defined in CRT library(stdio.h).
+//
+#ifndef BUFSIZ
+#define BUFSIZ  8192
+#endif
+
+//
 // OpenSSL relies on explicit configuration for word size in crypto/bn,
 // but we want it to be automatically inferred from the target. So we
 // bypass what's in <openssl/opensslconf.h> for OPENSSL_SYS_UEFI, and
@@ -38,7 +44,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #define CONFIG_HEADER_BN_H
 
-#if defined(MDE_CPU_X64) || defined(MDE_CPU_AARCH64) || defined(MDE_CPU_IA64)
+#if defined(MDE_CPU_X64) || defined(MDE_CPU_AARCH64) || defined(MDE_CPU_IA64) || defined(MDE_CPU_RISCV64)
 //
 // With GCC we would normally use SIXTY_FOUR_BIT_LONG, but MSVC needs
 // SIXTY_FOUR_BIT, because 'long' is 32-bit and only 'long long' is
@@ -69,6 +75,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 // Definitions for global constants used by CRT library routines
 //
 #define EINVAL       22               /* Invalid argument */
+#define EAFNOSUPPORT 47               /* Address family not supported by protocol family */
 #define INT_MAX      0x7FFFFFFF       /* Maximum (signed) int value */
 #define LONG_MAX     0X7FFFFFFFL      /* max value for a long */
 #define LONG_MIN     (-LONG_MAX-1)    /* min value for a long */
@@ -76,13 +83,28 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #define CHAR_BIT     8                /* Number of bits in a char */
 
 //
+// Address families.
+//
+#define AF_INET   2     /* internetwork: UDP, TCP, etc. */
+#define AF_INET6  24    /* IP version 6 */
+
+//
+// Define constants based on RFC0883, RFC1034, RFC 1035
+//
+#define NS_INT16SZ    2   /*%< #/bytes of data in a u_int16_t */
+#define NS_INADDRSZ   4   /*%< IPv4 T_A */
+#define NS_IN6ADDRSZ  16  /*%< IPv6 T_AAAA */
+
+//
 // Basic types mapping
 //
 typedef UINTN          size_t;
+typedef UINTN          u_int;
 typedef INTN           ssize_t;
 typedef INT32          time_t;
 typedef UINT8          __uint8_t;
 typedef UINT8          sa_family_t;
+typedef UINT8          u_char;
 typedef UINT32         uid_t;
 typedef UINT32         gid_t;
 
@@ -142,6 +164,7 @@ int            isupper     (int);
 int            tolower     (int);
 int            strcmp      (const char *, const char *);
 int            strncasecmp (const char *, const char *, size_t);
+char           *strchr     (const char *, int);
 char           *strrchr    (const char *, int);
 unsigned long  strtoul     (const char *, char **, int);
 long           strtol      (const char *, char **, int);
@@ -161,6 +184,7 @@ uid_t          getuid      (void);
 uid_t          geteuid     (void);
 gid_t          getgid      (void);
 gid_t          getegid     (void);
+int            issetugid   (void);
 void           qsort       (void *, size_t, size_t, int (*)(const void *, const void *));
 char           *getenv     (const char *);
 char           *secure_getenv (const char *);
@@ -169,6 +193,7 @@ void           abort       (void) __attribute__((__noreturn__));
 #else
 void           abort       (void);
 #endif
+int            inet_pton   (int, const char *, void *);
 
 //
 // Macros that directly map functions to BaseLib, BaseMemoryLib, and DebugLib functions
@@ -182,7 +207,6 @@ void           abort       (void);
 #define strcpy(strDest,strSource)         AsciiStrCpyS(strDest,MAX_STRING_SIZE,strSource)
 #define strncpy(strDest,strSource,count)  AsciiStrnCpyS(strDest,MAX_STRING_SIZE,strSource,(UINTN)count)
 #define strcat(strDest,strSource)         AsciiStrCatS(strDest,MAX_STRING_SIZE,strSource)
-#define strchr(str,ch)                    ScanMem8((VOID *)(str),AsciiStrSize(str),(UINT8)ch)
 #define strncmp(string1,string2,count)    (int)(AsciiStrnCmp(string1,string2,(UINTN)(count)))
 #define strcasecmp(str1,str2)             (int)AsciiStriCmp(str1,str2)
 #define sprintf(buf,...)                  AsciiSPrint(buf,MAX_STRING_SIZE,__VA_ARGS__)

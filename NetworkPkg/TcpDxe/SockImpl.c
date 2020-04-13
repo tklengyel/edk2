@@ -3,13 +3,7 @@
 
   Copyright (c) 2009 - 2018, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php.
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -73,13 +67,13 @@ SockBufNext (
 /**
   User provided callback function for NetbufFromExt.
 
-  @param[in] Event    The Event this notify function registered to, ignored.
+  @param[in] Arg      The Arg parameter forwarded by NetbufFromExt(). Ignored.
 
 **/
 VOID
 EFIAPI
 SockFreeFoo (
-  IN EFI_EVENT Event
+  IN VOID      *Arg
   )
 {
   return;
@@ -95,7 +89,7 @@ SockFreeFoo (
   @param[in]  BufLen                The maximum length of the data buffer to
                                     store the received data in the socket layer.
 
-  @return The length of the data can be retreived.
+  @return The length of the data can be retrieved.
 
 **/
 UINT32
@@ -276,7 +270,7 @@ SockProcessSndToken (
       );
 
     //
-    // Proceess it in the light of SockType
+    // Process it in the light of SockType
     //
     SndToken  = (SOCK_IO_TOKEN *) SockToken->Token;
     TxData    = SndToken->Packet.TxData;

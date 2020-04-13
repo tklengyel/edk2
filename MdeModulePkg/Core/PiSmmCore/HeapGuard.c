@@ -2,13 +2,7 @@
   UEFI Heap Guard functions.
 
 Copyright (c) 2017-2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -503,7 +497,7 @@ IsMemoryGuarded (
 /**
   Set the page at the given address to be a Guard page.
 
-  This is done by changing the page table attribute to be NOT PRSENT.
+  This is done by changing the page table attribute to be NOT PRESENT.
 
   @param[in]  BaseAddress     Page address to Guard at.
 
@@ -533,7 +527,7 @@ SetGuardPage (
 /**
   Unset the Guard page at the given address to the normal memory.
 
-  This is done by changing the page table attribute to be PRSENT.
+  This is done by changing the page table attribute to be PRESENT.
 
   @param[in]  BaseAddress     Page address to Guard at.
 

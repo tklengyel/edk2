@@ -4,13 +4,7 @@
 
   Copyright (C) 2017, Red Hat, Inc.
 
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT
-  WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
 #include <Library/MemoryAllocationLib.h>
@@ -246,7 +240,7 @@ FatalError:
                         Script opcodes. If the function returns successfully,
                         the caller must set the S3Context pointer -- originally
                         returned by AllocateS3Context() -- immediately to NULL,
-                        because the ownership of S3Context has been transfered.
+                        because the ownership of S3Context has been transferred.
 
   @retval EFI_SUCCESS The translation of S3Context to ACPI S3 Boot Script
                       opcodes has been successfully executed or queued. (This

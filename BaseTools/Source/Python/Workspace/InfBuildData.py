@@ -3,13 +3,7 @@
 #
 # Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
 # (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 from __future__ import absolute_import
@@ -20,6 +14,44 @@ from types import *
 from .MetaFileParser import *
 from collections import OrderedDict
 from Workspace.BuildClassObject import ModuleBuildClassObject, LibraryClassObject, PcdClassObject
+
+## Get Protocol value from given packages
+#
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+#   @param      Inffile         The driver file
+#
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+#
+def _ProtocolValue(CName, PackageList, Inffile = None):
+    for P in PackageList:
+        ProtocolKeys = list(P.Protocols.keys())
+        if Inffile and P._PrivateProtocols:
+            if not Inffile.startswith(P.MetaFile.Dir):
+                ProtocolKeys = [x for x in P.Protocols if x not in P._PrivateProtocols]
+        if CName in ProtocolKeys:
+            return P.Protocols[CName]
+    return None
+
+## Get PPI value from given packages
+#
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+#   @param      Inffile         The driver file
+#
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+#
+def _PpiValue(CName, PackageList, Inffile = None):
+    for P in PackageList:
+        PpiKeys = list(P.Ppis.keys())
+        if Inffile and P._PrivatePpis:
+            if not Inffile.startswith(P.MetaFile.Dir):
+                PpiKeys = [x for x in P.Ppis if x not in P._PrivatePpis]
+        if CName in PpiKeys:
+            return P.Ppis[CName]
+    return None
 
 ## Module build information from INF file
 #
@@ -62,9 +94,7 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_VERSION_STRING              : "_Version",
         TAB_INF_DEFINES_VERSION                     : "_Version",
         TAB_INF_DEFINES_PCD_IS_DRIVER               : "_PcdIsDriver",
-        TAB_INF_DEFINES_SHADOW                      : "_Shadow",
-
-        TAB_COMPONENTS_SOURCE_OVERRIDE_PATH         : "_SourceOverridePath",
+        TAB_INF_DEFINES_SHADOW                      : "_Shadow"
     }
 
     # regular expression for converting XXX_FLAGS in [nmake] section to new type
@@ -97,10 +127,6 @@ class InfBuildData(ModuleBuildClassObject):
         self._Target = Target
         self._Toolchain = Toolchain
         self._Platform = TAB_COMMON
-        if FilePath.Key in GlobalData.gOverrideDir:
-            self._SourceOverridePath = GlobalData.gOverrideDir[FilePath.Key]
-        else:
-            self._SourceOverridePath = None
         self._TailComments = None
         self._BaseName = None
         self._DxsFile = None
@@ -128,6 +154,12 @@ class InfBuildData(ModuleBuildClassObject):
         self._PcdComments = None
         self._BuildOptions = None
         self._DependencyFileList = None
+        self.LibInstances = []
+        self.ReferenceModules = set()
+
+    def SetReferenceModule(self,Module):
+        self.ReferenceModules.add(Module)
+        return self
 
     ## XXX[key] = value
     def __setitem__(self, key, value):
@@ -145,10 +177,6 @@ class InfBuildData(ModuleBuildClassObject):
     @cached_property
     def _Macros(self):
         RetVal = {}
-        # EDK_GLOBAL defined macros can be applied to EDK module
-        if self.AutoGenVersion < 0x00010005:
-            RetVal.update(GlobalData.gEdkGlobal)
-            RetVal.update(GlobalData.gGlobalDefines)
         return RetVal
 
     ## Get architecture
@@ -171,7 +199,7 @@ class InfBuildData(ModuleBuildClassObject):
 
     ## Retrieve all information in [Defines] section
     #
-    #   (Retriving all [Defines] information in one-shot is just to save time.)
+    #   (Retrieving all [Defines] information in one-shot is just to save time.)
     #
     @cached_class_function
     def _GetHeaderInfo(self):
@@ -246,106 +274,50 @@ class InfBuildData(ModuleBuildClassObject):
         #
         # Retrieve information in sections specific to Edk.x modules
         #
-        if self.AutoGenVersion >= 0x00010005:
-            if not self._ModuleType:
-                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
-                                "MODULE_TYPE is not given", File=self.MetaFile)
-            if self._ModuleType not in SUP_MODULE_LIST:
-                RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
-                for Record in RecordList:
-                    Name = Record[1]
-                    if Name == "MODULE_TYPE":
-                        LineNo = Record[6]
-                        break
-                EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
-                                "MODULE_TYPE %s is not supported for EDK II, valid values are:\n %s" % (self._ModuleType, ' '.join(l for l in SUP_MODULE_LIST)),
-                                File=self.MetaFile, Line=LineNo)
-            if (self._Specification is None) or (not 'PI_SPECIFICATION_VERSION' in self._Specification) or (int(self._Specification['PI_SPECIFICATION_VERSION'], 16) < 0x0001000A):
-                if self._ModuleType == SUP_MODULE_SMM_CORE:
-                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "SMM_CORE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x0001000A", File=self.MetaFile)
-            if (self._Specification is None) or (not 'PI_SPECIFICATION_VERSION' in self._Specification) or (int(self._Specification['PI_SPECIFICATION_VERSION'], 16) < 0x00010032):
-                if self._ModuleType == SUP_MODULE_MM_CORE_STANDALONE:
-                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "MM_CORE_STANDALONE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x00010032", File=self.MetaFile)
-                if self._ModuleType == SUP_MODULE_MM_STANDALONE:
-                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "MM_STANDALONE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x00010032", File=self.MetaFile)
-            if 'PCI_DEVICE_ID' in self._Defs and 'PCI_VENDOR_ID' in self._Defs \
-               and 'PCI_CLASS_CODE' in self._Defs and 'PCI_REVISION' in self._Defs:
-                self._BuildType = 'UEFI_OPTIONROM'
-                if 'PCI_COMPRESS' in self._Defs:
-                    if self._Defs['PCI_COMPRESS'] not in ('TRUE', 'FALSE'):
-                        EdkLogger.error("build", FORMAT_INVALID, "Expected TRUE/FALSE for PCI_COMPRESS: %s" % self.MetaFile)
+        if not self._ModuleType:
+            EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
+                            "MODULE_TYPE is not given", File=self.MetaFile)
+        if self._ModuleType not in SUP_MODULE_LIST:
+            RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
+            for Record in RecordList:
+                Name = Record[1]
+                if Name == "MODULE_TYPE":
+                    LineNo = Record[6]
+                    break
+            EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
+                            "MODULE_TYPE %s is not supported for EDK II, valid values are:\n %s" % (self._ModuleType, ' '.join(l for l in SUP_MODULE_LIST)),
+                            File=self.MetaFile, Line=LineNo)
+        if (self._Specification is None) or (not 'PI_SPECIFICATION_VERSION' in self._Specification) or (int(self._Specification['PI_SPECIFICATION_VERSION'], 16) < 0x0001000A):
+            if self._ModuleType == SUP_MODULE_SMM_CORE:
+                EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "SMM_CORE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x0001000A", File=self.MetaFile)
+        if (self._Specification is None) or (not 'PI_SPECIFICATION_VERSION' in self._Specification) or (int(self._Specification['PI_SPECIFICATION_VERSION'], 16) < 0x00010032):
+            if self._ModuleType == SUP_MODULE_MM_CORE_STANDALONE:
+                EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "MM_CORE_STANDALONE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x00010032", File=self.MetaFile)
+            if self._ModuleType == SUP_MODULE_MM_STANDALONE:
+                EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "MM_STANDALONE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x00010032", File=self.MetaFile)
+        if 'PCI_DEVICE_ID' in self._Defs and 'PCI_VENDOR_ID' in self._Defs \
+           and 'PCI_CLASS_CODE' in self._Defs and 'PCI_REVISION' in self._Defs:
+            self._BuildType = 'UEFI_OPTIONROM'
+            if 'PCI_COMPRESS' in self._Defs:
+                if self._Defs['PCI_COMPRESS'] not in ('TRUE', 'FALSE'):
+                    EdkLogger.error("build", FORMAT_INVALID, "Expected TRUE/FALSE for PCI_COMPRESS: %s" % self.MetaFile)
 
-            elif 'UEFI_HII_RESOURCE_SECTION' in self._Defs \
-               and self._Defs['UEFI_HII_RESOURCE_SECTION'] == 'TRUE':
-                self._BuildType = 'UEFI_HII'
-            else:
-                self._BuildType = self._ModuleType.upper()
-
-            if self._DxsFile:
-                File = PathClass(NormPath(self._DxsFile), self._ModuleDir, Arch=self._Arch)
-                # check the file validation
-                ErrorCode, ErrorInfo = File.Validate(".dxs", CaseSensitive=False)
-                if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo,
-                                    File=self.MetaFile, Line=LineNo)
-                if not self._DependencyFileList:
-                    self._DependencyFileList = []
-                self._DependencyFileList.append(File)
+        elif 'UEFI_HII_RESOURCE_SECTION' in self._Defs \
+           and self._Defs['UEFI_HII_RESOURCE_SECTION'] == 'TRUE':
+            self._BuildType = 'UEFI_HII'
         else:
-            if not self._ComponentType:
-                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
-                                "COMPONENT_TYPE is not given", File=self.MetaFile)
-            self._BuildType = self._ComponentType.upper()
-            if self._ComponentType in COMPONENT_TO_MODULE_MAP_DICT:
-                self._ModuleType = COMPONENT_TO_MODULE_MAP_DICT[self._ComponentType]
-            if self._ComponentType == EDK_COMPONENT_TYPE_LIBRARY:
-                self._LibraryClass = [LibraryClassObject(self._BaseName, SUP_MODULE_LIST)]
-            # make use some [nmake] section macros
-            Macros = self._Macros
-            Macros["EDK_SOURCE"] = GlobalData.gEcpSource
-            Macros['PROCESSOR'] = self._Arch
-            RecordList = self._RawData[MODEL_META_DATA_NMAKE, self._Arch, self._Platform]
-            for Name, Value, Dummy, Arch, Platform, ID, LineNo in RecordList:
-                Value = ReplaceMacro(Value, Macros, True)
-                if Name == "IMAGE_ENTRY_POINT":
-                    if self._ModuleEntryPointList is None:
-                        self._ModuleEntryPointList = []
-                    self._ModuleEntryPointList.append(Value)
-                elif Name == "DPX_SOURCE":
-                    File = PathClass(NormPath(Value), self._ModuleDir, Arch=self._Arch)
-                    # check the file validation
-                    ErrorCode, ErrorInfo = File.Validate(".dxs", CaseSensitive=False)
-                    if ErrorCode != 0:
-                        EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo,
-                                        File=self.MetaFile, Line=LineNo)
-                    if not self._DependencyFileList:
-                        self._DependencyFileList = []
-                    self._DependencyFileList.append(File)
-                else:
-                    ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
-                    if len(ToolList) == 1:
-                        if self._BuildOptions is None:
-                            self._BuildOptions = OrderedDict()
+            self._BuildType = self._ModuleType.upper()
 
-                        if ToolList[0] in self._TOOL_CODE_:
-                            Tool = self._TOOL_CODE_[ToolList[0]]
-                        else:
-                            Tool = ToolList[0]
-                        ToolChain = "*_*_*_%s_FLAGS" % Tool
-                        # Edk.x only support MSFT tool chain
-                        # ignore not replaced macros in value
-                        ValueList = GetSplitList(' ' + Value, '/D')
-                        Dummy = ValueList[0]
-                        for Index in range(1, len(ValueList)):
-                            if ValueList[Index][-1] == '=' or ValueList[Index] == '':
-                                continue
-                            Dummy = Dummy + ' /D ' + ValueList[Index]
-                        Value = Dummy.strip()
-                        if (TAB_COMPILER_MSFT, ToolChain) not in self._BuildOptions:
-                            self._BuildOptions[TAB_COMPILER_MSFT, ToolChain] = Value
-                        else:
-                            OptionString = self._BuildOptions[TAB_COMPILER_MSFT, ToolChain]
-                            self._BuildOptions[TAB_COMPILER_MSFT, ToolChain] = OptionString + " " + Value
+        if self._DxsFile:
+            File = PathClass(NormPath(self._DxsFile), self._ModuleDir, Arch=self._Arch)
+            # check the file validation
+            ErrorCode, ErrorInfo = File.Validate(".dxs", CaseSensitive=False)
+            if ErrorCode != 0:
+                EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo,
+                                File=self.MetaFile, Line=LineNo)
+            if not self._DependencyFileList:
+                self._DependencyFileList = []
+            self._DependencyFileList.append(File)
 
     ## Retrieve file version
     @cached_property
@@ -524,7 +496,6 @@ class InfBuildData(ModuleBuildClassObject):
         RetVal = []
         RecordList = self._RawData[MODEL_EFI_BINARY_FILE, self._Arch, self._Platform]
         Macros = self._Macros
-        Macros["EDK_SOURCE"] = GlobalData.gEcpSource
         Macros['PROCESSOR'] = self._Arch
         for Record in RecordList:
             FileType = Record[0]
@@ -572,31 +543,13 @@ class InfBuildData(ModuleBuildClassObject):
             ToolChainFamily = Record[1]
             TagName = Record[2]
             ToolCode = Record[3]
-            if self.AutoGenVersion < 0x00010005:
-                Macros["EDK_SOURCE"] = GlobalData.gEcpSource
-                Macros['PROCESSOR'] = self._Arch
-                SourceFile = NormPath(Record[0], Macros)
-                if SourceFile[0] == os.path.sep:
-                    SourceFile = mws.join(GlobalData.gWorkspace, SourceFile[1:])
-                # old module source files (Edk)
-                File = PathClass(SourceFile, self._ModuleDir, self._SourceOverridePath,
-                                 '', False, self._Arch, ToolChainFamily, '', TagName, ToolCode)
-                # check the file validation
-                ErrorCode, ErrorInfo = File.Validate(CaseSensitive=False)
-                if ErrorCode != 0:
-                    if File.Ext.lower() == '.h':
-                        EdkLogger.warn('build', 'Include file not found', ExtraData=ErrorInfo,
-                                       File=self.MetaFile, Line=LineNo)
-                        continue
-                    else:
-                        EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
-            else:
-                File = PathClass(NormPath(Record[0], Macros), self._ModuleDir, '',
-                                 '', False, self._Arch, ToolChainFamily, '', TagName, ToolCode)
-                # check the file validation
-                ErrorCode, ErrorInfo = File.Validate()
-                if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
+
+            File = PathClass(NormPath(Record[0], Macros), self._ModuleDir, '',
+                             '', False, self._Arch, ToolChainFamily, '', TagName, ToolCode)
+            # check the file validation
+            ErrorCode, ErrorInfo = File.Validate()
+            if ErrorCode != 0:
+                EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
 
             RetVal.append(File)
         # add any previously found dependency files to the source list
@@ -645,7 +598,7 @@ class InfBuildData(ModuleBuildClassObject):
         RecordList = self._RawData[MODEL_EFI_PROTOCOL, self._Arch, self._Platform]
         for Record in RecordList:
             CName = Record[0]
-            Value = ProtocolValue(CName, self.Packages, self.MetaFile.Path)
+            Value = _ProtocolValue(CName, self.Packages, self.MetaFile.Path)
             if Value is None:
                 PackageList = "\n\t".join(str(P) for P in self.Packages)
                 EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
@@ -669,7 +622,7 @@ class InfBuildData(ModuleBuildClassObject):
         RecordList = self._RawData[MODEL_EFI_PPI, self._Arch, self._Platform]
         for Record in RecordList:
             CName = Record[0]
-            Value = PpiValue(CName, self.Packages, self.MetaFile.Path)
+            Value = _PpiValue(CName, self.Packages, self.MetaFile.Path)
             if Value is None:
                 PackageList = "\n\t".join(str(P) for P in self.Packages)
                 EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
@@ -702,60 +655,38 @@ class InfBuildData(ModuleBuildClassObject):
             RetVal[CName] = Value
             CommentRecords = self._RawData[MODEL_META_DATA_COMMENT, self._Arch, self._Platform, Record[5]]
             self._GuidComments[CName] = [a[0] for a in CommentRecords]
+
+        for Type in [MODEL_PCD_FIXED_AT_BUILD,MODEL_PCD_PATCHABLE_IN_MODULE,MODEL_PCD_FEATURE_FLAG,MODEL_PCD_DYNAMIC,MODEL_PCD_DYNAMIC_EX]:
+            RecordList = self._RawData[Type, self._Arch, self._Platform]
+            for TokenSpaceGuid, _, _, _, _, _, LineNo in RecordList:
+                # get the guid value
+                if TokenSpaceGuid not in RetVal:
+                    Value = GuidValue(TokenSpaceGuid, self.Packages, self.MetaFile.Path)
+                    if Value is None:
+                        PackageList = "\n\t".join(str(P) for P in self.Packages)
+                        EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
+                                        "Value of Guid [%s] is not found under [Guids] section in" % TokenSpaceGuid,
+                                        ExtraData=PackageList, File=self.MetaFile, Line=LineNo)
+                    RetVal[TokenSpaceGuid] = Value
+                    self._GuidsUsedByPcd[TokenSpaceGuid] = Value
         return RetVal
 
     ## Retrieve include paths necessary for this module (for Edk.x style of modules)
     @cached_property
     def Includes(self):
         RetVal = []
-        if self._SourceOverridePath:
-            RetVal.append(self._SourceOverridePath)
-
         Macros = self._Macros
         Macros['PROCESSOR'] = GlobalData.gEdkGlobal.get('PROCESSOR', self._Arch)
         RecordList = self._RawData[MODEL_EFI_INCLUDE, self._Arch, self._Platform]
         for Record in RecordList:
-            if Record[0].find('EDK_SOURCE') > -1:
-                Macros['EDK_SOURCE'] = GlobalData.gEcpSource
-                File = NormPath(Record[0], self._Macros)
-                if File[0] == '.':
-                    File = os.path.join(self._ModuleDir, File)
-                else:
-                    File = os.path.join(GlobalData.gWorkspace, File)
-                File = RealPath(os.path.normpath(File))
-                if File:
-                    RetVal.append(File)
-
-                # TRICK: let compiler to choose correct header file
-                Macros['EDK_SOURCE'] = GlobalData.gEdkSource
-                File = NormPath(Record[0], self._Macros)
-                if File[0] == '.':
-                    File = os.path.join(self._ModuleDir, File)
-                else:
-                    File = os.path.join(GlobalData.gWorkspace, File)
-                File = RealPath(os.path.normpath(File))
-                if File:
-                    RetVal.append(File)
+            File = NormPath(Record[0], Macros)
+            if File[0] == '.':
+                File = os.path.join(self._ModuleDir, File)
             else:
-                File = NormPath(Record[0], Macros)
-                if File[0] == '.':
-                    File = os.path.join(self._ModuleDir, File)
-                else:
-                    File = mws.join(GlobalData.gWorkspace, File)
-                File = RealPath(os.path.normpath(File))
-                if File:
-                    RetVal.append(File)
-                if not File and Record[0].find('EFI_SOURCE') > -1:
-                    # tricky to regard WorkSpace as EFI_SOURCE
-                    Macros['EFI_SOURCE'] = GlobalData.gWorkspace
-                    File = NormPath(Record[0], Macros)
-                    if File[0] == '.':
-                        File = os.path.join(self._ModuleDir, File)
-                    else:
-                        File = os.path.join(GlobalData.gWorkspace, File)
-                    File = RealPath(os.path.normpath(File))
-                    if File:
-                        RetVal.append(File)
+                File = mws.join(GlobalData.gWorkspace, File)
+            File = RealPath(os.path.normpath(File))
+            if File:
+                RetVal.append(File)
         return RetVal
 
     ## Retrieve packages this module depends on
@@ -764,7 +695,6 @@ class InfBuildData(ModuleBuildClassObject):
         RetVal = []
         RecordList = self._RawData[MODEL_META_DATA_PACKAGE, self._Arch, self._Platform]
         Macros = self._Macros
-        Macros['EDK_SOURCE'] = GlobalData.gEcpSource
         for Record in RecordList:
             File = PathClass(NormPath(Record[0], Macros), GlobalData.gWorkspace, Arch=self._Arch)
             # check the file validation
@@ -794,6 +724,25 @@ class InfBuildData(ModuleBuildClassObject):
         RetVal.update(self._GetPcd(MODEL_PCD_DYNAMIC_EX))
         return RetVal
 
+    @cached_property
+    def ModulePcdList(self):
+        RetVal = self.Pcds
+        return RetVal
+    @cached_property
+    def LibraryPcdList(self):
+        if bool(self.LibraryClass):
+            return []
+        RetVal = {}
+        Pcds = set()
+        for Library in self.LibInstances:
+            PcdsInLibrary = OrderedDict()
+            for Key in Library.Pcds:
+                if Key in self.Pcds or Key in Pcds:
+                    continue
+                Pcds.add(Key)
+                PcdsInLibrary[Key] = copy.copy(Library.Pcds[Key])
+            RetVal[Library] = PcdsInLibrary
+        return RetVal
     @cached_property
     def PcdsName(self):
         PcdsName = set()
@@ -838,7 +787,7 @@ class InfBuildData(ModuleBuildClassObject):
                 EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "No [Depex] section or no valid expression in [Depex] section for [%s] module" \
                                 % self.ModuleType, File=self.MetaFile)
 
-        if len(RecordList) != 0 and self.ModuleType == SUP_MODULE_USER_DEFINED:
+        if len(RecordList) != 0 and (self.ModuleType == SUP_MODULE_USER_DEFINED or self.ModuleType == SUP_MODULE_HOST_APPLICATION):
             for Record in RecordList:
                 if Record[4] not in [SUP_MODULE_PEIM, SUP_MODULE_DXE_DRIVER, SUP_MODULE_DXE_SMM_DRIVER]:
                     EdkLogger.error('build', FORMAT_INVALID,
@@ -875,9 +824,9 @@ class InfBuildData(ModuleBuildClassObject):
                         Value = Token
                     else:
                         # get the GUID value now
-                        Value = ProtocolValue(Token, self.Packages, self.MetaFile.Path)
+                        Value = _ProtocolValue(Token, self.Packages, self.MetaFile.Path)
                         if Value is None:
-                            Value = PpiValue(Token, self.Packages, self.MetaFile.Path)
+                            Value = _PpiValue(Token, self.Packages, self.MetaFile.Path)
                             if Value is None:
                                 Value = GuidValue(Token, self.Packages, self.MetaFile.Path)
 
@@ -891,7 +840,7 @@ class InfBuildData(ModuleBuildClassObject):
             RetVal[Arch, ModuleType] = TemporaryDictionary[Arch, ModuleType]
         return RetVal
 
-    ## Retrieve depedency expression
+    ## Retrieve dependency expression
     @cached_property
     def DepexExpression(self):
         RetVal = tdict(False, 2)
@@ -909,10 +858,20 @@ class InfBuildData(ModuleBuildClassObject):
         for Arch, ModuleType in TemporaryDictionary:
             RetVal[Arch, ModuleType] = TemporaryDictionary[Arch, ModuleType]
         return RetVal
+    def LocalPkg(self):
+        module_path = self.MetaFile.File
+        subdir = os.path.split(module_path)[0]
+        TopDir = ""
+        while subdir:
+            subdir,TopDir = os.path.split(subdir)
 
+        for file_name in os.listdir(os.path.join(self.MetaFile.Root,TopDir)):
+            if file_name.upper().endswith("DEC"):
+                pkg = os.path.join(TopDir,file_name)
+        return pkg
     @cached_class_function
     def GetGuidsUsedByPcd(self):
-        self.Pcds
+        self.Guid
         return self._GuidsUsedByPcd
 
     ## Retrieve PCD for given type
@@ -924,16 +883,6 @@ class InfBuildData(ModuleBuildClassObject):
         for TokenSpaceGuid, PcdCName, Setting, Arch, Platform, Id, LineNo in RecordList:
             PcdDict[Arch, Platform, PcdCName, TokenSpaceGuid] = (Setting, LineNo)
             PcdList.append((PcdCName, TokenSpaceGuid))
-            # get the guid value
-            if TokenSpaceGuid not in self.Guids:
-                Value = GuidValue(TokenSpaceGuid, self.Packages, self.MetaFile.Path)
-                if Value is None:
-                    PackageList = "\n\t".join(str(P) for P in self.Packages)
-                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
-                                    "Value of Guid [%s] is not found under [Guids] section in" % TokenSpaceGuid,
-                                    ExtraData=PackageList, File=self.MetaFile, Line=LineNo)
-                self.Guids[TokenSpaceGuid] = Value
-                self._GuidsUsedByPcd[TokenSpaceGuid] = Value
             CommentRecords = self._RawData[MODEL_META_DATA_COMMENT, self._Arch, self._Platform, Id]
             Comments = []
             for CmtRec in CommentRecords:
@@ -1110,3 +1059,6 @@ class InfBuildData(ModuleBuildClassObject):
         if (self.Binaries and not self.Sources) or GlobalData.gIgnoreSource:
             return True
         return False
+def ExtendCopyDictionaryLists(CopyToDict, CopyFromDict):
+    for Key in CopyFromDict:
+        CopyToDict[Key].extend(CopyFromDict[Key])

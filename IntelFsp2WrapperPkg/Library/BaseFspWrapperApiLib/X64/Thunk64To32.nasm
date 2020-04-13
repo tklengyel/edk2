@@ -1,12 +1,6 @@
 ;
 ; Copyright (c) 2016 - 2018, Intel Corporation. All rights reserved.<BR>
-; This program and the accompanying materials
-; are licensed and made available under the terms and conditions of the BSD License
-; which accompanies this distribution.  The full text of the license may be found at
-; http://opensource.org/licenses/bsd-license.php.
-;
-; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+; SPDX-License-Identifier: BSD-2-Clause-Patent
 ;
 ;
 ; Module Name:
@@ -49,7 +43,7 @@ ASM_PFX(AsmExecute32BitCode):
     cli
 
     ;
-    ; save orignal GDTR and CS
+    ; save original GDTR and CS
     ;
     mov     rax, ds
     push    rax
@@ -196,7 +190,7 @@ ReloadCS:
     pop     rdi
     popfq
     ;
-    ; Switch to orignal GDT and CS. here rsp is pointer to the orignal GDT descriptor.
+    ; Switch to original GDT and CS. here rsp is pointer to the original GDT descriptor.
     ;
     lgdt    [rsp]
     ;
@@ -204,7 +198,7 @@ ReloadCS:
     ;
     add     rsp, 0x10
     ;
-    ; switch to orignal CS and GDTR
+    ; switch to original CS and GDTR
     ;
     pop     r9                 ; get  CS
     shl     r9,  32            ; rcx[32..47] <- Cs

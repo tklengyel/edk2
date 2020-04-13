@@ -2,13 +2,7 @@
   UEFI handle & protocol handling.
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -808,20 +802,27 @@ Done:
 
 
 
-
 /**
   Uninstalls a list of protocol interface in the boot services environment.
-  This function calls UnisatllProtocolInterface() in a loop. This is
+  This function calls UninstallProtocolInterface() in a loop. This is
   basically a lib function to save space.
 
-  @param  Handle                 The handle to uninstall the protocol
+  If any errors are generated while the protocol interfaces are being
+  uninstalled, then the protocol interfaces uninstalled prior to the error will
+  be reinstalled and EFI_INVALID_PARAMETER will be returned.
+
+  @param  Handle                 The handle to uninstall the protocol interfaces
+                                 from.
   @param  ...                    EFI_GUID followed by protocol instance. A NULL
-                                 terminates the  list. The pairs are the
+                                 terminates the list. The pairs are the
                                  arguments to UninstallProtocolInterface(). All
                                  the protocols are added to Handle.
 
-  @return Status code
-
+  @retval EFI_SUCCESS            if all protocol interfaces where uninstalled.
+  @retval EFI_INVALID_PARAMETER  if any protocol interface could not be
+                                 uninstalled and an attempt was made to
+                                 reinstall previously uninstalled protocol
+                                 interfaces.
 **/
 EFI_STATUS
 EFIAPI
@@ -870,6 +871,7 @@ CoreUninstallMultipleProtocolInterfaces (
       CoreInstallProtocolInterface (&Handle, Protocol, EFI_NATIVE_INTERFACE, Interface);
     }
     VA_END (Args);
+    Status = EFI_INVALID_PARAMETER;
   }
 
   return Status;

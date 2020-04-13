@@ -3,13 +3,7 @@
   for Bootability, Revision 1.0.
 
 Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -203,7 +197,7 @@ UsbBootExecCmd (
 
   //
   // If ExecCommand() returns no error and CmdResult is success,
-  // then the commnad transfer is successful.
+  // then the command transfer is successful.
   //
   if ((CmdResult == USB_MASS_CMD_SUCCESS) && !EFI_ERROR (Status)) {
     return EFI_SUCCESS;
@@ -616,7 +610,7 @@ UsbScsiModeSense (
   This function get the parameters for the USB mass storage media,
   It is used both to initialize the media during the Start() phase
   of Driver Binding Protocol and to re-initialize it when the media is
-  changed. Althought the RemoveableMedia is unlikely to change,
+  changed. Although the RemoveableMedia is unlikely to change,
   it is also included here.
 
   @param  UsbMass                The device to retrieve disk gemotric.

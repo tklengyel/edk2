@@ -2,24 +2,12 @@
 # This file is used to define common static strings used by INF/DEC/DSC files
 #
 # Copyright (c) 2007 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 
 import re
 
 gIsWindows = None
-
-gEdkCompatibilityPkg = "EdkCompatibilityPkg"
 gWorkspace = "."
-gEdkSource = "EdkCompatibilityPkg"
-gEfiSource = "."
-gEcpSource = "EdkCompatibilityPkg"
-
 gOptions = None
 gCaseInsensitive = False
 gAllFiles = None
@@ -35,7 +23,6 @@ gPlatformOtherPcds = {}
 gActivePlatform = None
 gCommandLineDefines = {}
 gEdkGlobal = {}
-gOverrideDir = {}
 gCommandMaxLength = 4096
 # for debug trace purpose when problem occurs
 gProcessingFile = ''
@@ -83,7 +70,7 @@ gAutoGenPhase = False
 # The Conf dir outside the workspace dir
 #
 gConfDirectory = ''
-
+gCmdConfDir = ''
 gBuildDirectory = ''
 #
 # The relative default database file path
@@ -109,7 +96,7 @@ MixedPcd = {}
 
 # Structure Pcd dict
 gStructurePcd = {}
-
+gPcdSkuOverrides={}
 # Pcd name for the Pcd which used in the Conditional directives
 gConditionalPcds = []
 
@@ -117,7 +104,20 @@ gUseHashCache = None
 gBinCacheDest = None
 gBinCacheSource = None
 gPlatformHash = None
-gPackageHash = {}
-gModuleHash = {}
-gEnableGenfdsMultiThread = False
+gPlatformHashFile = None
+gPackageHash = None
+gPackageHashFile = None
+gModuleHashFile = None
+gCMakeHashFile = None
+gHashChainStatus = None
+gModulePreMakeCacheStatus = None
+gModuleMakeCacheStatus = None
+gFileHashDict = None
+gModuleAllCacheStatus = None
+gModuleCacheHit = None
+
+gEnableGenfdsMultiThread = True
 gSikpAutoGenCache = set()
+# Common lock for the file access in multiple process AutoGens
+file_lock = None
+

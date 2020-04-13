@@ -4,13 +4,7 @@
   Copyright (c) 2010 - 2017, Intel Corporation. All rights reserved. <BR>
   Copyright (c) 2015, ARM Ltd. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 #include "Tftp.h"
@@ -31,7 +25,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED EFI_STRING_ID mStringHelpTokenId = STRING_TOKEN (S
   @param ImageHandle            The image handle of the process.
   @param SystemTable            The EFI System Table pointer.
 
-  @retval EFI_SUCCESS           Tftp command is executed sucessfully.
+  @retval EFI_SUCCESS           Tftp command is executed successfully.
   @retval EFI_ABORTED           HII package was failed to initialize.
   @retval others                Other errors when executing tftp command.
 **/

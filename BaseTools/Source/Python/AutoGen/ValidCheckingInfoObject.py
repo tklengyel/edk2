@@ -1,11 +1,5 @@
 # Copyright (c) 2015 - 2018, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.  The full text of the license may be found at
-# http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #
 # This file is used to collect the Variable checking information
@@ -41,7 +35,7 @@ class VAR_CHECK_PCD_VARIABLE_TAB_CONTAINER(object):
             os.mkdir(dest)
         BinFileName = "PcdVarCheck.bin"
         BinFilePath = os.path.join(dest, BinFileName)
-        Buffer = ''
+        Buffer = bytearray()
         index = 0
         for var_check_tab in self.var_check_info:
             index += 1
@@ -57,7 +51,7 @@ class VAR_CHECK_PCD_VARIABLE_TAB_CONTAINER(object):
                 itemIndex += 1
                 realLength += 5
                 for v_data in item.data:
-                    if type(v_data) in (int, long):
+                    if isinstance(v_data, int):
                         realLength += item.StorageWidth
                     else:
                         realLength += item.StorageWidth
@@ -137,7 +131,7 @@ class VAR_CHECK_PCD_VARIABLE_TAB_CONTAINER(object):
                 Buffer += b
                 realLength += 1
                 for v_data in item.data:
-                    if type(v_data) in (int, long):
+                    if isinstance(v_data, int):
                         b = pack(PACK_CODE_BY_SIZE[item.StorageWidth], v_data)
                         Buffer += b
                         realLength += item.StorageWidth

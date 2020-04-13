@@ -1,13 +1,7 @@
 ;------------------------------------------------------------------------------
 ;
 ; Copyright (c) 2007 - 2012, Intel Corporation. All rights reserved.<BR>
-; This program and the accompanying materials
-; are licensed and made available under the terms and conditions of the BSD License
-; which accompanies this distribution.  The full text of the license may be found at
-; http://opensource.org/licenses/bsd-license.php
-;
-; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+; SPDX-License-Identifier: BSD-2-Clause-Patent
 ;
 ; Module Name:
 ;
@@ -15,7 +9,7 @@
 ;
 ; Abstract:
 ;
-;   Switch the stack from temporary memory to permenent memory.
+;   Switch the stack from temporary memory to permanent memory.
 ;
 ;------------------------------------------------------------------------------
 
@@ -42,7 +36,7 @@ SecSwitchStack   PROC
 
     ;
     ; !!CAUTION!! this function address's is pushed into stack after
-    ; migration of whole temporary memory, so need save it to permenent
+    ; migration of whole temporary memory, so need save it to permanent
     ; memory at first!
     ;
 
@@ -50,13 +44,13 @@ SecSwitchStack   PROC
     mov   ecx, [esp + 24]          ; Save the second parameter
 
     ;
-    ; Save this function's return address into permenent memory at first.
-    ; Then, Fixup the esp point to permenent memory
+    ; Save this function's return address into permanent memory at first.
+    ; Then, Fixup the esp point to permanent memory
     ;
     mov   eax, esp
     sub   eax, ebx
     add   eax, ecx
-    mov   edx, dword ptr [esp]         ; copy pushed register's value to permenent memory
+    mov   edx, dword ptr [esp]         ; copy pushed register's value to permanent memory
     mov   dword ptr [eax], edx
     mov   edx, dword ptr [esp + 4]
     mov   dword ptr [eax + 4], edx
@@ -64,17 +58,17 @@ SecSwitchStack   PROC
     mov   dword ptr [eax + 8], edx
     mov   edx, dword ptr [esp + 12]
     mov   dword ptr [eax + 12], edx
-    mov   edx, dword ptr [esp + 16]    ; Update this function's return address into permenent memory
+    mov   edx, dword ptr [esp + 16]    ; Update this function's return address into permanent memory
     mov   dword ptr [eax + 16], edx
-    mov   esp, eax                     ; From now, esp is pointed to permenent memory
+    mov   esp, eax                     ; From now, esp is pointed to permanent memory
 
     ;
-    ; Fixup the ebp point to permenent memory
+    ; Fixup the ebp point to permanent memory
     ;
     mov   eax, ebp
     sub   eax, ebx
     add   eax, ecx
-    mov   ebp, eax                ; From now, ebp is pointed to permenent memory
+    mov   ebp, eax                ; From now, ebp is pointed to permanent memory
 
     ;
     ; Fixup callee's ebp point for PeiDispatch
@@ -82,7 +76,7 @@ SecSwitchStack   PROC
     mov   eax, dword ptr [ebp]
     sub   eax, ebx
     add   eax, ecx
-    mov   dword ptr [ebp], eax    ; From now, Temporary's PPI caller's stack is in permenent memory
+    mov   dword ptr [ebp], eax    ; From now, Temporary's PPI caller's stack is in permanent memory
 
     pop   edx
     pop   ecx

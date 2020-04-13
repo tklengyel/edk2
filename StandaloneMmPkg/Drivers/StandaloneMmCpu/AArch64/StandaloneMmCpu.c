@@ -4,13 +4,7 @@
   Copyright (c) 2016 HP Development Company, L.P.
   Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -74,7 +68,7 @@ GetGuidedHobData (
 }
 
 EFI_STATUS
-StandloneMmCpuInitialize (
+StandaloneMmCpuInitialize (
   IN EFI_HANDLE         ImageHandle,  // not actual imagehandle
   IN EFI_MM_SYSTEM_TABLE   *SystemTable  // not actual systemtable
   )
@@ -147,8 +141,8 @@ StandloneMmCpuInitialize (
   // Share the entry point of the CPU driver
   DEBUG ((DEBUG_INFO, "Sharing Cpu Driver EP *0x%lx = 0x%lx\n",
           (UINT64) CpuDriverEntryPointDesc->ArmTfCpuDriverEpPtr,
-          (UINT64) PiMmStandloneArmTfCpuDriverEntry));
-  *(CpuDriverEntryPointDesc->ArmTfCpuDriverEpPtr) = PiMmStandloneArmTfCpuDriverEntry;
+          (UINT64) PiMmStandaloneArmTfCpuDriverEntry));
+  *(CpuDriverEntryPointDesc->ArmTfCpuDriverEpPtr) = PiMmStandaloneArmTfCpuDriverEntry;
 
   // Find the descriptor that contains the whereabouts of the buffer for
   // communication with the Normal world.

@@ -2,13 +2,7 @@
   USB Mouse Driver that manages USB mouse and produces Simple Pointer Protocol.
 
 Copyright (c) 2004 - 2018, Intel Corporation. All rights reserved.<BR>
-This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -115,7 +109,7 @@ USBMouseDriverBindingSupported (
 /**
   Starts the mouse device with this driver.
 
-  This function consumes USB I/O Portocol, intializes USB mouse device,
+  This function consumes USB I/O Protocol, initializes USB mouse device,
   installs Simple Pointer Protocol, and submits Asynchronous Interrupt
   Transfer to manage the USB mouse device.
 
@@ -209,7 +203,7 @@ USBMouseDriverBindingStart (
   EndpointNumber = UsbMouseDevice->InterfaceDescriptor.NumEndpoints;
 
   //
-  // Traverse endpoints to find interrupt endpoint
+  // Traverse endpoints to find interrupt endpoint IN
   //
   Found = FALSE;
   for (Index = 0; Index < EndpointNumber; Index++) {
@@ -219,7 +213,8 @@ USBMouseDriverBindingStart (
              &EndpointDescriptor
              );
 
-    if ((EndpointDescriptor.Attributes & (BIT0 | BIT1)) == USB_ENDPOINT_INTERRUPT) {
+    if (((EndpointDescriptor.Attributes & (BIT0 | BIT1)) == USB_ENDPOINT_INTERRUPT) &&
+        ((EndpointDescriptor.EndpointAddress & USB_ENDPOINT_DIR_IN) != 0)) {
       //
       // We only care interrupt endpoint here
       //

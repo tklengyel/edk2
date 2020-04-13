@@ -2,16 +2,9 @@
   The NvmExpressPei driver is used to manage non-volatile memory subsystem
   which follows NVM Express specification at PEI phase.
 
-  Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2018 - 2019, Intel Corporation. All rights reserved.<BR>
 
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions
-  of the BSD License which accompanies this distribution.  The
-  full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -107,20 +100,6 @@ NvmeBaseMemPageOffset (
   );
 
 /**
-  Disable the Nvm Express controller.
-
-  @param[in] Private     The pointer to the PEI_NVME_CONTROLLER_PRIVATE_DATA data structure.
-
-  @return EFI_SUCCESS    Successfully disable the controller.
-  @return others         Fail to disable the controller.
-
-**/
-EFI_STATUS
-NvmeDisableController (
-  IN PEI_NVME_CONTROLLER_PRIVATE_DATA    *Private
-  );
-
-/**
   Initialize the Nvm Express controller.
 
   @param[in] Private     The pointer to the PEI_NVME_CONTROLLER_PRIVATE_DATA data structure.
@@ -153,13 +132,13 @@ NvmeIdentifyNamespace (
   );
 
 /**
-  Free the resources allocated by an NVME controller.
+  Free the DMA resources allocated by an NVME controller.
 
   @param[in] Private     The pointer to the PEI_NVME_CONTROLLER_PRIVATE_DATA data structure.
 
 **/
 VOID
-NvmeFreeControllerResource (
+NvmeFreeDmaResource (
   IN PEI_NVME_CONTROLLER_PRIVATE_DATA    *Private
   );
 
