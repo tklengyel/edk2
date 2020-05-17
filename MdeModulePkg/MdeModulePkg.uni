@@ -4,7 +4,7 @@
 // It also provides the definitions(including PPIs/PROTOCOLs/GUIDs and library classes)
 // and libraries instances, which are used for those modules.
 //
-// Copyright (c) 2007 - 2019, Intel Corporation. All rights reserved.<BR>
+// Copyright (c) 2007 - 2020, Intel Corporation. All rights reserved.<BR>
 //
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 //
@@ -891,27 +891,6 @@
 #string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdFrontPageFormSetGuid_HELP  #language en-US "This PCD points to the front page formset GUID\n"
                                                                                          "Compare the FormsetGuid or ClassGuid with this PCD value can detect whether in front page"
 
-#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdPropertiesTableEnable_PROMPT  #language en-US "Publish UEFI PropertiesTable."
-
-#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdPropertiesTableEnable_HELP  #language en-US "Publish PropertiesTable or not.\n"
-                                                                                          "\n"
-                                                                                          "If this PCD is TRUE, DxeCore publishs PropertiesTable.\n"
-                                                                                          "DxeCore evaluates if all runtime drivers has 4K aligned PE sections. If all\n"
-                                                                                          "PE sections in runtime drivers are 4K aligned, DxeCore sets BIT0 in\n"
-                                                                                          "PropertiesTable. Or DxeCore clears BIT0 in PropertiesTable.\n"
-                                                                                          "If this PCD is FALSE, DxeCore does not publish PropertiesTable.\n"
-                                                                                          "\n"
-                                                                                          "If PropertiesTable has BIT0 set, DxeCore uses below policy in UEFI memory map:\n"
-                                                                                          "1) Use EfiRuntimeServicesCode for runtime driver PE image code section and\n"
-                                                                                          "use EfiRuntimeServicesData for runtime driver PE image header and other section.\n"
-                                                                                          "2) Set EfiRuntimeServicesCode to be EFI_MEMORY_RO.\n"
-                                                                                          "3) Set EfiRuntimeServicesData to be EFI_MEMORY_XP.\n"
-                                                                                          "4) Set EfiMemoryMappedIO and EfiMemoryMappedIOPortSpace to be EFI_MEMORY_XP.\n"
-                                                                                          "\n"
-                                                                                          "NOTE: Platform need gurantee this PCD is set correctly. Platform should set\n"
-                                                                                          "this PCD to be TURE if and only if all runtime driver has seperated Code/Data\n"
-                                                                                          "section. If PE code/data sections are merged, the result is unpredictable.\n"
-
 #string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdShadowPeimOnBoot_HELP  #language en-US "Indicates if to shadow PEIM and PeiCore after memory is ready.<BR><BR>\n"
                                                                                      "This PCD is used on other boot path except for S3 boot.\n"
                                                                                      "TRUE  - Shadow PEIM and PeiCore after memory is ready.<BR>\n"
@@ -1008,6 +987,13 @@
                                                                                                    "which requires that all PCI MMIO BARs are located below 4 GB.<BR>"
                                                                                                    "TRUE  - All PCI MMIO BARs of a device will be located below 4 GB if it has an option ROM.<BR>"
                                                                                                    "FALSE - PCI MMIO BARs of a device may be located above 4 GB even if it has an option ROM.<BR>"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdSupportProcessCapsuleAtRuntime_PROMPT  #language en-US "Enable process non-reset capsule image at runtime."
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdSupportProcessCapsuleAtRuntime_HELP  #language en-US "Indicates if the platform can support process non-reset capsule image at runtime.<BR><BR>\n"
+                                                                                                   "TRUE  - Supports process non-reset capsule image at runtime.<BR>\n"
+                                                                                                   "FALSE - Does not support process non-reset capsule image at runtime.<BR>"
+
 
 #string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdStatusCodeSubClassCapsule_PROMPT  #language en-US "Status Code for Capsule subclass definitions"
 
@@ -1307,3 +1293,7 @@
                                                                                     "when the PCD is TRUE but CPU doesn't support 5-Level Paging."
                                                                                     " TRUE  - 5-Level Paging will be enabled."
                                                                                     " FALSE - 5-Level Paging will not be enabled."
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdTcgPfpMeasurementRevision_PROMPT #language en-US "TCG Platform Firmware Profile revision"
+
+#string STR_gEfiMdeModulePkgTokenSpaceGuid_PcdTcgPfpMeasurementRevision_HELP #language en-US "Indicates which TCG Platform Firmware Profile revision the EDKII firmware follows."

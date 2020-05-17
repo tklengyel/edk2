@@ -9,10 +9,17 @@
     "CompilerPlugin": {
         "DscPath": "MdeModulePkg.dsc"
     },
+    ## options defined ci/Plugin/HostUnitTestCompilerPlugin
+    "HostUnitTestCompilerPlugin": {
+        "DscPath": "Test/MdeModulePkgHostTest.dsc"
+    },
 
     ## options defined ci/Plugin/CharEncodingCheck
     "CharEncodingCheck": {
-        "IgnoreFiles": []
+        "IgnoreFiles": [
+            "MdeModulePkg/Universal/RegularExpressionDxe/oniguruma/test/testc.c",
+            "MdeModulePkg/Universal/RegularExpressionDxe/oniguruma/windows/testc.c"
+        ]
     },
 
     ## options defined ci/Plugin/DependencyCheck
@@ -24,7 +31,9 @@
             "ArmPkg/ArmPkg.dec"  # this should be fixed by promoting an abstraction
         ],
         # For host based unit tests
-        "AcceptableDependencies-HOST_APPLICATION":[],
+        "AcceptableDependencies-HOST_APPLICATION":[
+            "UnitTestFrameworkPkg/UnitTestFrameworkPkg.dec"
+        ],
         # For UEFI shell based apps
         "AcceptableDependencies-UEFI_APPLICATION":[],
         "IgnoreInf": []
@@ -35,6 +44,11 @@
         "IgnoreInf": [],
         "DscPath": "MdeModulePkg.dsc"
     },
+    ## options defined ci/Plugin/HostUnitTestDscCompleteCheck
+    "HostUnitTestDscCompleteCheck": {
+        "IgnoreInf": [""],
+        "DscPath": "Test/MdeModulePkgHostTest.dsc"
+    },
 
     ## options defined ci/Plugin/GuidCheck
     "GuidCheck": {
@@ -42,7 +56,6 @@
         "IgnoreGuidValue": ["00000000-0000-0000-0000-000000000000"],
         "IgnoreFoldersAndFiles": [],
         "IgnoreDuplicates": [
-            "gEdkiiFormBrowserExProtocolGuid=gEfiFormBrowserExProtocolGuid",
             "gEfiPeiMmAccessPpiGuid=gPeiSmmAccessPpiGuid",
             "gPeiSmmControlPpiGuid=gEfiPeiMmControlPpiGuid",
         ]

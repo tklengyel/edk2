@@ -1,7 +1,7 @@
 ## @file  UefiCpuPkg.dec
 # This Package provides UEFI compatible CPU modules and libraries.
 #
-# Copyright (c) 2007 - 2019, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2020, Intel Corporation. All rights reserved.<BR>
 #
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -63,6 +63,9 @@
   ## Include/Guid/CpuFeaturesInitDone.h
   gEdkiiCpuFeaturesInitDoneGuid  = { 0xc77c3a41, 0x61ab, 0x4143, { 0x98, 0x3e, 0x33, 0x39, 0x28, 0x6, 0x28, 0xe5 }}
 
+  ## Include/Guid/MicrocodePatchHob.h
+  gEdkiiMicrocodePatchHobGuid    = { 0xd178f11d, 0x8716, 0x418e, { 0xa1, 0x31, 0x96, 0x7d, 0x2a, 0xc4, 0x28, 0x43 }}
+
 [Protocols]
   ## Include/Protocol/SmmCpuService.h
   gEfiSmmCpuServiceProtocolGuid  = { 0x1d202cab, 0xc8ab, 0x4d5c, { 0x94, 0xf7, 0x3c, 0xfc, 0xc0, 0xd3, 0xd3, 0x35 }}
@@ -77,6 +80,9 @@
 
 [Ppis]
   gEdkiiPeiMpServices2PpiGuid =    { 0x5cb9cb3d, 0x31a4, 0x480c, { 0x94, 0x98, 0x29, 0xd2, 0x69, 0xba, 0xcf, 0xba}}
+
+  ## Include/Ppi/ShadowMicrocode.h
+  gEdkiiPeiShadowMicrocodePpiGuid = { 0x430f6965, 0x9a69, 0x41c5, { 0x93, 0xed, 0x8b, 0xf0, 0x64, 0x35, 0xc1, 0xc6 }}
 
 [PcdsFeatureFlag]
   ## Indicates if SMM Profile will be enabled.
@@ -223,6 +229,12 @@
   #   Intel Atom processors based on Goldmont Microarchitecture with CPUID signature 06_5CH = 19200000 (19.2MHz)
   # @Prompt This PCD is the nominal frequency of the core crystal clock in Hz as is CPUID Leaf 0x15:ECX
   gUefiCpuPkgTokenSpaceGuid.PcdCpuCoreCrystalClockFrequency|24000000|UINT64|0x32132113
+
+  ## Specifies the periodic interval value in microseconds for the status check
+  #  of APs for StartupAllAPs() and StartupThisAP() executed in non-blocking
+  #  mode in DXE phase.
+  # @Prompt Periodic interval value in microseconds for AP status check in DXE.
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuApStatusCheckIntervalInMicroSeconds|100000|UINT32|0x0000001E
 
 [PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
   ## Specifies max supported number of Logical Processors.

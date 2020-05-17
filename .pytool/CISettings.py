@@ -1,6 +1,7 @@
 # @file
 #
 # Copyright (c) Microsoft Corporation.
+# Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 import os
@@ -39,7 +40,9 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
         ''' return iterable of edk2 packages supported by this build.
         These should be edk2 workspace relative paths '''
 
-        return ("MdePkg",
+        return ("ArmVirtPkg",
+                "EmulatorPkg",
+                "MdePkg",
                 "MdeModulePkg",
                 "NetworkPkg",
                 "PcAtChipsetPkg",
@@ -48,15 +51,19 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
                 "FmpDevicePkg",
                 "ShellPkg",
                 "FatPkg",
-                "CryptoPkg"
+                "CryptoPkg",
+                "UnitTestFrameworkPkg",
+                "OvmfPkg"
                 )
 
     def GetArchitecturesSupported(self):
         ''' return iterable of edk2 architectures supported by this build '''
-        return ("IA32",
+        return (
+                "IA32",
                 "X64",
                 "ARM",
-                "AARCH64")
+                "AARCH64",
+                "RISCV64")
 
     def GetTargetsSupported(self):
         ''' return iterable of edk2 target tags supported by this build '''
@@ -117,7 +124,7 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
 
     def GetActiveScopes(self):
         ''' return tuple containing scopes that should be active for this process '''
-        scopes = ("cibuild","edk2-build")
+        scopes = ("cibuild", "edk2-build", "host-based-test")
 
         self.ActualToolChainTag = shell_environment.GetBuildVars().GetValue("TOOL_CHAIN_TAG", "")
 
@@ -126,6 +133,8 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
                 scopes += ("gcc_aarch64_linux",)
             if "ARM" in self.ActualArchitectures:
                 scopes += ("gcc_arm_linux",)
+            if "RISCV64" in self.ActualArchitectures:
+                scopes += ("gcc_riscv64_unknown",)
 
         return scopes
 
@@ -133,18 +142,27 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
         ''' return iterable containing RequiredSubmodule objects.
         If no RequiredSubmodules return an empty iterable
         '''
-        rs=[]
+        rs = []
         rs.append(RequiredSubmodule(
             "ArmPkg/Library/ArmSoftFloatLib/berkeley-softfloat-3", False))
         rs.append(RequiredSubmodule(
             "CryptoPkg/Library/OpensslLib/openssl", False))
+        rs.append(RequiredSubmodule(
+            "UnitTestFrameworkPkg/Library/CmockaLib/cmocka", False))
+        rs.append(RequiredSubmodule(
+            "MdeModulePkg/Universal/RegularExpressionDxe/oniguruma", False))
+        rs.append(RequiredSubmodule(
+            "MdeModulePkg/Library/BrotliCustomDecompressLib/brotli", False))
+        rs.append(RequiredSubmodule(
+            "BaseTools/Source/C/BrotliCompress/brotli", False))
         return rs
 
     def GetName(self):
         return "Edk2"
 
     def GetDependencies(self):
-        return []
+        return [
+        ]
 
     def GetPackagesPath(self):
         return ()
@@ -155,10 +173,11 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
 
     def FilterPackagesToTest(self, changedFilesList: list, potentialPackagesList: list) -> list:
         ''' Filter potential packages to test based on changed files. '''
-        build_these_packages=[]
-        possible_packages=potentialPackagesList.copy()
+        build_these_packages = []
+        possible_packages = potentialPackagesList.copy()
         for f in changedFilesList:
-            nodes=f.split("/")  # split each part of path for comparison later
+            # split each part of path for comparison later
+            nodes = f.split("/")
 
             # python file change in .pytool folder causes building all
             if f.endswith(".py") and ".pytool" in nodes:

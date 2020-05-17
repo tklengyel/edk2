@@ -16,8 +16,10 @@
   VariableServiceSetVariable() should also check authenticate data to avoid buffer overflow,
   integer overflow. It should also check attribute to avoid authentication bypass.
 
-Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2006 - 2020, Intel Corporation. All rights reserved.<BR>
 (C) Copyright 2015-2018 Hewlett Packard Enterprise Development LP<BR>
+Copyright (c) Microsoft Corporation.<BR>
+
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -335,8 +337,8 @@ RecordVarErrorFlag (
       *VarErrFlag = TempFlag;
       Status =  SynchronizeRuntimeVariableCache (
                   &mVariableModuleGlobal->VariableGlobal.VariableRuntimeCacheContext.VariableRuntimeNvCache,
-                  (UINTN) VarErrFlag - (UINTN) mNvVariableCache + (UINTN) mVariableModuleGlobal->VariableGlobal.NonVolatileVariableBase,
-                  sizeof (TempFlag)
+                  0,
+                  mNvVariableCache->Size
                   );
       ASSERT_EFI_ERROR (Status);
     }
@@ -2379,9 +2381,6 @@ VariableServiceGetVariable (
     }
 
     CopyMem (Data, GetVariableDataPtr (Variable.CurrPtr, mVariableModuleGlobal->VariableGlobal.AuthFormat), VarDataSize);
-    if (Attributes != NULL) {
-      *Attributes = Variable.CurrPtr->Attributes;
-    }
 
     *DataSize = VarDataSize;
     UpdateVariableInfo (VariableName, VendorGuid, Variable.Volatile, TRUE, FALSE, FALSE, FALSE, &gVariableInfo);
@@ -2395,6 +2394,11 @@ VariableServiceGetVariable (
   }
 
 Done:
+  if (Status == EFI_SUCCESS || Status == EFI_BUFFER_TOO_SMALL) {
+    if (Attributes != NULL && Variable.CurrPtr != NULL) {
+      *Attributes = Variable.CurrPtr->Attributes;
+    }
+  }
   ReleaseLockOnlyAtBootTime (&mVariableModuleGlobal->VariableGlobal.VariableServicesLock);
   return Status;
 }

@@ -4,6 +4,9 @@
 
 Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
 Portions copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
+Copyright (c) Microsoft Corporation.<BR>
+Portions Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
+
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -124,6 +127,30 @@ typedef struct {
 
 #endif  // defined (MDE_CPU_AARCH64)
 
+#if defined (MDE_CPU_RISCV64)
+///
+/// The RISC-V architecture context buffer used by SetJump() and LongJump().
+///
+typedef struct {
+  UINT64                            RA;
+  UINT64                            S0;
+  UINT64                            S1;
+  UINT64                            S2;
+  UINT64                            S3;
+  UINT64                            S4;
+  UINT64                            S5;
+  UINT64                            S6;
+  UINT64                            S7;
+  UINT64                            S8;
+  UINT64                            S9;
+  UINT64                            S10;
+  UINT64                            S11;
+  UINT64                            SP;
+} BASE_LIBRARY_JUMP_BUFFER;
+
+#define BASE_LIBRARY_JUMP_BUFFER_ALIGNMENT 8
+
+#endif // defined (MDE_CPU_RISCV64)
 
 //
 // String Services
@@ -2972,6 +2999,32 @@ PathCleanUpDirectories(
 **/
 #define INITIALIZE_LIST_HEAD_VARIABLE(ListHead)  {&(ListHead), &(ListHead)}
 
+/**
+  Iterates over each node in a doubly linked list using each node's forward link.
+
+  @param  Entry     A pointer to a list node used as a loop cursor during iteration
+  @param  ListHead  The head node of the doubly linked list
+
+**/
+#define BASE_LIST_FOR_EACH(Entry, ListHead)    \
+  for(Entry = (ListHead)->ForwardLink; Entry != (ListHead); Entry = Entry->ForwardLink)
+
+/**
+  Iterates over each node in a doubly linked list using each node's forward link
+  with safety against node removal.
+
+  This macro uses NextEntry to temporarily store the next list node so the node
+  pointed to by Entry may be deleted in the current loop iteration step and
+  iteration can continue from the node pointed to by NextEntry.
+
+  @param  Entry     A pointer to a list node used as a loop cursor during iteration
+  @param  NextEntry A pointer to a list node used to temporarily store the next node
+  @param  ListHead  The head node of the doubly linked list
+
+**/
+#define BASE_LIST_FOR_EACH_SAFE(Entry, NextEntry, ListHead)            \
+  for(Entry = (ListHead)->ForwardLink, NextEntry = Entry->ForwardLink;\
+      Entry != (ListHead); Entry = NextEntry, NextEntry = Entry->ForwardLink)
 
 /**
   Checks whether FirstEntry and SecondEntry are part of the same doubly-linked
@@ -5387,10 +5440,19 @@ typedef union {
     UINT32  OSXMMEXCPT:1;   ///< Operating System Support for
                             ///< Unmasked SIMD Floating Point
                             ///< Exceptions.
-    UINT32  Reserved_2:1;   ///< Reserved.
+    UINT32  UMIP:1;         ///< User-Mode Instruction Prevention.
     UINT32  LA57:1;         ///< Linear Address 57bit.
-    UINT32  VMXE:1;         ///< VMX Enable
-    UINT32  Reserved_1:18;  ///< Reserved.
+    UINT32  VMXE:1;         ///< VMX Enable.
+    UINT32  SMXE:1;         ///< SMX Enable.
+    UINT32  Reserved_3:1;   ///< Reserved.
+    UINT32  FSGSBASE:1;     ///< FSGSBASE Enable.
+    UINT32  PCIDE:1;        ///< PCID Enable.
+    UINT32  OSXSAVE:1;      ///< XSAVE and Processor Extended States Enable.
+    UINT32  Reserved_4:1;   ///< Reserved.
+    UINT32  SMEP:1;         ///< SMEP Enable.
+    UINT32  SMAP:1;         ///< SMAP Enable.
+    UINT32  PKE:1;          ///< Protection-Key Enable.
+    UINT32  Reserved_5:9;   ///< Reserved.
   } Bits;
   UINTN     UintN;
 } IA32_CR4;

@@ -8,6 +8,7 @@
 **/
 
 #include <Library/BaseLib.h>
+#include <Library/CacheMaintenanceLib.h>
 #include <Library/DebugAgentLib.h>
 #include <Library/ArmLib.h>
 
@@ -59,12 +60,13 @@ CEntryPoint (
 {
   // Data Cache enabled on Primary core when MMU is enabled.
   ArmDisableDataCache ();
-  // Invalidate Data cache
-  ArmInvalidateDataCache ();
   // Invalidate instruction cache
   ArmInvalidateInstructionCache ();
   // Enable Instruction Caches on all cores.
   ArmEnableInstructionCache ();
+
+  InvalidateDataCacheRange ((VOID *)(UINTN)PcdGet64 (PcdCPUCoresStackBase),
+                            PcdGet32 (PcdCPUCorePrimaryStackSize));
 
   //
   // Note: Doesn't have to Enable CPU interface in non-secure world,
@@ -76,6 +78,11 @@ CEntryPoint (
   // 'Align=4K' is defined into your FDF for this module.
   ASSERT (((UINTN)PeiVectorTable & ARM_VECTOR_TABLE_ALIGNMENT) == 0);
   ArmWriteVBar ((UINTN)PeiVectorTable);
+
+  // Enable Floating Point
+  if (FixedPcdGet32 (PcdVFPEnabled)) {
+    ArmEnableVFP ();
+  }
 
   //Note: The MMU will be enabled by MemoryPeim. Only the primary core will have the MMU on.
 

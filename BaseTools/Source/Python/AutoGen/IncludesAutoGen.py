@@ -1,7 +1,8 @@
 ## @file
 # Build cache intermediate result and state
 #
-# Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2019 - 2020, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2020, ARM Limited. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 from Common.caching import cached_property
@@ -12,20 +13,6 @@ from Common.Misc import SaveFileOnChange, PathClass
 from Common.Misc import TemplateString
 import sys
 gIsFileMap = {}
-if sys.platform == "win32":
-    _INCLUDE_DEPS_TEMPLATE = TemplateString('''
-${BEGIN}
-!IF EXIST(${deps_file})
-!INCLUDE ${deps_file}
-!ENDIF
-${END}
-        ''')
-else:
-    _INCLUDE_DEPS_TEMPLATE = TemplateString('''
-${BEGIN}
--include ${deps_file}
-${END}
-        ''')
 
 DEP_FILE_TAIL = "# Updated \n"
 
@@ -59,11 +46,33 @@ class IncludesAutoGen():
 
     def CreateDepsInclude(self):
         deps_file = {'deps_file':self.deps_files}
+
+        MakePath = self.module_autogen.BuildOption.get('MAKE', {}).get('PATH')
+        if not MakePath:
+            EdkLogger.error("build", PARAMETER_MISSING, Message="No Make path available.")
+        elif "nmake" in MakePath:
+            _INCLUDE_DEPS_TEMPLATE = TemplateString('''
+${BEGIN}
+!IF EXIST(${deps_file})
+!INCLUDE ${deps_file}
+!ENDIF
+${END}
+               ''')
+        else:
+            _INCLUDE_DEPS_TEMPLATE = TemplateString('''
+${BEGIN}
+-include ${deps_file}
+${END}
+               ''')
+
         try:
             deps_include_str = _INCLUDE_DEPS_TEMPLATE.Replace(deps_file)
         except Exception as e:
             print(e)
         SaveFileOnChange(os.path.join(self.makefile_folder,"dependency"),deps_include_str,False)
+
+    def CreateDepsTarget(self):
+        SaveFileOnChange(os.path.join(self.makefile_folder,"deps_target"),"\n".join([item +":" for item in self.DepsCollection]),False)
 
     @cached_property
     def deps_files(self):
@@ -102,6 +111,8 @@ class IncludesAutoGen():
                         continue
                     dependency_file = item.strip(" \\\n")
                     dependency_file = dependency_file.strip('''"''')
+                    if dependency_file == '':
+                        continue
                     if os.path.normpath(dependency_file +".deps") == abspath:
                         continue
                     filename = os.path.basename(dependency_file).strip()

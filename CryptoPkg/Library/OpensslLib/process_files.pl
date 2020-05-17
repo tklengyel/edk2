@@ -51,7 +51,6 @@ BEGIN {
                 "no-afalgeng",
                 "no-asm",
                 "no-async",
-                "no-autoalginit",
                 "no-autoerrinit",
                 "no-autoload-config",
                 "no-bf",
@@ -63,6 +62,7 @@ BEGIN {
                 "no-cms",
                 "no-ct",
                 "no-deprecated",
+                "no-des",
                 "no-dgram",
                 "no-dsa",
                 "no-dynamic-engine",
@@ -74,12 +74,14 @@ BEGIN {
                 "no-gost",
                 "no-hw",
                 "no-idea",
+                "no-md4",
                 "no-mdc2",
                 "no-pic",
                 "no-ocb",
                 "no-poly1305",
                 "no-posix-io",
                 "no-rc2",
+                "no-rc4",
                 "no-rfc3779",
                 "no-rmd160",
                 "no-scrypt",
@@ -142,6 +144,7 @@ foreach my $product ((@{$unified_info{libraries}},
             next if $s =~ "crypto/rand/randfile.c";
             next if $s =~ "crypto/store/";
             next if $s =~ "crypto/err/err_all.c";
+            next if $s =~ "crypto/aes/aes_ecb.c";
 
             if ($product =~ "libssl") {
                 push @sslfilelist, '  $(OPENSSL_PATH)/' . $s . "\r\n";
@@ -157,7 +160,7 @@ foreach my $product ((@{$unified_info{libraries}},
 # Update the perl script to generate the missing header files
 #
 my @dir_list = ();
-for (keys %{$unified_info{dirinfo}}){
+for (sort keys %{$unified_info{dirinfo}}){
   push @dir_list,$_;
 }
 

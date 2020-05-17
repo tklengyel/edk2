@@ -1,7 +1,7 @@
 /** @file
   IORT table parser
 
-  Copyright (c) 2016 - 2019, ARM Limited. All rights reserved.
+  Copyright (c) 2016 - 2020, ARM Limited. All rights reserved.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
   @par Reference(s):
@@ -322,6 +322,20 @@ DumpIortNodeSmmuV1V2 (
     PARSER_PARAMS (IortNodeSmmuV1V2Parser)
     );
 
+  // Check if the values used to control the parsing logic have been
+  // successfully read.
+  if ((InterruptContextCount == NULL)   ||
+      (InterruptContextOffset == NULL)  ||
+      (PmuInterruptCount == NULL)       ||
+      (PmuInterruptOffset == NULL)) {
+    IncrementErrorCount ();
+    Print (
+      L"ERROR: Insufficient SMMUv1/2 node length. Length = %d\n",
+      Length
+      );
+    return;
+  }
+
   Offset = *InterruptContextOffset;
   Index = 0;
 
@@ -432,6 +446,17 @@ DumpIortNodeIts (
             Length,
             PARSER_PARAMS (IortNodeItsParser)
             );
+
+  // Check if the values used to control the parsing logic have been
+  // successfully read.
+  if (ItsCount == NULL) {
+    IncrementErrorCount ();
+    Print (
+      L"ERROR: Insufficient ITS group length. Length = %d.\n",
+      Length
+      );
+    return;
+  }
 
   Index = 0;
 
@@ -617,6 +642,18 @@ ParseAcpiIort (
     PARSER_PARAMS (IortParser)
     );
 
+  // Check if the values used to control the parsing logic have been
+  // successfully read.
+  if ((IortNodeCount == NULL) ||
+      (IortNodeOffset == NULL)) {
+    IncrementErrorCount ();
+    Print (
+      L"ERROR: Insufficient table length. AcpiTableLength = %d.\n",
+      AcpiTableLength
+      );
+    return;
+  }
+
   Offset = *IortNodeOffset;
   NodePtr = Ptr + Offset;
   Index = 0;
@@ -635,14 +672,31 @@ ParseAcpiIort (
       PARSER_PARAMS (IortNodeHeaderParser)
       );
 
-    // Make sure the IORT Node is inside the table
-    if ((Offset + (*IortNodeLength)) > AcpiTableLength) {
+    // Check if the values used to control the parsing logic have been
+    // successfully read.
+    if ((IortNodeType == NULL)        ||
+        (IortNodeLength == NULL)      ||
+        (IortIdMappingCount == NULL)  ||
+        (IortIdMappingOffset == NULL)) {
       IncrementErrorCount ();
       Print (
-        L"ERROR: Invalid IORT node length. IortNodeLength = %d. " \
-          L"RemainingTableBufferLength = %d. IORT parsing aborted.\n",
-        *IortNodeLength,
+        L"ERROR: Insufficient remaining table buffer length to read the " \
+          L"IORT node header. Length = %d.\n",
         AcpiTableLength - Offset
+        );
+      return;
+    }
+
+    // Validate IORT Node length
+    if ((*IortNodeLength == 0) ||
+        ((Offset + (*IortNodeLength)) > AcpiTableLength)) {
+      IncrementErrorCount ();
+      Print (
+        L"ERROR: Invalid IORT Node length. " \
+          L"Length = %d. Offset = %d. AcpiTableLength = %d.\n",
+        *IortNodeLength,
+        Offset,
+        AcpiTableLength
         );
       return;
     }

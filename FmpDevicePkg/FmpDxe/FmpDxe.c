@@ -4,7 +4,7 @@
   information provided through PCDs and libraries.
 
   Copyright (c) 2016, Microsoft Corporation. All rights reserved.<BR>
-  Copyright (c) 2018 - 2019, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2018 - 2020, Intel Corporation. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -80,7 +80,8 @@ const FIRMWARE_MANAGEMENT_PRIVATE_DATA  mFirmwareManagementPrivateDataTemplate =
   NULL,                                        // LsvVariableName
   NULL,                                        // LastAttemptStatusVariableName
   NULL,                                        // LastAttemptVersionVariableName
-  NULL                                         // FmpStateVariableName
+  NULL,                                        // FmpStateVariableName
+  TRUE                                         // DependenciesSatisfied
 };
 
 ///
@@ -275,6 +276,7 @@ PopulateDescriptor (
   )
 {
   EFI_STATUS  Status;
+  UINT32      DependenciesSize;
 
   if (Private->DescriptorPopulated) {
     return;
@@ -377,6 +379,18 @@ PopulateDescriptor (
 
   Private->Descriptor.LastAttemptVersion = GetLastAttemptVersionFromVariable (Private);
   Private->Descriptor.LastAttemptStatus  = GetLastAttemptStatusFromVariable (Private);
+
+  //
+  // Get the dependency from the FmpDependencyDeviceLib.
+  //
+  Private->Descriptor.Dependencies = NULL;
+
+  //
+  // Check the attribute IMAGE_ATTRIBUTE_DEPENDENCY
+  //
+  if (Private->Descriptor.AttributesSetting & IMAGE_ATTRIBUTE_DEPENDENCY) {
+    Private->Descriptor.Dependencies = GetFmpDependency (&DependenciesSize);
+  }
 
   Private->DescriptorPopulated = TRUE;
 }
@@ -598,8 +612,9 @@ cleanup:
   Helper function to safely retrieve the FMP header from
   within an EFI_FIRMWARE_IMAGE_AUTHENTICATION structure.
 
-  @param[in]   Image        Pointer to the image.
-  @param[in]   ImageSize    Size of the image.
+  @param[in]   Image                 Pointer to the image.
+  @param[in]   ImageSize             Size of the image.
+  @param[in]   AdditionalHeaderSize  Size of any headers that cannot be calculated by this function.
   @param[out]  PayloadSize
 
   @retval  !NULL  Valid pointer to the header.
@@ -610,22 +625,23 @@ VOID *
 GetFmpHeader (
   IN  CONST EFI_FIRMWARE_IMAGE_AUTHENTICATION  *Image,
   IN  CONST UINTN                              ImageSize,
+  IN  CONST UINTN                              AdditionalHeaderSize,
   OUT UINTN                                    *PayloadSize
   )
 {
   //
   // Check to make sure that operation can be safely performed.
   //
-  if (((UINTN)Image + sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength) < (UINTN)Image || \
-      ((UINTN)Image + sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength) >= (UINTN)Image + ImageSize) {
+  if (((UINTN)Image + sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength) + AdditionalHeaderSize < (UINTN)Image || \
+      ((UINTN)Image + sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength) + AdditionalHeaderSize >= (UINTN)Image + ImageSize) {
     //
     // Pointer overflow. Invalid image.
     //
     return NULL;
   }
 
-  *PayloadSize = ImageSize - (sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength);
-  return (VOID *)((UINT8 *)Image + sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength);
+  *PayloadSize = ImageSize - (sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength + AdditionalHeaderSize);
+  return (VOID *)((UINT8 *)Image + sizeof (Image->MonotonicCount) + Image->AuthInfo.Hdr.dwLength  + AdditionalHeaderSize);
 }
 
 /**
@@ -710,6 +726,8 @@ CheckTheImage (
   UINTN                             PublicKeyDataLength;
   UINT8                             *PublicKeyDataXdr;
   UINT8                             *PublicKeyDataXdrEnd;
+  EFI_FIRMWARE_IMAGE_DEP            *Dependencies;
+  UINT32                            DependenciesSize;
 
   Status           = EFI_SUCCESS;
   RawSize          = 0;
@@ -718,6 +736,8 @@ CheckTheImage (
   Version          = 0;
   FmpHeaderSize    = 0;
   AllHeaderSize    = 0;
+  Dependencies     = NULL;
+  DependenciesSize = 0;
 
   if (!FeaturePcdGet (PcdFmpDeviceStorageAccessEnable)) {
     return EFI_UNSUPPORTED;
@@ -744,6 +764,11 @@ CheckTheImage (
   //Set to valid and then if any tests fail it will update this flag.
   //
   *ImageUpdatable = IMAGE_UPDATABLE_VALID;
+
+  //
+  // Set to satisfied and then if dependency evaluates to false it will update this flag.
+  //
+  Private->DependenciesSatisfied = TRUE;
 
   if (Image == NULL) {
     DEBUG ((DEBUG_ERROR, "FmpDxe(%s): CheckImage() - Image Pointer Parameter is NULL.\n", mImageIdName));
@@ -830,11 +855,15 @@ CheckTheImage (
     goto cleanup;
   }
 
+  //
+  // Get the dependency from Image.
+  //
+  Dependencies = GetImageDependency ((EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, ImageSize, &DependenciesSize);
 
   //
   // Check the FmpPayloadHeader
   //
-  FmpPayloadHeader = GetFmpHeader ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, ImageSize, &FmpPayloadSize );
+  FmpPayloadHeader = GetFmpHeader ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, ImageSize, DependenciesSize, &FmpPayloadSize );
   if (FmpPayloadHeader == NULL) {
     DEBUG ((DEBUG_ERROR, "FmpDxe(%s): CheckTheImage() - GetFmpHeader failed.\n", mImageIdName));
     Status = EFI_ABORTED;
@@ -863,6 +892,17 @@ CheckTheImage (
   }
 
   //
+  // Evaluate dependency expression
+  //
+  Private->DependenciesSatisfied = CheckFmpDependency (Private->Descriptor.ImageTypeId, Version, Dependencies, DependenciesSize);
+  if (!Private->DependenciesSatisfied) {
+    DEBUG ((DEBUG_ERROR, "FmpDxe(%s): CheckTheImage() - Dependency check failed.\n", mImageIdName));
+    *ImageUpdatable = IMAGE_UPDATABLE_INVALID;
+    Status = EFI_SUCCESS;
+    goto cleanup;
+  }
+
+  //
   // Get the FmpHeaderSize so we can determine the real payload size
   //
   Status = GetFmpPayloadHeaderSize (FmpPayloadHeader, FmpPayloadSize, &FmpHeaderSize);
@@ -877,7 +917,7 @@ CheckTheImage (
   // Call FmpDevice Lib Check Image on the
   // Raw payload.  So all headers need stripped off
   //
-  AllHeaderSize = GetAllHeaderSize ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, FmpHeaderSize );
+  AllHeaderSize = GetAllHeaderSize ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, FmpHeaderSize + DependenciesSize);
   if (AllHeaderSize == 0) {
     DEBUG ((DEBUG_ERROR, "FmpDxe(%s): CheckTheImage() - GetAllHeaderSize failed.\n", mImageIdName));
     Status = EFI_ABORTED;
@@ -967,6 +1007,8 @@ SetTheImage (
   UINT32                            LastAttemptStatus;
   UINT32                            Version;
   UINT32                            LowestSupportedVersion;
+  EFI_FIRMWARE_IMAGE_DEP            *Dependencies;
+  UINT32                            DependenciesSize;
 
   Status             = EFI_SUCCESS;
   Updateable         = 0;
@@ -975,8 +1017,10 @@ SetTheImage (
   FmpHeader          = NULL;
   FmpPayloadSize     = 0;
   AllHeaderSize      = 0;
-  IncomingFwVersion = 0;
+  IncomingFwVersion  = 0;
   LastAttemptStatus  = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
+  Dependencies       = NULL;
+  DependenciesSize   = 0;
 
   if (!FeaturePcdGet (PcdFmpDeviceStorageAccessEnable)) {
     return EFI_UNSUPPORTED;
@@ -1021,10 +1065,15 @@ SetTheImage (
   }
 
   //
+  // Get the dependency from Image.
+  //
+  Dependencies = GetImageDependency ((EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, ImageSize, &DependenciesSize);
+
+  //
   // No functional error in CheckTheImage.  Attempt to get the Version to
   // support better error reporting.
   //
-  FmpHeader = GetFmpHeader ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, ImageSize, &FmpPayloadSize );
+  FmpHeader = GetFmpHeader ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, ImageSize, DependenciesSize, &FmpPayloadSize );
   if (FmpHeader == NULL) {
     DEBUG ((DEBUG_ERROR, "FmpDxe(%s): SetTheImage() - GetFmpHeader failed.\n", mImageIdName));
     Status = EFI_ABORTED;
@@ -1045,6 +1094,9 @@ SetTheImage (
       "FmpDxe(%s): SetTheImage() - Check The Image returned that the Image was not valid for update.  Updatable value = 0x%X.\n",
       mImageIdName, Updateable)
       );
+    if (Private->DependenciesSatisfied == FALSE) {
+      LastAttemptStatus = LAST_ATTEMPT_STATUS_ERROR_UNSATISFIED_DEPENDENCIES;
+    }
     Status = EFI_ABORTED;
     goto cleanup;
   }
@@ -1138,7 +1190,7 @@ SetTheImage (
     goto cleanup;
   }
 
-  AllHeaderSize = GetAllHeaderSize ( (EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, FmpHeaderSize );
+  AllHeaderSize = GetAllHeaderSize ((EFI_FIRMWARE_IMAGE_AUTHENTICATION *)Image, FmpHeaderSize + DependenciesSize);
   if (AllHeaderSize == 0) {
     DEBUG ((DEBUG_ERROR, "FmpDxe(%s): SetTheImage() - GetAllHeaderSize failed.\n", mImageIdName));
     Status = EFI_ABORTED;
@@ -1166,6 +1218,16 @@ SetTheImage (
     goto cleanup;
   }
 
+  //
+  // Store the dependency
+  //
+  if (Private->Descriptor.AttributesSetting & IMAGE_ATTRIBUTE_DEPENDENCY) {
+    Status = SaveFmpDependency (Dependencies, DependenciesSize);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "FmpDxe(%s): SetTheImage() SaveFmpDependency from FmpDependencyCheckLib failed. (%r)\n", mImageIdName, Status));
+    }
+    Status = EFI_SUCCESS;
+  }
 
   //
   // Finished the update without error

@@ -2,8 +2,9 @@
 # build a platform or a module
 #
 #  Copyright (c) 2014, Hewlett-Packard Development Company, L.P.<BR>
-#  Copyright (c) 2007 - 2019, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2007 - 2020, Intel Corporation. All rights reserved.<BR>
 #  Copyright (c) 2018, Hewlett Packard Enterprise Development, L.P.<BR>
+#  Copyright (c) 2020, ARM Limited. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -24,9 +25,10 @@ import traceback
 import multiprocessing
 from threading import Thread,Event,BoundedSemaphore
 import threading
+from linecache import getlines
 from subprocess import Popen,PIPE, STDOUT
 from collections import OrderedDict, defaultdict
-from Common.buildoptions import BuildOption,BuildTarget
+
 from AutoGen.PlatformAutoGen import PlatformAutoGen
 from AutoGen.ModuleAutoGen import ModuleAutoGen
 from AutoGen.WorkspaceAutoGen import WorkspaceAutoGen
@@ -35,8 +37,9 @@ from AutoGen.AutoGenWorker import AutoGenWorkerInProcess,AutoGenManager,\
 from AutoGen import GenMake
 from Common import Misc as Utils
 
-from Common.TargetTxtClassObject import TargetTxt
-from Common.ToolDefClassObject import ToolDef
+from Common.TargetTxtClassObject import TargetTxtDict
+from Common.ToolDefClassObject import ToolDefDict
+from buildoptions import MyOptionParser
 from Common.Misc import PathClass,SaveFileOnChange,RemoveDirectory
 from Common.StringUtils import NormPath
 from Common.MultipleWorkspace import MultipleWorkspace as mws
@@ -279,6 +282,7 @@ def LaunchCommand(Command, WorkingDir,ModuleAuto = None):
         iau.UpdateDepsFileforTrim()
         iau.CreateModuleDeps()
         iau.CreateDepsInclude()
+        iau.CreateDepsTarget()
     return "%dms" % (int(round((time.time() - BeginTime) * 1000)))
 
 ## The smallest unit that can be built in multi-thread build mode
@@ -731,11 +735,14 @@ class Build():
         self.ConfDirectory = BuildOptions.ConfDirectory
         self.SpawnMode      = True
         self.BuildReport    = BuildReport(BuildOptions.ReportFile, BuildOptions.ReportType)
-        self.TargetTxt      = TargetTxt
-        self.ToolDef        = ToolDef
         self.AutoGenTime    = 0
         self.MakeTime       = 0
         self.GenFdsTime     = 0
+        self.MakeFileName   = ""
+        TargetObj = TargetTxtDict()
+        ToolDefObj = ToolDefDict((os.path.join(os.getenv("WORKSPACE"),"Conf")))
+        self.TargetTxt = TargetObj.Target
+        self.ToolDef = ToolDefObj.ToolDef
         GlobalData.BuildOptionPcd     = BuildOptions.OptionPcd if BuildOptions.OptionPcd else []
         #Set global flag for build mode
         GlobalData.gIgnoreSource = BuildOptions.IgnoreSources
@@ -816,8 +823,10 @@ class Build():
             EdkLogger.quiet("%-16s = %s" % ("POSTBUILD", self.Postbuild))
         if self.Prebuild:
             self.LaunchPrebuild()
-            self.TargetTxt = TargetTxt
-            self.ToolDef   = ToolDef
+            TargetObj = TargetTxtDict()
+            ToolDefObj = ToolDefDict((os.path.join(os.getenv("WORKSPACE"), "Conf")))
+            self.TargetTxt = TargetObj.Target
+            self.ToolDef = ToolDefObj.ToolDef
         if not (self.LaunchPrebuildFlag and os.path.exists(self.PlatformBuildPath)):
             self.InitBuild()
 
@@ -1245,8 +1254,6 @@ class Build():
                                 (AutoGenObject.BuildTarget, AutoGenObject.ToolChain, AutoGenObject.Arch),
                             ExtraData=str(AutoGenObject))
 
-        makefile = GenMake.BuildFile(AutoGenObject)._FILE_NAME_[GenMake.gMakeType]
-
         # run
         if Target == 'run':
             return True
@@ -1272,7 +1279,7 @@ class Build():
                 if not Lib.IsBinaryModule:
                     DirList.append((os.path.join(AutoGenObject.BuildDir, Lib.BuildDir),Lib))
             for Lib, LibAutoGen in DirList:
-                NewBuildCommand = BuildCommand + ['-f', os.path.normpath(os.path.join(Lib, makefile)), 'pbuild']
+                NewBuildCommand = BuildCommand + ['-f', os.path.normpath(os.path.join(Lib, self.MakeFileName)), 'pbuild']
                 LaunchCommand(NewBuildCommand, AutoGenObject.MakeFileDir,LibAutoGen)
             return True
 
@@ -1283,7 +1290,7 @@ class Build():
                 if not Lib.IsBinaryModule:
                     DirList.append((os.path.join(AutoGenObject.BuildDir, Lib.BuildDir),Lib))
             for Lib, LibAutoGen in DirList:
-                NewBuildCommand = BuildCommand + ['-f', os.path.normpath(os.path.join(Lib, makefile)), 'pbuild']
+                NewBuildCommand = BuildCommand + ['-f', os.path.normpath(os.path.join(Lib, self.MakeFileName)), 'pbuild']
                 LaunchCommand(NewBuildCommand, AutoGenObject.MakeFileDir,LibAutoGen)
 
             DirList = []
@@ -1291,7 +1298,7 @@ class Build():
                 if not ModuleAutoGen.IsBinaryModule:
                     DirList.append((os.path.join(AutoGenObject.BuildDir, ModuleAutoGen.BuildDir),ModuleAutoGen))
             for Mod,ModAutoGen in DirList:
-                NewBuildCommand = BuildCommand + ['-f', os.path.normpath(os.path.join(Mod, makefile)), 'pbuild']
+                NewBuildCommand = BuildCommand + ['-f', os.path.normpath(os.path.join(Mod, self.MakeFileName)), 'pbuild']
                 LaunchCommand(NewBuildCommand, AutoGenObject.MakeFileDir,ModAutoGen)
             self.CreateAsBuiltInf()
             if GlobalData.gBinCacheDest:
@@ -1306,7 +1313,7 @@ class Build():
         # cleanlib
         if Target == 'cleanlib':
             for Lib in AutoGenObject.LibraryBuildDirectoryList:
-                LibMakefile = os.path.normpath(os.path.join(Lib, makefile))
+                LibMakefile = os.path.normpath(os.path.join(Lib, self.MakeFileName))
                 if os.path.exists(LibMakefile):
                     NewBuildCommand = BuildCommand + ['-f', LibMakefile, 'cleanall']
                     LaunchCommand(NewBuildCommand, AutoGenObject.MakeFileDir)
@@ -1315,12 +1322,12 @@ class Build():
         # clean
         if Target == 'clean':
             for Mod in AutoGenObject.ModuleBuildDirectoryList:
-                ModMakefile = os.path.normpath(os.path.join(Mod, makefile))
+                ModMakefile = os.path.normpath(os.path.join(Mod, self.MakeFileName))
                 if os.path.exists(ModMakefile):
                     NewBuildCommand = BuildCommand + ['-f', ModMakefile, 'cleanall']
                     LaunchCommand(NewBuildCommand, AutoGenObject.MakeFileDir)
             for Lib in AutoGenObject.LibraryBuildDirectoryList:
-                LibMakefile = os.path.normpath(os.path.join(Lib, makefile))
+                LibMakefile = os.path.normpath(os.path.join(Lib, self.MakeFileName))
                 if os.path.exists(LibMakefile):
                     NewBuildCommand = BuildCommand + ['-f', LibMakefile, 'cleanall']
                     LaunchCommand(NewBuildCommand, AutoGenObject.MakeFileDir)
@@ -1407,6 +1414,9 @@ class Build():
         if Target == 'fds':
             if GenFdsApi(AutoGenObject.GenFdsCommandDict, self.Db):
                 EdkLogger.error("build", COMMAND_FAILURE)
+            Threshold = self.GetFreeSizeThreshold()
+            if Threshold:
+                self.CheckFreeSizeThreshold(Threshold, AutoGenObject.FvDir)
             return True
 
         # run
@@ -2034,10 +2044,10 @@ class Build():
             ModuleBuildDirectoryList = data_pipe.Get("ModuleBuildDirectoryList")
 
             for m_build_dir in LibraryBuildDirectoryList:
-                if not os.path.exists(os.path.join(m_build_dir,GenMake.BuildFile._FILE_NAME_[GenMake.gMakeType])):
+                if not os.path.exists(os.path.join(m_build_dir,self.MakeFileName)):
                     return None
             for m_build_dir in ModuleBuildDirectoryList:
-                if not os.path.exists(os.path.join(m_build_dir,GenMake.BuildFile._FILE_NAME_[GenMake.gMakeType])):
+                if not os.path.exists(os.path.join(m_build_dir,self.MakeFileName)):
                     return None
             Wa = WorkSpaceInfo(
                 workspacedir,active_p,target,toolchain,archlist
@@ -2122,6 +2132,11 @@ class Build():
             Pa.DataPipe.DataContainer = {"Workspace_timestamp": Wa._SrcTimeStamp}
             Pa.DataPipe.DataContainer = {"CommandTarget": self.Target}
             Pa.CreateLibModuelDirs()
+            # Fetch the MakeFileName.
+            self.MakeFileName = Pa.MakeFileName
+            if not self.MakeFileName:
+                self.MakeFileName = Pa.MakeFile
+
             Pa.DataPipe.DataContainer = {"LibraryBuildDirectoryList":Pa.LibraryBuildDirectoryList}
             Pa.DataPipe.DataContainer = {"ModuleBuildDirectoryList":Pa.ModuleBuildDirectoryList}
             Pa.DataPipe.DataContainer = {"FdsCommandDict": Wa.GenFdsCommandDict}
@@ -2300,6 +2315,9 @@ class Build():
                         GenFdsStart = time.time()
                         if GenFdsApi(Wa.GenFdsCommandDict, self.Db):
                             EdkLogger.error("build", COMMAND_FAILURE)
+                        Threshold = self.GetFreeSizeThreshold()
+                        if Threshold:
+                            self.CheckFreeSizeThreshold(Threshold, Wa.FvDir)
 
                         #
                         # Create MAP file for all platform FVs after GenFds.
@@ -2311,6 +2329,46 @@ class Build():
                     #
                     self._SaveMapFile(MapBuffer, Wa)
                 self.CreateGuidedSectionToolsFile(Wa)
+
+    ## GetFreeSizeThreshold()
+    #
+    #   @retval int             Threshold value
+    #
+    def GetFreeSizeThreshold(self):
+        Threshold = None
+        Threshold_Str = GlobalData.gCommandLineDefines.get('FV_SPARE_SPACE_THRESHOLD')
+        if Threshold_Str:
+            try:
+                if Threshold_Str.lower().startswith('0x'):
+                    Threshold = int(Threshold_Str, 16)
+                else:
+                    Threshold = int(Threshold_Str)
+            except:
+                EdkLogger.warn("build", 'incorrect value for FV_SPARE_SPACE_THRESHOLD %s.Only decimal or hex format is allowed.' % Threshold_Str)
+        return Threshold
+
+    def CheckFreeSizeThreshold(self, Threshold=None, FvDir=None):
+        if not isinstance(Threshold, int):
+            return
+        if not isinstance(FvDir, str) or not FvDir:
+            return
+        FdfParserObject = GlobalData.gFdfParser
+        FvRegionNameList = [FvName for FvName in FdfParserObject.Profile.FvDict if FdfParserObject.Profile.FvDict[FvName].FvRegionInFD]
+        for FvName in FdfParserObject.Profile.FvDict:
+            if FvName in FvRegionNameList:
+                FvSpaceInfoFileName = os.path.join(FvDir, FvName.upper() + '.Fv.map')
+                if os.path.exists(FvSpaceInfoFileName):
+                    FileLinesList = getlines(FvSpaceInfoFileName)
+                    for Line in FileLinesList:
+                        NameValue = Line.split('=')
+                        if len(NameValue) == 2 and NameValue[0].strip() == 'EFI_FV_SPACE_SIZE':
+                            FreeSizeValue = int(NameValue[1].strip(), 0)
+                            if FreeSizeValue < Threshold:
+                                EdkLogger.error("build", FV_FREESIZE_ERROR,
+                                                '%s FV free space %d is not enough to meet with the required spare space %d set by -D FV_SPARE_SPACE_THRESHOLD option.' % (
+                                                    FvName, FreeSizeValue, Threshold))
+                            break
+
     ## Generate GuidedSectionTools.txt in the FV directories.
     #
     def CreateGuidedSectionToolsFile(self,Wa):
@@ -2336,7 +2394,7 @@ class Build():
                                 toolName = split[3]
                                 path = '_'.join(split[0:4]) + '_PATH'
                                 path = self.ToolDef.ToolsDefTxtDictionary[path]
-                                path = self.GetFullPathOfTool(path)
+                                path = self.GetRealPathOfTool(path)
                                 guidAttribs.append((guid, toolName, path))
 
                     # Write out GuidedSecTools.txt
@@ -2346,21 +2404,11 @@ class Build():
                         print(' '.join(guidedSectionTool), file=toolsFile)
                     toolsFile.close()
 
-    ## Returns the full path of the tool.
+    ## Returns the real path of the tool.
     #
-    def GetFullPathOfTool (self, tool):
+    def GetRealPathOfTool (self, tool):
         if os.path.exists(tool):
             return os.path.realpath(tool)
-        else:
-            # We need to search for the tool using the
-            # PATH environment variable.
-            for dirInPath in os.environ['PATH'].split(os.pathsep):
-                foundPath = os.path.join(dirInPath, tool)
-                if os.path.exists(foundPath):
-                    return os.path.realpath(foundPath)
-
-        # If the tool was not found in the path then we just return
-        # the input tool.
         return tool
 
     ## Launch the module or platform build
@@ -2438,9 +2486,15 @@ def LogBuildTime(Time):
     else:
         return None
 def ThreadNum():
+    OptionParser = MyOptionParser()
+    if not OptionParser.BuildOption and not OptionParser.BuildTarget:
+        OptionParser.GetOption()
+    BuildOption, BuildTarget = OptionParser.BuildOption, OptionParser.BuildTarget
     ThreadNumber = BuildOption.ThreadNumber
+    GlobalData.gCmdConfDir = BuildOption.ConfDirectory
     if ThreadNumber is None:
-        ThreadNumber = TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
+        TargetObj = TargetTxtDict()
+        ThreadNumber = TargetObj.Target.TargetTxtDictionary[TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
         if ThreadNumber == '':
             ThreadNumber = 0
         else:
@@ -2475,7 +2529,10 @@ def Main():
     #
     # Parse the options and args
     #
-    Option, Target = BuildOption, BuildTarget
+    OptionParser = MyOptionParser()
+    if not OptionParser.BuildOption and not OptionParser.BuildTarget:
+        OptionParser.GetOption()
+    Option, Target = OptionParser.BuildOption, OptionParser.BuildTarget
     GlobalData.gOptions = Option
     GlobalData.gCaseInsensitive = Option.CaseInsensitive
 

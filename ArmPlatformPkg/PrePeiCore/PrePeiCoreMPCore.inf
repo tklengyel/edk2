@@ -44,6 +44,7 @@
 [LibraryClasses]
   ArmLib
   ArmPlatformLib
+  CacheMaintenanceLib
   BaseLib
   DebugLib
   DebugAgentLib
@@ -62,6 +63,7 @@
 [FixedPcd]
   gArmTokenSpaceGuid.PcdFvBaseAddress
   gArmTokenSpaceGuid.PcdFvSize
+  gArmTokenSpaceGuid.PcdVFPEnabled
 
   gArmPlatformTokenSpaceGuid.PcdCPUCoresStackBase
   gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize
