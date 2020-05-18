@@ -801,6 +801,7 @@ CoreFreePoolI (
   // Determine the pool list
   //
   Index = SIZE_TO_LIST(Size);
+  UnpoisonPool ((UINTN)Head, Size);
   DEBUG_CLEAR_MEMORY (Head, Size);
 
   //
