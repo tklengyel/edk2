@@ -120,186 +120,28 @@ TestModuleDxeEntryPoint (
   IN EFI_SYSTEM_TABLE     *SystemTable
   )
 {
-  int stack_array[11];
-  int Num;
-  int *heap_array;
-  int *heap_array2;
-  char *CharPtr;
-  short *ShortPtr;
-  int *IntPtr;
-  VOID *HeapBase, *BeginPtr, *EndPtr;
-
-  GlobalTest();
-  StackTest();
-  //
-  // Test the whether asan skip MMIO access.
-  // Assume system memory and its shadow memory as below:
-  // LowerMemorySize = 0x20000000
-  // AsanShadowMemoryStart = 0x4000000
-  // AsanShadowMemorySize = 0x4000000
-  SetMem ((void *)(0x4000000+0x4000000), 0x100, 0xFF);
-  SerialOutput ("access MMIO 1\n");
-  IntPtr = (int *)(0x20000000 - 1);
-  *IntPtr = 1;
-  SerialOutput ("access MMIO 2\n");
-  IntPtr = (int *)0x20000000;
-  *IntPtr = 2;
-  SerialOutput ("access MMIO 3\n");
-  IntPtr = (int *)(0x20000000 + 1);
-  *IntPtr = 3;
-
-  Num = 9;
-  SerialOutput ("Num = 9\n");
-  global_array[Num] = 0x21; // global buffer overflow, Num should <= 10
-  global_array2[Num] = 0x4321; // global buffer overflow, Num should <= 10
-  global_array3[Num] = 0x87654321; // global buffer overflow, Num should <= 10
-  global_structure[Num].line_no = 0x87654321; // global buffer overflow, Num should <= 10
-  Num = 10; // clang static analysers (e.g. alpha.security.ArrayBound) can detect the constant value easily
-  SerialOutput ("Num = 10\n");
-  //Num = (int)(UINTN)ImageHandle; // clang static analysers can not detect it when the value is from input
-  global_array[Num] = 0x21; // global buffer overflow, Num should <= 10
-  global_array2[Num] = 0x4321; // global buffer overflow, Num should <= 10
-  global_array3[Num] = 0x87654321; // global buffer overflow, Num should <= 10
-  global_structure[Num].line_no = 0x87654321; // global buffer overflow, Num should <= 10
-  Num = 11;
-  SerialOutput ("Num = 11\n");
-  global_array[Num] = 0x21; // global buffer overflow, Num should <= 10
-  global_array2[Num] = 0x4321; // global buffer overflow, Num should <= 10
-  global_array3[Num] = 0x87654321; // global buffer overflow, Num should <= 10
-  global_structure[Num].line_no = 0x87654321; // global buffer overflow, Num should <= 10
-  Num = 12;
-  SerialOutput ("Num = 12\n");
-  global_array[Num] = 0x21; // global buffer overflow, Num should <= 10
-  global_array2[Num] = 0x4321; // global buffer overflow, Num should <= 10
-  global_array3[Num] = 0x87654321; // global buffer overflow, Num should <= 10
-  global_structure[Num].line_no = 0x87654321; // global buffer overflow, Num should <= 10
-  Num = 13;
-  SerialOutput ("Num = 13\n");
-  global_array[Num] = 0x21; // global buffer overflow, Num should <= 10
-  global_array2[Num] = 0x4321; // global buffer overflow, Num should <= 10
-  global_array3[Num] = 0x87654321; // global buffer overflow, Num should <= 10
-  global_structure[Num].line_no = 0x87654321; // global buffer overflow, Num should <= 10
-
-  SerialOutput ("CharPtr = -1\n");
-  CharPtr = &global_array[0];
-  *(char *)((UINTN)CharPtr - sizeof(global_array[0])) = 0x21; 
-  
-  SerialOutput ("ShortPtr = -1\n");
-  ShortPtr = &global_array2[0];
-  *(short *)((UINTN)ShortPtr - sizeof(global_array2[0])) = 0x4321; 
-  
-  SerialOutput ("IntPtr = -1\n");
-  IntPtr = &global_array3[0];
-  *(int *)((UINTN)IntPtr - sizeof(global_array3[0])) = 0x87654321; 
-  
-  SerialOutput ("Access stack_array 1\n");
-  stack_array[Num] = 0x12345678; // stack buffer overflow, Num should <= 10  
-  
-  Num = 11;
-  SerialOutput ("Access stack_array 2\n");
-  stack_array[Num] = 0x12345678;
-  stack_array[Num-1] = stack_array[Num];
-  
-  heap_array = AllocateZeroPool (sizeof (int) * 11);  
-  SerialOutput ("Access heap_array 1\n");
-  heap_array[Num] = 0x12345678; // heap buffer overflow, Num should <= 10
-  SerialOutput ("Access heap_array 2\n");
-  heap_array[Num -1] = 0x12345678; 
-  SerialOutput ("Access heap_array 3\n");
-  *((char *)heap_array - 1) = 0x12; 
-  
-  FreePool(heap_array);
-  SerialOutput ("Access heap_array 4\n");
-  heap_array[0] = 0x12345678; // heap buffer use after free
-  SerialOutput ("Access heap_array 5\n");
-  heap_array[Num] = 0x12345678; 
-  SerialOutput ("Access heap_array 6\n");
-  *((char *)heap_array - 1) = 0x12; 
-
-  heap_array = AllocateZeroPool (sizeof (int) * 11);
-  heap_array2 = ReallocatePool(sizeof (int) * 11, sizeof (int) * 10, heap_array);
-  SerialOutput ("Access heap_array 7\n");
-  heap_array2[0] = 0x12345678; // heap buffer overflow, Num should <= 10
-  SerialOutput ("Access heap_array 8\n");
-  heap_array2[10] = 0x12345678; 
-  SerialOutput ("Access heap_array 9\n");
-  *((char *)heap_array2 - 1) = 0x12; 
-  FreePool(heap_array2);
-  
-  for (int i = 1; i <= 10; i++){
-    heap_array = AllocateZeroPool (sizeof (int) * i);
-    
-    SerialOutput ("Loop test access heap_array 10\n");
-    heap_array[i] = 0x12345678; 
-    SerialOutput ("Loop test access heap_array 11\n");
-    heap_array[i -1] = 0x12345678; 
-    SerialOutput ("Loop test access heap_array 12\n");
-    *((char *)heap_array - 1) = 0x12; 
-    
-    FreePool(heap_array);
-  }
-  
-  
-  SerialOutput ("Access heap page\n");
-  HeapBase = AllocatePages(11);
-  EndPtr = HeapBase + EFI_PAGES_TO_SIZE(11) - 1;
-  SerialOutput ("Access heap 1\n");
-  *(char *)EndPtr = 0x12;
-  SerialOutput ("Access heap 2\n");
-  *(char *)(EndPtr + 1) = 0x12;
-  SerialOutput ("Access heap 3\n");
-  *(char *)(EndPtr + 2) = 0x12;
-  SerialOutput ("Access heap 4\n");
-  *(char *)HeapBase = 0x12;
-  SerialOutput ("Access heap 5\n");
-  *(char *)(HeapBase -1) = 0x12;
-  
-  SerialOutput ("Free heap page test 1\n");
-  BeginPtr = HeapBase;
-  EndPtr = HeapBase + EFI_PAGES_TO_SIZE(11) - 1;
-  
-  for (int i = 0; i < 11; i++){
-   
-    FreePages(HeapBase + EFI_PAGES_TO_SIZE(i), 1);
-    
-    SerialOutput ("Loop test access heap page 6\n");
-    *(char *)(BeginPtr -1) = 0x12;
-    SerialOutput ("Loop test access heap page 7\n");
-    *(char *)(BeginPtr) = 0x12;
-    SerialOutput ("Loop test access heap page 8\n");
-    *(char *)(EndPtr) = 0x12;
-    SerialOutput ("Loop test access heap page 9\n");
-    *(char *)(EndPtr + 1) = 0x12;
-    
-    SerialOutput ("Loop test access heap page 10\n");
-    *(char *)(HeapBase + EFI_PAGES_TO_SIZE(i)) = 0x12; //current Asan implementation will not protect clipped page
-  }
-  
-  SerialOutput ("Free heap page test 2\n");
-  HeapBase = AllocatePages(11);
-  for (int i = 0; i < 11/2; i++){
-   
-    FreePages(HeapBase + EFI_PAGES_TO_SIZE(i*2 + 1), 1);
-    
-    BeginPtr = HeapBase + EFI_PAGES_TO_SIZE(i*2);
-    EndPtr = BeginPtr + EFI_PAGES_TO_SIZE(1) - 1;
-    SerialOutput ("Loop test access heap page 11\n");
-    *(char *)(BeginPtr -1) = 0x12;
-    SerialOutput ("Loop test access heap page 12\n");
-    *(char *)(BeginPtr) = 0x12;
-    SerialOutput ("Loop test access heap page 13\n");
-    *(char *)(EndPtr) = 0x12;
-    SerialOutput ("Loop test access heap page 14\n");
-    *(char *)(EndPtr + 1) = 0x12;
-  }
-  
-  
-  SerialOutput ("Test address-use-after-scope\n");
-  {
-    int x = 0;
-    p = &x;
-  }
-  *p = 5;
+  char a1[2];
+  char a2[3];
+  SerialOutput ("CopyMem Test begin \n");
+  //heap_array = AllocateZeroPool (sizeof (int) * 2048);
+  //if (!heap_array)
+        //return;
+  //SetMem ((void *)heap_array, 2048, 0xFF);
+  //SerialOutput ("Access heap_array 1\n");
+  //heap_array[1] = 0x12345678; // heap buffer overflow, Num should <= 10
+  a1[0] = 'a';
+  a1[1] = 'b';
+  a2[0] = 'c';
+  a2[1] = 'd';
+  a2[2] = 'e';
+  a1[2] = 'f';
+  a2[3] = 'g';
+  CopyMem(a1, a2, 3);
+  CopyMem(a2, a1, 3);
+  SetMem(a1, 10, 0xFF);
+  SetMem(a2, 10, 0xFF);
+  //FreePool(heap_array);
+  SerialOutput ("CopyMem Test done \n");
   
   return EFI_SUCCESS;
 }
