@@ -295,6 +295,15 @@ DEFINE DTC_BIN                 = ENV(DTC_PREFIX)dtc
 #                             Required to build platforms or ACPI tables:
 #                               Intel(r) ACPI Compiler from
 #                               https://acpica.org/downloads
+#   CLANGRTS -Linux, Windows, Mac-  Requires:
+#                             Clang 9 or above from http://releases.llvm.org/
+#                        Optional:
+#                             Required to compile nasm source:
+#                               nasm compiler from
+#                               NASM -- http://www.nasm.us/
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler from
+#                               https://acpica.org/downloads
 #   VS2008x86   -win64-  Requires:
 #                             Microsoft Visual Studio 2008 (x86)
 #                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
@@ -2881,6 +2890,105 @@ NOOPT_CLANGPDB_X64_CC_FLAGS         = DEF(CLANGPDB_ALL_CC_FLAGS) -m64 "-DEFIAPI=
 NOOPT_CLANGPDB_X64_DLINK_FLAGS      = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /Machine:X64 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /DEBUG:GHASH /MLLVM:-exception-model=wineh /lldmap
 NOOPT_CLANGPDB_X64_DLINK2_FLAGS     =
 NOOPT_CLANGPDB_X64_GENFW_FLAGS      = --keepexceptiontable
+
+
+####################################################################################
+#
+# CLANGRTS - This configuration is used to compile under Windows/Linux/Mac to produce
+#  PE/COFF binaries using LLVM/Clang/LLD with Link Time Optimization enabled
+#
+####################################################################################
+*_CLANGRTS_*_*_FAMILY                = GCC
+*_CLANGRTS_*_*_BUILDRULEFAMILY       = CLANGRTS
+*_CLANGRTS_*_MAKE_PATH               = ENV(CLANG_HOST_BIN)make
+*_CLANGRTS_*_*_DLL                   = ENV(CLANGRTS_DLL)
+*_CLANGRTS_*_ASL_PATH                = DEF(UNIX_IASL_BIN)
+
+*_CLANGRTS_*_APP_FLAGS               =
+*_CLANGRTS_*_ASL_FLAGS               = DEF(DEFAULT_WIN_ASL_FLAGS)
+*_CLANGRTS_*_ASL_OUTFLAGS            = DEF(DEFAULT_WIN_ASL_OUTFLAGS)
+*_CLANGRTS_*_ASLDLINK_FLAGS          = DEF(MSFT_ASLDLINK_FLAGS)
+*_CLANGRTS_*_DEPS_FLAGS              = DEF(GCC_DEPS_FLAGS)
+
+DEFINE CLANGRTS_IA32_PREFIX          = ENV(CLANG_BIN)
+DEFINE CLANGRTS_X64_PREFIX           = ENV(CLANG_BIN)
+
+DEFINE CLANGRTS_IA32_TARGET          = -target i686-unknown-windows-gnu
+DEFINE CLANGRTS_X64_TARGET           = -target x86_64-unknown-windows-gnu
+
+DEFINE CLANGRTS_WARNING_OVERRIDES    = -Wno-parentheses-equality -Wno-tautological-compare -Wno-tautological-constant-out-of-range-compare -Wno-empty-body -Wno-unused-const-variable -Wno-varargs -Wno-unknown-warning-option -Wno-microsoft-enum-forward-reference
+DEFINE CLANGRTS_ALL_CC_FLAGS         = DEF(GCC48_ALL_CC_FLAGS) DEF(CLANGRTS_WARNING_OVERRIDES) -fno-stack-protector -funsigned-char -ftrap-function=undefined_behavior_has_been_optimized_away_by_clang -Wno-address -Wno-shift-negative-value -Wno-unknown-pragmas -Wno-incompatible-library-redeclaration -Wno-null-dereference -mno-implicit-float -mms-bitfields -mno-stack-arg-probe -nostdlib -nostdlibinc -fseh-exceptions
+
+###########################
+# CLANGRTS IA32 definitions
+###########################
+*_CLANGRTS_IA32_CC_PATH              = DEF(CLANGRTS_IA32_PREFIX)clang
+*_CLANGRTS_IA32_SLINK_PATH           = DEF(CLANGRTS_IA32_PREFIX)llvm-lib
+*_CLANGRTS_IA32_DLINK_PATH           = DEF(CLANGRTS_IA32_PREFIX)lld-link
+*_CLANGRTS_IA32_ASLDLINK_PATH        = DEF(CLANGRTS_IA32_PREFIX)lld-link
+*_CLANGRTS_IA32_ASM_PATH             = DEF(CLANGRTS_IA32_PREFIX)clang
+*_CLANGRTS_IA32_PP_PATH              = DEF(CLANGRTS_IA32_PREFIX)clang
+*_CLANGRTS_IA32_VFRPP_PATH           = DEF(CLANGRTS_IA32_PREFIX)clang
+*_CLANGRTS_IA32_ASLCC_PATH           = DEF(CLANGRTS_IA32_PREFIX)clang
+*_CLANGRTS_IA32_ASLPP_PATH           = DEF(CLANGRTS_IA32_PREFIX)clang
+*_CLANGRTS_IA32_RC_PATH              = DEF(CLANGRTS_IA32_PREFIX)llvm-rc
+
+*_CLANGRTS_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32 -fno-lto DEF(CLANGRTS_IA32_TARGET)
+*_CLANGRTS_IA32_ASM_FLAGS            = DEF(GCC_ASM_FLAGS) -m32 -march=i386 DEF(CLANGRTS_IA32_TARGET)
+*_CLANGRTS_IA32_OBJCOPY_FLAGS        =
+*_CLANGRTS_IA32_NASM_FLAGS           = -f win32
+*_CLANGRTS_IA32_PP_FLAGS             = DEF(GCC_PP_FLAGS) DEF(CLANGRTS_IA32_TARGET)
+*_CLANGRTS_IA32_ASLPP_FLAGS          = DEF(GCC_ASLPP_FLAGS) DEF(CLANGRTS_IA32_TARGET)
+*_CLANGRTS_IA32_VFRPP_FLAGS          = DEF(GCC_VFRPP_FLAGS) DEF(CLANGRTS_IA32_TARGET)
+
+DEBUG_CLANGRTS_IA32_CC_FLAGS         = DEF(CLANGRTS_ALL_CC_FLAGS) -m32 -Oz -flto -march=i586 DEF(CLANGRTS_IA32_TARGET) -gcodeview
+DEBUG_CLANGRTS_IA32_DLINK_FLAGS      = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /SECTION:.xdata,D /SECTION:.pdata,D /MACHINE:X86 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /DEBUG:GHASH /MLLVM:-exception-model=wineh /lldmap
+DEBUG_CLANGRTS_IA32_DLINK2_FLAGS     =
+
+RELEASE_CLANGRTS_IA32_CC_FLAGS       = DEF(CLANGRTS_ALL_CC_FLAGS) -m32 -Oz -flto -march=i586 DEF(CLANGRTS_IA32_TARGET)
+RELEASE_CLANGRTS_IA32_DLINK_FLAGS    = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /IGNORE:4254 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /SECTION:.xdata,D /SECTION:.pdata,D /MACHINE:X86 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /MERGE:.rdata=.data /MLLVM:-exception-model=wineh /lldmap
+RELEASE_CLANGRTS_IA32_DLINK2_FLAGS   =
+
+NOOPT_CLANGRTS_IA32_CC_FLAGS         = DEF(CLANGRTS_ALL_CC_FLAGS) -m32 -O0 -march=i586 DEF(CLANGRTS_IA32_TARGET) -gcodeview
+NOOPT_CLANGRTS_IA32_DLINK_FLAGS      = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /SECTION:.xdata,D /SECTION:.pdata,D /MACHINE:X86 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /DEBUG:GHASH /MLLVM:-exception-model=wineh /lldmap
+NOOPT_CLANGRTS_IA32_DLINK2_FLAGS     =
+
+##########################
+# CLANGRTS X64 definitions
+##########################
+*_CLANGRTS_X64_CC_PATH              = DEF(CLANGRTS_X64_PREFIX)clang
+*_CLANGRTS_X64_SLINK_PATH           = DEF(CLANGRTS_X64_PREFIX)llvm-lib
+*_CLANGRTS_X64_DLINK_PATH           = DEF(CLANGRTS_X64_PREFIX)lld-link
+*_CLANGRTS_X64_ASLDLINK_PATH        = DEF(CLANGRTS_X64_PREFIX)lld-link
+*_CLANGRTS_X64_ASM_PATH             = DEF(CLANGRTS_X64_PREFIX)clang
+*_CLANGRTS_X64_PP_PATH              = DEF(CLANGRTS_X64_PREFIX)clang
+*_CLANGRTS_X64_VFRPP_PATH           = DEF(CLANGRTS_X64_PREFIX)clang
+*_CLANGRTS_X64_ASLCC_PATH           = DEF(CLANGRTS_X64_PREFIX)clang
+*_CLANGRTS_X64_ASLPP_PATH           = DEF(CLANGRTS_X64_PREFIX)clang
+*_CLANGRTS_X64_RC_PATH              = DEF(CLANGRTS_IA32_PREFIX)llvm-rc
+
+*_CLANGRTS_X64_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m64 -fno-lto DEF(CLANGRTS_X64_TARGET)
+*_CLANGRTS_X64_ASM_FLAGS            = DEF(GCC_ASM_FLAGS) -m64 DEF(CLANGRTS_X64_TARGET)
+*_CLANGRTS_X64_OBJCOPY_FLAGS        =
+*_CLANGRTS_X64_NASM_FLAGS           = -f win64
+*_CLANGRTS_X64_PP_FLAGS             = DEF(GCC_PP_FLAGS) DEF(CLANGRTS_X64_TARGET)
+*_CLANGRTS_X64_ASLPP_FLAGS          = DEF(GCC_ASLPP_FLAGS) DEF(CLANGRTS_X64_TARGET)
+*_CLANGRTS_X64_VFRPP_FLAGS          = DEF(GCC_VFRPP_FLAGS) DEF(CLANGRTS_X64_TARGET)
+
+DEBUG_CLANGRTS_X64_CC_FLAGS         = DEF(CLANGRTS_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -Oz -flto DEF(CLANGRTS_X64_TARGET) -gcodeview  -funwind-tables
+DEBUG_CLANGRTS_X64_DLINK_FLAGS      = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /Machine:X64 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /DEBUG:GHASH /MLLVM:-exception-model=wineh /lldmap
+DEBUG_CLANGRTS_X64_DLINK2_FLAGS     =
+DEBUG_CLANGRTS_X64_GENFW_FLAGS      = --keepexceptiontable
+
+RELEASE_CLANGRTS_X64_CC_FLAGS       = DEF(CLANGRTS_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -Oz -flto DEF(CLANGRTS_X64_TARGET) -fno-unwind-tables
+RELEASE_CLANGRTS_X64_DLINK_FLAGS    = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /IGNORE:4254 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /SECTION:.xdata,D /SECTION:.pdata,D /Machine:X64 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /MERGE:.rdata=.data /MLLVM:-exception-model=wineh /lldmap
+RELEASE_CLANGRTS_X64_DLINK2_FLAGS   =
+RELEASE_CLANGRTS_X64_GENFW_FLAGS    =
+
+NOOPT_CLANGRTS_X64_CC_FLAGS         = DEF(CLANGRTS_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -mcmodel=small -O0 DEF(CLANGRTS_X64_TARGET) -gcodeview -funwind-tables
+NOOPT_CLANGRTS_X64_DLINK_FLAGS      = /NOLOGO /NODEFAULTLIB /IGNORE:4001 /OPT:REF /OPT:ICF=10 /ALIGN:32 /FILEALIGN:32 /Machine:X64 /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /SAFESEH:NO /BASE:0 /DEBUG:GHASH /MLLVM:-exception-model=wineh /lldmap
+NOOPT_CLANGRTS_X64_DLINK2_FLAGS     =
+NOOPT_CLANGRTS_X64_GENFW_FLAGS      = --keepexceptiontable
 
 #
 #

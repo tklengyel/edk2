@@ -269,7 +269,7 @@
     <OutputFile>
         $(OUTPUT_DIR)(+)$(MODULE_NAME).lib
 
-    <Command.MSFT, Command.INTEL, Command.CLANGPDB>
+    <Command.MSFT, Command.INTEL, Command.CLANGPDB, Command.CLANGRTS>
         "$(SLINK)" $(SLINK_FLAGS) /OUT:${dst} @$(OBJECT_FILES_LIST)
 
     <Command.GCC>
@@ -300,7 +300,7 @@
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK2_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST)
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST)
 
-    <Command.CLANGPDB>
+    <Command.CLANGPDB, Command.CLANGRTS>
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST) $(DLINK2_FLAGS)
 
     <Command.GCC>
@@ -343,7 +343,7 @@
     <OutputFile>
         $(DEBUG_DIR)(+)$(MODULE_NAME)
 
-    <Command.MSFT, Command.INTEL, Command.CLANGPDB>
+    <Command.MSFT, Command.INTEL, Command.CLANGPDB, Command.CLANGRTS>
         "$(DLINK)" $(DLINK_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST)
 
     <Command.GCC>
@@ -367,7 +367,7 @@
     <OutputFile>
         $(OUTPUT_DIR)(+)$(MODULE_NAME).efi
 
-    <Command.MSFT, Command.INTEL, Command.RVCT, Command.CLANGPDB>
+    <Command.MSFT, Command.INTEL, Command.RVCT, Command.CLANGPDB, Command.CLANGRTS>
         "$(GENFW)" -e $(MODULE_TYPE) -o ${dst} ${src} $(GENFW_FLAGS)
         $(CP) ${dst} $(DEBUG_DIR)
         $(CP) ${dst} $(BIN_DIR)(+)$(MODULE_NAME_GUID).efi
@@ -488,7 +488,7 @@
         "$(ASLDLINK)" -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(ASLDLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj $(CC_FLAGS) $(ASLCC_FLAGS)
         "$(GENFW)" -o ${dst} -c $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(GENFW_FLAGS)
 
-    <Command.CLANGPDB>
+    <Command.CLANGPDB, Command.CLANGRTS>
         "$(ASLCC)" $(DEPS_FLAGS) -c -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj $(CC_FLAGS) $(ASLCC_FLAGS) $(DEPS_FLAGS) $(INC) ${src}
         "$(ASLDLINK)" /OUT:$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(ASLDLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
         "$(GENFW)" -o ${dst} -c $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(GENFW_FLAGS)
@@ -656,13 +656,13 @@
     <InputFile>
         *.hpk
 
-    <OutputFile.MSFT, OutputFile.INTEL, OutputFile.GCC, OutputFile.CLANGPDB>
+    <OutputFile.MSFT, OutputFile.INTEL, OutputFile.GCC, OutputFile.CLANGPDB, OutputFile.CLANGRTS>
         $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.lib
 
     <OutputFile.XCODE, OutputFile.RVCT>
         $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc
 
-    <Command.MSFT, Command.INTEL, Command.CLANGPDB>
+    <Command.MSFT, Command.INTEL, Command.CLANGPDB, Command.CLANGRTS>
         "$(GENFW)" -o $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc -g $(MODULE_GUID) --hiipackage $(HII_BINARY_PACKAGES) $(GENFW_FLAGS)
         "$(RC)" /Fo${dst} $(OUTPUT_DIR)(+)$(MODULE_NAME)hii.rc
 
