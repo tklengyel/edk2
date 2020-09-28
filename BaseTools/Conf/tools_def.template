@@ -2894,7 +2894,7 @@ NOOPT_CLANGPDB_X64_GENFW_FLAGS      = --keepexceptiontable
 
 ####################################################################################
 #
-# CLANGRTS - This configuration is used to compile under Windows/Linux/Mac to produce
+# CLANGRTS - This configuration is used to compile under Windows/Linux/Mac to analyze
 #  PE/COFF binaries using LLVM/Clang/LLD with Link Time Optimization enabled
 #
 ####################################################################################
@@ -2933,6 +2933,11 @@ DEFINE CLANGRTS_ALL_CC_FLAGS         = DEF(GCC48_ALL_CC_FLAGS) DEF(CLANGRTS_WARN
 *_CLANGRTS_IA32_ASLPP_PATH           = DEF(CLANGRTS_IA32_PREFIX)clang
 *_CLANGRTS_IA32_RC_PATH              = DEF(CLANGRTS_IA32_PREFIX)llvm-rc
 
+*_CLANGRTS_IA32_LLVM-LINK_PATH       = DEF(CLANGRTS_IA32_PREFIX)llvm-link
+*_CLANGRTS_IA32_LLVM-DIS_PATH        = DEF(CLANGRTS_IA32_PREFIX)llvm-dis
+*_CLANGRTS_IA32_LLVM-DIFF_PATH       = DEF(CLANGRTS_IA32_PREFIX)llvm-diff
+*_CLANGRTS_IA32_OPT_PATH             = DEF(CLANGRTS_IA32_PREFIX)opt
+
 *_CLANGRTS_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32 -fno-lto DEF(CLANGRTS_IA32_TARGET)
 *_CLANGRTS_IA32_ASM_FLAGS            = DEF(GCC_ASM_FLAGS) -m32 -march=i386 DEF(CLANGRTS_IA32_TARGET)
 *_CLANGRTS_IA32_OBJCOPY_FLAGS        =
@@ -2966,6 +2971,11 @@ NOOPT_CLANGRTS_IA32_DLINK2_FLAGS     =
 *_CLANGRTS_X64_ASLCC_PATH           = DEF(CLANGRTS_X64_PREFIX)clang
 *_CLANGRTS_X64_ASLPP_PATH           = DEF(CLANGRTS_X64_PREFIX)clang
 *_CLANGRTS_X64_RC_PATH              = DEF(CLANGRTS_IA32_PREFIX)llvm-rc
+
+*_CLANGRTS_X64_LLVM-LINK_PATH       = DEF(CLANGRTS_IA32_PREFIX)llvm-link
+*_CLANGRTS_X64_LLVM-DIS_PATH        = DEF(CLANGRTS_IA32_PREFIX)llvm-dis
+*_CLANGRTS_X64_LLVM-DIFF_PATH       = DEF(CLANGRTS_IA32_PREFIX)llvm-diff
+*_CLANGRTS_X64_OPT_PATH             = DEF(CLANGRTS_IA32_PREFIX)opt
 
 *_CLANGRTS_X64_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m64 -fno-lto DEF(CLANGRTS_X64_TARGET)
 *_CLANGRTS_X64_ASM_FLAGS            = DEF(GCC_ASM_FLAGS) -m64 DEF(CLANGRTS_X64_TARGET)
