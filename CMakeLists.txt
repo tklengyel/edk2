@@ -28,5 +28,10 @@ message(STATUS "CMAKE_SOURCE_DIR is ${CMAKE_SOURCE_DIR}")
 message(STATUS "EDK2_MAIN_SRC_DIR is ${EDK2_MAIN_SRC_DIR}")
 message(STATUS "EDK2_MDEPKG_DIR is ${EDK2_MDEPKG_DIR}")
 
-add_subdirectory(${EDK2_MDEPKG_DIR}/Library/PeiPcdLib)
+# Cmake module directory (FindMdePkg.cmake, FindMdeModulePkg.cmake etc.)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
+message(STATUS "CMAKE_MODULE_PATH is ${CMAKE_MODULE_PATH}")
+find_package(MdePkg REQUIRED)
+
+add_subdirectory(${EDK2_MDEPKG_DIR}/Library/PeiPcdLib)
