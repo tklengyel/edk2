@@ -862,16 +862,17 @@ typedef struct {
 } PROCESSOR_FEATURE_FLAGS;
 
 typedef struct {
-  UINT32  ProcessorReserved1             :1;
-  UINT32  ProcessorUnknown               :1;
-  UINT32  Processor64BitCapble           :1;
-  UINT32  ProcessorMultiCore             :1;
-  UINT32  ProcessorHardwareThread        :1;
-  UINT32  ProcessorExecuteProtection     :1;
-  UINT32  ProcessorEnhancedVirtulization :1;
-  UINT32  ProcessorPowerPerformanceCtrl  :1;
-  UINT32  Processor128bitCapble          :1;
-  UINT32  ProcessorReserved2             :7;
+  UINT16  ProcessorReserved1              :1;
+  UINT16  ProcessorUnknown                :1;
+  UINT16  Processor64BitCapable           :1;
+  UINT16  ProcessorMultiCore              :1;
+  UINT16  ProcessorHardwareThread         :1;
+  UINT16  ProcessorExecuteProtection      :1;
+  UINT16  ProcessorEnhancedVirtualization :1;
+  UINT16  ProcessorPowerPerformanceCtrl   :1;
+  UINT16  Processor128BitCapable          :1;
+  UINT16  ProcessorArm64SocId             :1;
+  UINT16  ProcessorReserved2              :6;
 } PROCESSOR_CHARACTERISTIC_FLAGS;
 
 typedef struct {
@@ -893,7 +894,7 @@ typedef struct {
   SMBIOS_TABLE_STRING   Socket;
   UINT8                 ProcessorType;          ///< The enumeration value from PROCESSOR_TYPE_DATA.
   UINT8                 ProcessorFamily;        ///< The enumeration value from PROCESSOR_FAMILY_DATA.
-  SMBIOS_TABLE_STRING   ProcessorManufacture;
+  SMBIOS_TABLE_STRING   ProcessorManufacturer;
   PROCESSOR_ID_DATA     ProcessorId;
   SMBIOS_TABLE_STRING   ProcessorVersion;
   PROCESSOR_VOLTAGE     Voltage;
@@ -1718,7 +1719,9 @@ typedef enum {
   MemoryTypeLpddr4                         = 0x1E,
   MemoryTypeLogicalNonVolatileDevice       = 0x1F,
   MemoryTypeHBM                            = 0x20,
-  MemoryTypeHBM2                           = 0x21
+  MemoryTypeHBM2                           = 0x21,
+  MemoryTypeDdr5                           = 0x22,
+  MemoryTypeLpddr5                         = 0x23
 } MEMORY_DEVICE_TYPE;
 
 ///
@@ -1834,7 +1837,7 @@ typedef struct {
   //
   UINT8                                     MemoryTechnology;   ///< The enumeration value from MEMORY_DEVICE_TECHNOLOGY
   MEMORY_DEVICE_OPERATING_MODE_CAPABILITY   MemoryOperatingModeCapability;
-  SMBIOS_TABLE_STRING                       FirwareVersion;
+  SMBIOS_TABLE_STRING                       FirmwareVersion;
   UINT16                                    ModuleManufacturerID;
   UINT16                                    ModuleProductID;
   UINT16                                    MemorySubsystemControllerManufacturerID;
@@ -2502,6 +2505,15 @@ typedef struct {
   UINT8                             BusNum;
   UINT8                             DevFuncNum;
 } SMBIOS_TABLE_TYPE41;
+
+///
+///  Management Controller Host Interface - Protocol Record Data Format.
+///
+typedef struct {
+  UINT8                        ProtocolType;
+  UINT8                        ProtocolTypeDataLen;
+  UINT8                        ProtocolTypeData[1];
+} MC_HOST_INTERFACE_PROTOCOL_RECORD;
 
 ///
 /// Management Controller Host Interface - Interface Types.

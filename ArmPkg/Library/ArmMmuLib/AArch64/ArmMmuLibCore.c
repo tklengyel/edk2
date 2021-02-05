@@ -294,7 +294,7 @@ UpdateRegionMapping (
 {
   UINTN     T0SZ;
 
-  if (((RegionStart | RegionLength) & EFI_PAGE_MASK)) {
+  if (((RegionStart | RegionLength) & EFI_PAGE_MASK) != 0) {
     return EFI_INVALID_PARAMETER;
   }
 
@@ -649,7 +649,7 @@ ArmMmuBaseLibConstructor (
   // The ArmReplaceLiveTranslationEntry () helper function may be invoked
   // with the MMU off so we have to ensure that it gets cleaned to the PoC
   //
-  WriteBackDataCacheRange (ArmReplaceLiveTranslationEntry,
+  WriteBackDataCacheRange ((VOID *)(UINTN)ArmReplaceLiveTranslationEntry,
     ArmReplaceLiveTranslationEntrySize);
 
   return RETURN_SUCCESS;

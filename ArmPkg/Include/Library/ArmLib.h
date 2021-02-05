@@ -2,6 +2,7 @@
 
   Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
   Copyright (c) 2011 - 2016, ARM Ltd. All rights reserved.<BR>
+  Copyright (c) 2020, NUVIA Inc. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -129,18 +130,6 @@ ArmCacheWritebackGranule (
 UINTN
 EFIAPI
 ArmIsArchTimerImplemented (
-  VOID
-  );
-
-UINTN
-EFIAPI
-ArmReadIdPfr0 (
-  VOID
-  );
-
-UINTN
-EFIAPI
-ArmReadIdPfr1 (
   VOID
   );
 
@@ -714,5 +703,39 @@ EFIAPI
 ArmGetPhysicalAddressBits (
   VOID
   );
+
+
+///
+///  ID Register Helper functions
+///
+
+/**
+  Check whether the CPU supports the GIC system register interface (any version)
+
+  @return   Whether GIC System Register Interface is supported
+
+**/
+BOOLEAN
+EFIAPI
+ArmHasGicSystemRegisters (
+  VOID
+  );
+
+#ifdef MDE_CPU_ARM
+///
+/// AArch32-only ID Register Helper functions
+///
+/**
+  Check whether the CPU supports the Security extensions
+
+  @return   Whether the Security extensions are implemented
+
+**/
+BOOLEAN
+EFIAPI
+ArmHasSecurityExtensions (
+  VOID
+  );
+#endif // MDE_CPU_ARM
 
 #endif // __ARM_LIB__

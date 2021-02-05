@@ -2,7 +2,7 @@
   Entry point to the Standalone MM Foundation when initialized during the SEC
   phase on ARM platforms
 
-Copyright (c) 2017 - 2018, ARM Ltd. All rights reserved.<BR>
+Copyright (c) 2017 - 2021, Arm Ltd. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -31,18 +31,19 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define SPM_MINOR_VER_MASK        0x0000FFFF
 #define SPM_MAJOR_VER_SHIFT       16
 
-CONST UINT32 SPM_MAJOR_VER = 0;
-CONST UINT32 SPM_MINOR_VER = 1;
+#define SPM_MAJOR_VER             0
+#define SPM_MINOR_VER             1
 
-CONST UINT8 BOOT_PAYLOAD_VERSION = 1;
+#define BOOT_PAYLOAD_VERSION      1
 
 PI_MM_ARM_TF_CPU_DRIVER_ENTRYPOINT      CpuDriverEntryPoint = NULL;
 
 /**
   Retrieve a pointer to and print the boot information passed by privileged
-  secure firmware
+  secure firmware.
 
-  @param  SharedBufAddress The pointer memory shared with privileged firmware
+  @param  [in] SharedBufAddress   The pointer memory shared with privileged
+                                  firmware.
 
 **/
 EFI_SECURE_PARTITION_BOOT_INFO *
@@ -101,6 +102,12 @@ GetAndPrintBootinformation (
   return PayloadBootInfo;
 }
 
+/**
+  A loop to delegated events.
+
+  @param  [in] EventCompleteSvcArgs   Pointer to the event completion arguments.
+
+**/
 VOID
 EFIAPI
 DelegatedEventLoop (
@@ -156,6 +163,12 @@ DelegatedEventLoop (
   }
 }
 
+/**
+  Query the SPM version, check compatibility and return success if compatible.
+
+  @retval EFI_SUCCESS       SPM versions compatible.
+  @retval EFI_UNSUPPORTED   SPM versions not compatible.
+**/
 STATIC
 EFI_STATUS
 GetSpmVersion (VOID)
@@ -202,9 +215,10 @@ GetSpmVersion (VOID)
 /**
   The entry point of Standalone MM Foundation.
 
-  @param  SharedBufAddress  Pointer to the Buffer between SPM and SP.
-  @param  cookie1.
-  @param  cookie2.
+  @param  [in]  SharedBufAddress  Pointer to the Buffer between SPM and SP.
+  @param  [in]  SharedBufSize     Size of the shared buffer.
+  @param  [in]  cookie1           Cookie 1
+  @param  [in]  cookie2           Cookie 2
 
 **/
 VOID
@@ -225,6 +239,7 @@ _ModuleEntryPoint (
   VOID                                    *HobStart;
   VOID                                    *TeData;
   UINTN                                   TeDataSize;
+  EFI_PHYSICAL_ADDRESS                    ImageBase;
 
   // Get Secure Partition Manager Version Information
   Status = GetSpmVersion ();
@@ -253,6 +268,7 @@ _ModuleEntryPoint (
   Status = GetStandaloneMmCorePeCoffSections (
              TeData,
              &ImageContext,
+             &ImageBase,
              &SectionHeaderOffset,
              &NumberOfSections
              );
@@ -261,10 +277,21 @@ _ModuleEntryPoint (
     goto finish;
   }
 
+  //
+  // ImageBase may deviate from ImageContext.ImageAddress if we are dealing
+  // with a TE image, in which case the latter points to the actual offset
+  // of the image, whereas ImageBase refers to the address where the image
+  // would start if the stripped PE headers were still in place. In either
+  // case, we need to fix up ImageBase so it refers to the actual current
+  // load address.
+  //
+  ImageBase += (UINTN)TeData - ImageContext.ImageAddress;
+
   // Update the memory access permissions of individual sections in the
   // Standalone MM core module
   Status = UpdateMmFoundationPeCoffPermissions (
              &ImageContext,
+             ImageBase,
              SectionHeaderOffset,
              NumberOfSections,
              ArmSetMemoryRegionNoExec,
@@ -274,6 +301,15 @@ _ModuleEntryPoint (
 
   if (EFI_ERROR (Status)) {
     goto finish;
+  }
+
+  if (ImageContext.ImageAddress != (UINTN)TeData) {
+    ImageContext.ImageAddress = (UINTN)TeData;
+    ArmSetMemoryRegionNoExec (ImageBase, SIZE_4KB);
+    ArmClearMemoryRegionReadOnly (ImageBase, SIZE_4KB);
+
+    Status = PeCoffLoaderRelocateImage (&ImageContext);
+    ASSERT_EFI_ERROR (Status);
   }
 
   //

@@ -2,7 +2,7 @@
   Serial I/O Port library functions with no library constructor/destructor
 
   Copyright (c) 2008 - 2010, Apple Inc. All rights reserved.<BR>
-  Copyright (c) 2011 - 2016, ARM Ltd. All rights reserved.<BR>
+  Copyright (c) 2011 - 2020, Arm Limited. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -78,10 +78,14 @@ PL011UartInitializePort (
   UINT32      Integer;
   UINT32      Fractional;
   UINT32      HardwareFifoDepth;
+  UINT32      UartPid2;
 
-  HardwareFifoDepth = (PL011_UARTPID2_VER (MmioRead32 (UartBase + UARTPID2)) \
-                       > PL011_VER_R1P4) \
-                      ? 32 : 16 ;
+  HardwareFifoDepth = FixedPcdGet16 (PcdUartDefaultReceiveFifoDepth);
+  if (HardwareFifoDepth == 0) {
+    UartPid2 = MmioRead32 (UartBase + UARTPID2);
+    HardwareFifoDepth = (PL011_UARTPID2_VER (UartPid2) > PL011_VER_R1P4) ? 32 : 16;
+  }
+
   // The PL011 supports a buffer of 1, 16 or 32 chars. Therefore we can accept
   // 1 char buffer as the minimum FIFO size. Because everything can be rounded
   // down, there is no maximum FIFO size.
@@ -265,31 +269,31 @@ PL011UartSetControl (
 {
   UINT32  Bits;
 
-  if (Control & (mInvalidControlBits)) {
+  if ((Control & mInvalidControlBits) != 0) {
     return RETURN_UNSUPPORTED;
   }
 
   Bits = MmioRead32 (UartBase + UARTCR);
 
-  if (Control & EFI_SERIAL_REQUEST_TO_SEND) {
+  if ((Control & EFI_SERIAL_REQUEST_TO_SEND) != 0) {
     Bits |= PL011_UARTCR_RTS;
   } else {
     Bits &= ~PL011_UARTCR_RTS;
   }
 
-  if (Control & EFI_SERIAL_DATA_TERMINAL_READY) {
+  if ((Control & EFI_SERIAL_DATA_TERMINAL_READY) != 0) {
     Bits |= PL011_UARTCR_DTR;
   } else {
     Bits &= ~PL011_UARTCR_DTR;
   }
 
-  if (Control & EFI_SERIAL_HARDWARE_LOOPBACK_ENABLE) {
+  if ((Control & EFI_SERIAL_HARDWARE_LOOPBACK_ENABLE) != 0) {
     Bits |= PL011_UARTCR_LBE;
   } else {
     Bits &= ~PL011_UARTCR_LBE;
   }
 
-  if (Control & EFI_SERIAL_HARDWARE_FLOW_CONTROL_ENABLE) {
+  if ((Control & EFI_SERIAL_HARDWARE_FLOW_CONTROL_ENABLE) != 0) {
     Bits |= (PL011_UARTCR_CTSEN | PL011_UARTCR_RTSEN);
   } else {
     Bits &= ~(PL011_UARTCR_CTSEN | PL011_UARTCR_RTSEN);

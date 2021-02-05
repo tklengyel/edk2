@@ -2,6 +2,7 @@
 #
 # Copyright (c) Microsoft Corporation.
 # Copyright (c) 2020, Hewlett Packard Enterprise Development LP. All rights reserved.<BR>
+# Copyright (c) 2020 - 2021, ARM Limited. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 import os
@@ -41,6 +42,7 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
         These should be edk2 workspace relative paths '''
 
         return ("ArmVirtPkg",
+                "DynamicTablesPkg",
                 "EmulatorPkg",
                 "MdePkg",
                 "MdeModulePkg",
@@ -50,10 +52,12 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
                 "UefiCpuPkg",
                 "FmpDevicePkg",
                 "ShellPkg",
+                "StandaloneMmPkg",
                 "FatPkg",
                 "CryptoPkg",
                 "UnitTestFrameworkPkg",
-                "OvmfPkg"
+                "OvmfPkg",
+                "RedfishPkg"
                 )
 
     def GetArchitecturesSupported(self):
@@ -155,6 +159,8 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager, SetupSettingsManag
             "MdeModulePkg/Library/BrotliCustomDecompressLib/brotli", False))
         rs.append(RequiredSubmodule(
             "BaseTools/Source/C/BrotliCompress/brotli", False))
+        rs.append(RequiredSubmodule(
+            "RedfishPkg/Library/JsonLib/jansson", False))
         return rs
 
     def GetName(self):

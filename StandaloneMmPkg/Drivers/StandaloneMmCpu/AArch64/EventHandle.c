@@ -1,7 +1,7 @@
 /** @file
 
   Copyright (c) 2016 HP Development Company, L.P.
-  Copyright (c) 2016 - 2018, ARM Limited. All rights reserved.
+  Copyright (c) 2016 - 2021, Arm Limited. All rights reserved.
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -58,6 +58,19 @@ EFI_MM_CONFIGURATION_PROTOCOL mMmConfig = {
 
 STATIC EFI_MM_ENTRY_POINT     mMmEntryPoint = NULL;
 
+/**
+  The PI Standalone MM entry point for the TF-A CPU driver.
+
+  @param  [in] EventId            The event Id.
+  @param  [in] CpuNumber          The CPU number.
+  @param  [in] NsCommBufferAddr   Address of the NS common buffer.
+
+  @retval   EFI_SUCCESS             Success.
+  @retval   EFI_INVALID_PARAMETER   A parameter was invalid.
+  @retval   EFI_ACCESS_DENIED       Access not permitted.
+  @retval   EFI_OUT_OF_RESOURCES    Out of resources.
+  @retval   EFI_UNSUPPORTED         Operation not supported.
+**/
 EFI_STATUS
 PiMmStandaloneArmTfCpuDriverEntry (
   IN UINTN EventId,
@@ -65,8 +78,8 @@ PiMmStandaloneArmTfCpuDriverEntry (
   IN UINTN NsCommBufferAddr
   )
 {
-  EFI_MM_COMMUNICATE_HEADER *GuidedEventContext = NULL;
-  EFI_MM_ENTRY_CONTEXT        MmEntryPointContext = {0};
+  EFI_MM_COMMUNICATE_HEADER   *GuidedEventContext;
+  EFI_MM_ENTRY_CONTEXT        MmEntryPointContext;
   EFI_STATUS                  Status;
   UINTN                       NsCommBufferSize;
 
@@ -84,12 +97,18 @@ PiMmStandaloneArmTfCpuDriverEntry (
   }
 
   // Perform parameter validation of NsCommBufferAddr
-  if (NsCommBufferAddr && (NsCommBufferAddr < mNsCommBuffer.PhysicalStart))
+  if (NsCommBufferAddr == (UINTN)NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (NsCommBufferAddr < mNsCommBuffer.PhysicalStart) {
     return EFI_ACCESS_DENIED;
+  }
 
   if ((NsCommBufferAddr + sizeof (EFI_MM_COMMUNICATE_HEADER)) >=
-      (mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize))
+      (mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize)) {
     return EFI_INVALID_PARAMETER;
+  }
 
   // Find out the size of the buffer passed
   NsCommBufferSize = ((EFI_MM_COMMUNICATE_HEADER *) NsCommBufferAddr)->MessageLength +
@@ -97,10 +116,11 @@ PiMmStandaloneArmTfCpuDriverEntry (
 
   // perform bounds check.
   if (NsCommBufferAddr + NsCommBufferSize >=
-      mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize)
+      mNsCommBuffer.PhysicalStart + mNsCommBuffer.PhysicalSize) {
     return EFI_ACCESS_DENIED;
+  }
 
-
+  GuidedEventContext = NULL;
   // Now that the secure world can see the normal world buffer, allocate
   // memory to copy the communication buffer to the secure world.
   Status = mMmst->MmAllocatePool (
@@ -120,6 +140,8 @@ PiMmStandaloneArmTfCpuDriverEntry (
 
   // Stash the pointer to the allocated Event Context for this CPU
   PerCpuGuidedEventContext[CpuNumber] = GuidedEventContext;
+
+  ZeroMem (&MmEntryPointContext, sizeof (EFI_MM_ENTRY_CONTEXT));
 
   MmEntryPointContext.CurrentlyExecutingCpu = CpuNumber;
   MmEntryPointContext.NumberOfCpus = mMpInformationHobData->NumberOfProcessors;
@@ -150,6 +172,14 @@ PiMmStandaloneArmTfCpuDriverEntry (
   return Status;
 }
 
+/**
+  Registers the MM foundation entry point.
+
+  @param  [in] This               Pointer to the MM Configuration protocol.
+  @param  [in] MmEntryPoint       Function pointer to the MM Entry point.
+
+  @retval   EFI_SUCCESS             Success.
+**/
 EFI_STATUS
 EFIAPI
 MmFoundationEntryRegister (
@@ -166,10 +196,13 @@ MmFoundationEntryRegister (
   This function is the main entry point for an MM handler dispatch
   or communicate-based callback.
 
-  @param  DispatchHandle  The unique handle assigned to this handler by MmiHandlerRegister().
-  @param  Context         Points to an optional handler context which was specified when the handler was registered.
+  @param  DispatchHandle  The unique handle assigned to this handler by
+                          MmiHandlerRegister().
+  @param  Context         Points to an optional handler context which was
+                          specified when the handler was registered.
   @param  CommBuffer      A pointer to a collection of data in memory that will
-                          be conveyed from a non-MM environment into an MM environment.
+                          be conveyed from a non-MM environment into an
+                          MM environment.
   @param  CommBufferSize  The size of the CommBuffer.
 
   @return Status Code
@@ -192,8 +225,9 @@ PiMmCpuTpFwRootMmiHandler (
   ASSERT (CommBufferSize == NULL);
 
   CpuNumber = mMmst->CurrentlyExecutingCpu;
-  if (!PerCpuGuidedEventContext[CpuNumber])
+  if (PerCpuGuidedEventContext[CpuNumber] == NULL) {
     return EFI_NOT_FOUND;
+  }
 
   DEBUG ((DEBUG_INFO, "CommBuffer - 0x%x, CommBufferSize - 0x%x\n",
           PerCpuGuidedEventContext[CpuNumber],
