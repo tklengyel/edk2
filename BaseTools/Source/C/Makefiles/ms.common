@@ -48,15 +48,15 @@ SYS_LIB_PATH = $(EDK_TOOLS_PATH)\Lib\Win64
 !ERROR "Bad HOST_ARCH"
 !ENDIF
 
-CC = cl.exe
-CXX = cl.exe
+CC = "$(CLANG_BIN)\clang-cl.exe"
+CXX = "$(CLANG_BIN)\clang-cl.exe"
 AS = ml.exe
-AR = lib.exe
-LD = link.exe
+AR = "$(CLANG_BIN)\llvm-lib.exe"
+LD = "$(CLANG_BIN)\lld-link.exe"
 LINKER = $(LD)
 
 INC = $(INC) -I . -I $(SOURCE_PATH)\Include -I $(ARCH_INCLUDE) -I $(SOURCE_PATH)\Common
 
-CFLAGS = $(CFLAGS) /nologo /Zi /c /O2 /MT /W4 /WX /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE
-CPPFLAGS = $(CPPFLAGS) /EHsc /nologo /Zi /c /O2 /MT /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE
+CFLAGS = $(CFLAGS) /nologo /Zi /c /O2 /MT /W4 /WX /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /w -m32
+CPPFLAGS = $(CPPFLAGS) /EHsc /nologo /Zi /c /O2 /MT /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /w -m32
 
