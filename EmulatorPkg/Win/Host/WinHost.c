@@ -353,6 +353,9 @@ Returns:
   return EFI_SUCCESS;
 }
 
+void
+InitSimics(int argc, char *argv[], char *envp[]);
+
 INTN
 EFIAPI
 main (
@@ -395,6 +398,7 @@ Returns:
   UINTN                 SystemAffinityMask;
   INT32                 LowBit;
 
+  InitSimics(Argc, Argv, Envp);
   //
   // Enable the privilege so that RTC driver can successfully run SetTime()
   //
