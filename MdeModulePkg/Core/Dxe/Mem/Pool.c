@@ -19,6 +19,18 @@ typedef struct {
   LIST_ENTRY    Link;
 } POOL_FREE;
 
+
+//
+// The pool memory with Asan red zone looks like this:
+// H L U U U U R R R R R R A T
+//   H -- POOL_HEAD
+//   L -- left redzone defined in POOL_HEAD (static kAsanHeapLeftRedzoneSize bytes)
+//   U -- user memory.
+//   R -- right redzone (dymanic ComputePoolRightRedzoneSize() bytes)
+//   A -- Alignment (might be zero byte)
+//   T -- POOL_TAIL
+//
+#define kAsanHeapLeftRedzoneSize  128
 #define POOL_HEAD_SIGNATURE      SIGNATURE_32('p','h','d','0')
 #define POOLPAGE_HEAD_SIGNATURE  SIGNATURE_32('p','h','d','1')
 typedef struct {
@@ -26,6 +38,9 @@ typedef struct {
   UINT32             Reserved;
   EFI_MEMORY_TYPE    Type;
   UINTN              Size;
+  UINTN           OriSize;
+  UINTN           AsanRightRZSize;
+  CHAR8           AsanLeftRZ[kAsanHeapLeftRedzoneSize];
   CHAR8              Data[1];
 } POOL_HEAD;
 
@@ -366,6 +381,8 @@ CoreAllocatePoolI (
   UINTN      NoPages;
   UINTN      Granularity;
   BOOLEAN    HasPoolTail;
+  UINTN       OrignalSize;
+  UINTN       RightRedZoneSize;
   BOOLEAN    PageAsPool;
 
   ASSERT_LOCKED (&mPoolMemoryLock);
@@ -379,6 +396,13 @@ CoreAllocatePoolI (
   } else {
     Granularity = DEFAULT_PAGE_ALLOCATION_GRANULARITY;
   }
+  //SerialOutput2 ("CoreAllocatePoolI step 1 \n");
+  //
+  // Add Asan right Red-zone overhead
+  //
+  OrignalSize = Size;
+  RightRedZoneSize = ComputePoolRightRedzoneSize(Size);
+  Size += RightRedZoneSize;
 
   //
   // Adjust the size by the pool header & tail overhead
@@ -437,6 +461,7 @@ CoreAllocatePoolI (
       if (!IsListEmpty (&Pool->FreeList[Index])) {
         Free = CR (Pool->FreeList[Index].ForwardLink, POOL_FREE, Link, POOL_FREE_SIGNATURE);
         RemoveEntryList (&Free->Link);
+        UnpoisonPool ((UINTN)Free, LIST_TO_SIZE (Index));
         NewPage   = (VOID *)Free;
         MaxOffset = LIST_TO_SIZE (Index);
         goto Carve;
@@ -475,6 +500,9 @@ Carve:
         Free->Signature = POOL_FREE_SIGNATURE;
         Free->Index     = (UINT32)Index;
         InsertHeadList (&Pool->FreeList[Index], &Free->Link);
+        //SerialOutput2 ("CoreAllocatePoolI step 6.3 \n");
+        PoisonPool((UINTN)Free + sizeof(POOL_FREE), FSize - sizeof(POOL_FREE), kAsanHeapFreeMagic);
+        //SerialOutput2 ("CoreAllocatePoolI step 6.4 \n");
         Offset += FSize;
       }
 
@@ -490,7 +518,8 @@ Carve:
   //
   Free = CR (Pool->FreeList[Index].ForwardLink, POOL_FREE, Link, POOL_FREE_SIGNATURE);
   RemoveEntryList (&Free->Link);
-
+  //SerialOutput2 ("CoreAllocatePoolI step 8 \n");
+  UnpoisonPool ((UINTN)Free, LIST_TO_SIZE (Index));
   Head = (POOL_HEAD *)Free;
 
 Done:
@@ -508,6 +537,11 @@ Done:
     Head->Signature = (PageAsPool) ? POOLPAGE_HEAD_SIGNATURE : POOL_HEAD_SIGNATURE;
     Head->Size      = Size;
     Head->Type      = (EFI_MEMORY_TYPE)PoolType;
+    Head->OriSize   = OrignalSize;
+    Head->AsanRightRZSize   = RightRedZoneSize;
+    Tail            = HEAD_TO_TAIL (Head);
+    Tail->Signature = POOL_TAIL_SIGNATURE;
+    Tail->Size      = Size;
     Buffer          = Head->Data;
 
     if (HasPoolTail) {
@@ -530,6 +564,20 @@ Done:
       (UINT64)Size,
       (UINT64)Pool->Used
       ));
+
+
+    //
+    //Poison Pool left and right RedZones
+    //
+    //memset((void*)Head->AsanLeftRZ, 0, kAsanHeapLeftRedzoneSize);
+    DEBUG ((DEBUG_POOL, "(UINTN)Head->AsanLeftRZ: 0x%x\n", (UINTN)Head->AsanLeftRZ));
+    //SerialOutput2 ("CoreAllocatePoolI step 12 \n");
+    PoisonPool((UINTN)Head->AsanLeftRZ, kAsanHeapLeftRedzoneSize, kAsanHeapLeftRedzoneMagic);
+    //SerialOutput2 ("CoreAllocatePoolI step 13 \n");
+    DEBUG ((DEBUG_POOL, "(UINTN)Head->Data + Head->OriSize: 0x%x\n", (UINTN)Head->Data + Head->OriSize));
+    //SerialOutput2 ("CoreAllocatePoolI step 14 \n");
+    PoisonPool((UINTN)Head->Data + Head->OriSize, Head->AsanRightRZSize, kAsanHeapLeftRedzoneMagic);
+
   } else {
     DEBUG ((DEBUG_ERROR | DEBUG_POOL, "AllocatePool: failed to allocate %ld bytes\n", (UINT64)Size));
   }
@@ -771,6 +819,7 @@ CoreFreePoolI (
   // Determine the pool list
   //
   Index = SIZE_TO_LIST (Size);
+  UnpoisonPool ((UINTN)Head, Size);
   DEBUG_CLEAR_MEMORY (Head, Size);
 
   //
@@ -805,6 +854,9 @@ CoreFreePoolI (
     Free->Signature = POOL_FREE_SIGNATURE;
     Free->Index     = (UINT32)Index;
     InsertHeadList (&Pool->FreeList[Index], &Free->Link);
+    DEBUG ((DEBUG_POOL, "Free: 0x%x\n", (UINTN)Free));
+    DEBUG ((DEBUG_POOL, "(UINTN)Free + sizeof(POOL_FREE): 0x%x\n", (UINTN)Free + sizeof(POOL_FREE)));
+    PoisonPool((UINTN)Free + sizeof(POOL_FREE), LIST_TO_SIZE(Index) - sizeof(POOL_FREE), kAsanHeapFreeMagic);
 
     //
     // See if all the pool entries in the same page as Free are freed pool

@@ -60,6 +60,9 @@
   PerformanceLib
   HobLib
   SmmMemLib
+  DxeServicesLib
+  AsanLib
+
 
 [Protocols]
   gEfiDxeSmmReadyToLockProtocolGuid             ## UNDEFINED # SmiHandlerRegister

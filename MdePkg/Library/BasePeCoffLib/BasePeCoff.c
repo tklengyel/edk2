@@ -1697,6 +1697,7 @@ PeCoffLoaderLoadImage (
                              image was relocated using PeCoffLoaderRelocateImage().
 
 **/
+__attribute__((no_sanitize("address")))
 VOID
 EFIAPI
 PeCoffLoaderRelocateImageForRuntime (

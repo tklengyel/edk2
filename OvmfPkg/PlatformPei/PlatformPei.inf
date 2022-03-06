@@ -45,6 +45,7 @@
 [Guids]
   gEfiMemoryTypeInformationGuid
   gFdtHobGuid
+  gAsanInfoGuid
 
 [LibraryClasses]
   BaseLib
@@ -112,6 +113,8 @@
   gUefiCpuPkgTokenSpaceGuid.PcdSevEsIsEnabled
   gEfiMdePkgTokenSpaceGuid.PcdConfidentialComputingGuestAttr
   gUefiCpuPkgTokenSpaceGuid.PcdGhcbHypervisorFeatures
+  gEfiMdeModulePkgTokenSpaceGuid.AsanShadowMemoryStart
+  gEfiMdeModulePkgTokenSpaceGuid.AsanShadowMemorySize
 
 [FixedPcd]
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfCpuidBase

@@ -240,6 +240,9 @@ CoreAddRange (
   mMapStack[mMapDepth].End          = End;
   mMapStack[mMapDepth].VirtualStart = 0;
   mMapStack[mMapDepth].Attribute    = Attribute;
+
+  UnpoisonPages (Start, EFI_SIZE_TO_PAGES(End - Start + 1));
+
   InsertTailList (&gMemoryMap, &mMapStack[mMapDepth].Link);
 
   mMapDepth += 1;

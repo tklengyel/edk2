@@ -62,10 +62,10 @@ FV = SECFV
 
 [FD.MEMFD]
 BaseAddress   = $(MEMFD_BASE_ADDRESS)
-Size          = 0xD00000
+Size          = 0x8000000
 ErasePolarity = 1
 BlockSize     = 0x10000
-NumBlocks     = 0xD0
+NumBlocks     = 0x800
 
 0x000000|0x006000
 gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecPageTablesBase|gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecPageTablesSize
@@ -86,7 +86,7 @@ gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecPeiTempRamBase|gUefiOvmfPkgTokenSpaceGuid.P
 gUefiOvmfPkgTokenSpaceGuid.PcdOvmfPeiMemFvBase|gUefiOvmfPkgTokenSpaceGuid.PcdOvmfPeiMemFvSize
 FV = PEIFV
 
-0x100000|0xC00000
+0x100000|0x7F00000
 gUefiOvmfPkgTokenSpaceGuid.PcdOvmfDxeMemFvBase|gUefiOvmfPkgTokenSpaceGuid.PcdOvmfDxeMemFvSize
 FV = DXEFV
 
@@ -316,7 +316,7 @@ INF  MdeModulePkg/Bus/Pci/XhciDxe/XhciDxe.inf
 INF  MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
 INF  MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
 INF  MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
-
+#INF  AsanTestCase/TestModule/AsanTestPool.inf
 !ifdef $(CSM_ENABLE)
 INF  OvmfPkg/Csm/BiosThunk/VideoDxe/VideoDxe.inf
 INF  OvmfPkg/Csm/LegacyBiosDxe/LegacyBiosDxe.inf

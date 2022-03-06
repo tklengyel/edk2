@@ -19,7 +19,7 @@ extern UINT8                     IScsiDxeStrings[];
 extern ISCSI_FORM_CALLBACK_INFO  *mCallbackInfo;
 
 #define VAR_OFFSET(Field)    \
-  ((UINT16) ((UINTN) &(((ISCSI_CONFIG_IFR_NVDATA *) 0)->Field)))
+  ((UINT16) ((UINTN) &(((ISCSI_CONFIG_IFR_NVDATA *) 0x100)->Field) - 0x100))
 
 #define QUESTION_ID(Field)   \
   ((UINT16) (VAR_OFFSET (Field) + CONFIG_OPTION_OFFSET))

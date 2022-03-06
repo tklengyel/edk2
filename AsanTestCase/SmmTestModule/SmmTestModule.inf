@@ -1,0 +1,54 @@
+## @file
+# Asan enabling test module
+#
+# Copyright (c) 2006, Intel Corporation. All rights reserved.<BR>
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SmmTestModule
+  FILE_GUID                      = D10B5DD7-855B-4fa5-8E43-3B5BC5435A4C
+  MODULE_TYPE                    = DXE_SMM_DRIVER
+  VERSION_STRING                 = 1.0
+  PI_SPECIFICATION_VERSION       = 0x0001000A
+  ENTRY_POINT                    = SmmTestModuleEntryPoint
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 IPF EBC ARM AARCH64
+#
+#  DRIVER_BINDING                =  gUsbKeyboardDriverBinding                        
+#  COMPONENT_NAME                =  gUsbKeyboardComponentName
+#  COMPONENT_NAME2               =  gUsbKeyboardComponentName2
+#
+
+[Sources]
+  SmmTestModule.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  MemoryAllocationLib
+#  UefiLib
+#  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+#  UefiRuntimeServicesTableLib
+#  BaseMemoryLib
+#  ReportStatusCodeLib
+  DebugLib
+
+[Depex]
+  TRUE

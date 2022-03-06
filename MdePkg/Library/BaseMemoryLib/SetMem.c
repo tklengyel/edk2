@@ -42,10 +42,12 @@ InternalMemSetMem (
   volatile UINT64  *Pointer64;
   UINT32           Value32;
   UINT64           Value64;
+  UINT32                            ShiftValue;
 
+  ShiftValue = Value;
   if ((((UINTN)Buffer & 0x7) == 0) && (Length >= 8)) {
     // Generate the 64bit value
-    Value32 = (Value << 24) | (Value << 16) | (Value << 8) | Value;
+    Value32 = (ShiftValue << 24) | (ShiftValue << 16) | (ShiftValue << 8) | ShiftValue;
     Value64 = LShiftU64 (Value32, 32) | Value32;
 
     Pointer64 = (UINT64 *)Buffer;
@@ -58,7 +60,7 @@ InternalMemSetMem (
     Pointer8 = (UINT8 *)Pointer64;
   } else if ((((UINTN)Buffer & 0x3) == 0) && (Length >= 4)) {
     // Generate the 32bit value
-    Value32 = (Value << 24) | (Value << 16) | (Value << 8) | Value;
+    Value32 = (ShiftValue << 24) | (ShiftValue << 16) | (ShiftValue << 8) | ShiftValue;
 
     Pointer32 = (UINT32 *)Buffer;
     while (Length >= 4) {
@@ -73,7 +75,7 @@ InternalMemSetMem (
   }
 
   while (Length-- > 0) {
-    *(Pointer8++) = Value;
+    *(Pointer8++) = ShiftValue;
   }
 
   return Buffer;
