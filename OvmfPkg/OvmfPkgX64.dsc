@@ -67,7 +67,15 @@
 !ifdef $(FD_SIZE_4MB)
   DEFINE FD_SIZE_IN_KB           = 4096
 !else
-  DEFINE FD_SIZE_IN_KB           = 4096
+!ifdef $(FD_SIZE_8MB)
+  DEFINE FD_SIZE_IN_KB           = 8192
+!else
+!ifdef $(FD_SIZE_16MB)
+  DEFINE FD_SIZE_IN_KB           = 16384
+!else
+  DEFINE FD_SIZE_IN_KB           = 16384
+!endif
+!endif
 !endif
 !endif
 !endif
@@ -97,6 +105,7 @@
 
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
   GCC:*_*_*_DLINK_FLAGS = -z common-page-size=0x1000
+  GCC:*_CLANGSAN40_X64_SAN_FLAGS  = -mllvm -asan-stack=0
   XCODE:*_*_*_DLINK_FLAGS = -seg1addr 0x1000 -segalign 0x1000
   XCODE:*_*_*_MTOC_FLAGS = -align 0x1000
   CLANGPDB:*_*_*_DLINK_FLAGS = /ALIGN:4096
@@ -130,7 +139,7 @@
   TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLib.inf
   ResetSystemLib|OvmfPkg/Library/ResetSystemLib/BaseResetSystemLib.inf
   PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
-  BaseMemoryLib|MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
+  BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
   BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
   TimeBaseLib|EmbeddedPkg/Library/TimeBaseLib/TimeBaseLib.inf
@@ -263,6 +272,7 @@
 !endif
   VmgExitLib|OvmfPkg/Library/VmgExitLib/SecVmgExitLib.inf
   MemEncryptSevLib|OvmfPkg/Library/BaseMemEncryptSevLib/SecMemEncryptSevLib.inf
+  NULL|MdeModulePkg/Library/AsanLibNull/AsanLibNull.inf
 
 [LibraryClasses.common.PEI_CORE]
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
@@ -279,6 +289,7 @@
   DebugLib|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf
 !endif
   PeCoffLib|MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
+  NULL|MdeModulePkg/Library/AsanLibNull/AsanLibNull.inf
 
 [LibraryClasses.common.PEIM]
   HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
@@ -309,6 +320,7 @@
 !include OvmfPkg/OvmfTpmLibsPeim.dsc.inc
 
   MemEncryptSevLib|OvmfPkg/Library/BaseMemEncryptSevLib/PeiMemEncryptSevLib.inf
+  NULL|MdeModulePkg/Library/AsanLibNull/AsanLibNull.inf
 
 [LibraryClasses.common.DXE_CORE]
   HobLib|MdePkg/Library/DxeCoreHobLib/DxeCoreHobLib.inf
@@ -326,6 +338,7 @@
 !endif
   CpuExceptionHandlerLib|UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+  AsanLib|MdeModulePkg/Library/AsanLib/AsanLib.inf
 
 [LibraryClasses.common.DXE_RUNTIME_DRIVER]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -348,6 +361,7 @@
 !if $(SMM_REQUIRE) == TRUE
   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
 !endif
+  NULL|MdeModulePkg/Library/AsanRuntimeLib/AsanRuntimeLib.inf
 
 [LibraryClasses.common.UEFI_DRIVER]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -364,6 +378,8 @@
 !endif
   UefiScsiLib|MdePkg/Library/UefiScsiLib/UefiScsiLib.inf
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
+  AsanLib|MdeModulePkg/Library/AsanLib/AsanLib.inf
+  NULL|MdeModulePkg/Library/AsanLib/AsanLib.inf
 
 [LibraryClasses.common.DXE_DRIVER]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -396,6 +412,7 @@
   QemuLoadImageLib|OvmfPkg/Library/X86QemuLoadImageLib/X86QemuLoadImageLib.inf
 
 !include OvmfPkg/OvmfTpmLibsDxe.dsc.inc
+  NULL|MdeModulePkg/Library/AsanLib/AsanLib.inf
 
 [LibraryClasses.common.UEFI_APPLICATION]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -410,6 +427,7 @@
   DebugLib|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf
 !endif
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
+  NULL|MdeModulePkg/Library/AsanLib/AsanLib.inf
 
 [LibraryClasses.common.DXE_SMM_DRIVER]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -432,6 +450,7 @@
 !endif
   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/SmmCryptLib.inf
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
+  NULL|MdeModulePkg/Library/AsanLib/AsanLib.inf
 
 [LibraryClasses.common.SMM_CORE]
   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
@@ -449,6 +468,7 @@
   DebugLib|OvmfPkg/Library/PlatformDebugLibIoPort/PlatformDebugLibIoPort.inf
 !endif
   PciLib|OvmfPkg/Library/DxePciLibI440FxQ35/DxePciLibI440FxQ35.inf
+  AsanLib|MdeModulePkg/Library/AsanLib/AsanLib.inf
 
 ################################################################################
 #
@@ -486,7 +506,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0xe000
 !endif
 !endif
-!if $(FD_SIZE_IN_KB) == 4096
+!if ($(FD_SIZE_IN_KB) == 4096) || ($(FD_SIZE_IN_KB) == 8192) || ($(FD_SIZE_IN_KB) == 16384)
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x8400
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxAuthVariableSize|0x8400
 !if $(NETWORK_TLS_ENABLE) == FALSE
@@ -525,7 +545,7 @@
   # DEBUG_VERBOSE   0x00400000  // Detailed debug messages that may
   #                             // significantly impact boot performance
   # DEBUG_ERROR     0x80000000  // Error
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x8000004F
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x800001CF
 
 !if $(SOURCE_DEBUG_ENABLE) == TRUE
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x17
@@ -574,6 +594,7 @@
   # Point to the MdeModulePkg/Application/UiApp/UiApp.inf
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
 
+  gEfiMdeModulePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x0
 ################################################################################
 #
 # Pcd Dynamic Section - list of all EDK II PCD Entries defined by this Platform
@@ -879,6 +900,9 @@
   MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
   MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
   MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
+  AsanTestCase/TestModule/TestModule.inf
+  AsanTestCase/TestModule/AsanTestPool.inf
+  AsanTestCase/SmmTestModule/SmmTestModule.inf
 
 !ifdef $(CSM_ENABLE)
   OvmfPkg/Csm/BiosThunk/VideoDxe/VideoDxe.inf {
