@@ -15,7 +15,7 @@ if [ ! -d edk2-non-osi ]; then
 fi
 
 export PACKAGES_PATH=$PWD:$PWD/edk2-platforms:$PWD/edk2-non-osi
-git checkout sanitizers2
+git checkout sanitizer2
 . edksetup.sh --reconfig
 make -C BaseTools/Source/C/
 build -p OvmfPkg/OvmfPkgX64.dsc -t CLANGSAN40 -a X64 -b NOOPT -DDEBUG_ON_SERIAL_PORT
