@@ -886,6 +886,13 @@ PiCpuSmmEntry (
     // When the HOB doesn't exist, allocate new SMBASE itself.
     //
     DEBUG ((DEBUG_INFO, "PiCpuSmmEntry: gSmmBaseHobGuid not found!\n"));
+
+    mCpuHotPlugData.SmBase = (UINTN *)AllocatePool (sizeof (UINTN) * mMaxNumberOfCpus);
+    if (mCpuHotPlugData.SmBase == NULL) {
+      ASSERT (mCpuHotPlugData.SmBase != NULL);
+      CpuDeadLoop ();
+    }
+
     //
     // very old processors (i486 + pentium) need 32k not 4k alignment, exclude them.
     //
@@ -1278,12 +1285,14 @@ FindSmramInfo (
   //
   Size   = 0;
   Status = SmmAccess->GetCapabilities (SmmAccess, &Size, NULL);
+  DEBUG ((DEBUG_WARN, "GetCapabilities: Status = %r, Size = 0x%x\n", Status, Size));
   ASSERT (Status == EFI_BUFFER_TOO_SMALL);
 
   mSmmCpuSmramRanges = (EFI_SMRAM_DESCRIPTOR *)AllocatePool (Size);
   ASSERT (mSmmCpuSmramRanges != NULL);
 
   Status = SmmAccess->GetCapabilities (SmmAccess, &Size, mSmmCpuSmramRanges);
+  DEBUG ((DEBUG_WARN, "GetCapabilities: Status = %r, Size = 0x%x\n", Status, Size));
   ASSERT_EFI_ERROR (Status);
 
   mSmmCpuSmramRangeCount = Size / sizeof (EFI_SMRAM_DESCRIPTOR);
