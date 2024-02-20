@@ -34,6 +34,28 @@ SECTIONS {
      * emitted GUIDs here.
      */
     *:AutoGen.obj(.data.g*Guid)
+    /*
+     * LLVM and GCC address sanitizer has module constructor/destructor
+     * pointers in .init_array and .fini_array sections, which are need 
+     * to call before module start and exit. Keep them in image.
+     */
+    PROVIDE_HIDDEN (__preinit_array_start = .);
+    KEEP (*(SORT(.preinit_array.*)))
+    KEEP (*(.preinit_array))
+    PROVIDE_HIDDEN (__preinit_array_end = .);
+
+    PROVIDE_HIDDEN (__init_array_start = .);
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array))
+    PROVIDE_HIDDEN (__init_array_end = .);
+
+    PROVIDE_HIDDEN (__fini_array_start = .);
+    KEEP (*(SORT(.fini_array.*)))
+    KEEP (*(.fini_array))
+    PROVIDE_HIDDEN (__fini_array_end = .);
+
+    KEEP(*(.init))
+    KEEP(*(.fini))
   }
 
   /*

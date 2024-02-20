@@ -95,6 +95,7 @@
   CpuExceptionHandlerLib
   PcdLib
   ImagePropertiesRecordLib
+  AsanLib
 
 [Guids]
   gEfiEventMemoryMapChangeGuid                  ## PRODUCES             ## Event
