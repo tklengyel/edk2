@@ -255,6 +255,12 @@ RegisterMemoryProfileImage (
   }
 }
 
+void
+UnpoisonPool(
+  IN const UINTN aligned_addr,
+  IN UINTN Size
+  );
+
 /**
   This is the Event notification function to reload BootScriptExecutor image
   to RESERVED mem and save it to LockBox.
@@ -378,6 +384,8 @@ ReadyToLockEventNotify (
 
   Status = ((EFI_IMAGE_ENTRY_POINT)(UINTN)(ImageContext.EntryPoint))(NewImageHandle, gST);
   ASSERT_EFI_ERROR (Status);
+
+  UnpoisonPool ((UINTN)ImageContext.ImageAddress, ImageContext.ImageSize);
 
   //
   // Additional step for BootScript integrity
