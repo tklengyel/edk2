@@ -34,6 +34,7 @@
 
 [LibraryClasses]
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
+  AsanLib|MdeModulePkg/Library/AsanLib/AsanLibNull.inf
 
 [Components]
   MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
